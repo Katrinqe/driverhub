@@ -1,0 +1,52 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #121212;
+  color: #fff;
+}
+
+.screen {
+  display: none;
+  height: 100vh;
+  width: 100%;
+  text-align: center;
+  padding-top: 50px;
+}
+
+.screen.active {
+  display: block;
+}
+
+button {
+  padding: 15px 30px;
+  margin: 10px;
+  font-size: 18px;
+  color: #fff;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  border-radius: 10px;
+  backdrop-filter: blur(5px);
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+#map {
+  height: 60vh;
+  width: 90%;
+  margin: 20px auto;
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+}
+
+#driveStats {
+  margin: 10px;
+  font-size: 18px;
+}
+
+h1, h2 {
+  margin-bottom: 20px;
+}

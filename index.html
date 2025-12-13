@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DriverHub V1</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+</head>
+<body>
+
+  <!-- Startscreen -->
+  <div id="startScreen" class="screen active">
+    <h1>DriverHub</h1>
+    <button id="startDriveBtn">Start Drive</button>
+  </div>
+
+  <!-- Drive Screen -->
+  <div id="driveScreen" class="screen">
+    <div id="map"></div>
+    <div id="driveStats">
+      Speed: <span id="speed">0</span> km/h |
+      Distance: <span id="distance">0</span> km |
+      Time: <span id="time">0</span> min
+    </div>
+    <button id="endDriveBtn">End Drive</button>
+  </div>
+
+  <!-- Statistics Screen -->
+  <div id="statsScreen" class="screen">
+    <h2>Drive Summary</h2>
+    <p>Total Distance: <span id="totalDistance">0</span> km</p>
+    <p>Average Speed: <span id="avgSpeed">0</span> km/h</p>
+    <p>Total Time: <span id="totalTime">0</span> min</p>
+    <button id="backHomeBtn">Back to Home</button>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>
