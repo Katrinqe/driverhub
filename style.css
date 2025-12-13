@@ -1,0 +1,215 @@
+:root {
+    --bg-color: #050505;
+    --accent-blue: #4a90e2; /* Deine DriverHub Blue Farbe */
+    --accent-glow: rgba(74, 144, 226, 0.6);
+    --text-white: #ffffff;
+    --text-grey: #8e8e93;
+    --glass-bg: rgba(20, 20, 20, 0.7);
+    --danger: #ff3b30;
+    --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-white);
+    font-family: var(--font-stack);
+    overflow: hidden; /* App-Feeling, kein Scrollen */
+    height: 100vh;
+    width: 100vw;
+}
+
+/* SCREEN MANAGEMENT */
+.screen {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    display: none;
+    flex-direction: column;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.screen.active {
+    display: flex;
+    opacity: 1;
+    z-index: 10;
+}
+
+.content-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    text-align: center;
+    background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
+}
+
+/* LOGO & ANIMATION */
+.logo-container {
+    margin-bottom: 20px;
+}
+
+.dh-logo {
+    width: 180px;
+    height: auto;
+    /* Die Animation imitiert dein Video */
+    animation: pulse-blue 3s infinite ease-in-out;
+}
+
+@keyframes pulse-blue {
+    0% { filter: drop-shadow(0 0 0px rgba(74,144,226,0)); transform: scale(1); }
+    50% { filter: drop-shadow(0 0 20px var(--accent-glow)); transform: scale(1.02); }
+    100% { filter: drop-shadow(0 0 0px rgba(74,144,226,0)); transform: scale(1); }
+}
+
+h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 5px;
+    background: linear-gradient(to right, #fff, #a0a0a0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.slogan {
+    color: var(--text-grey);
+    font-size: 1rem;
+    margin-bottom: 60px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* BUTTONS */
+button {
+    border: none;
+    padding: 16px 32px;
+    border-radius: 30px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    max-width: 280px;
+    transition: transform 0.2s;
+    font-family: var(--font-stack);
+}
+
+button:active { transform: scale(0.95); }
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-blue), #2c5f9e);
+    color: white;
+    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
+}
+
+.btn-danger {
+    background: rgba(255, 59, 48, 0.2);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    backdrop-filter: blur(10px);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    margin-top: 20px;
+}
+
+/* MAP STYLING (DARK MODE HACK) */
+#map {
+    height: 100%;
+    width: 100%;
+    z-index: 1;
+    /* Macht die Karte dunkel und bläulich */
+    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+
+/* DRIVE UI OVERLAYS */
+.drive-overlay-top {
+    position: absolute;
+    top: 50px; left: 20px; right: 20px;
+    z-index: 999;
+    display: flex;
+    justify-content: space-between;
+}
+
+.stat-box {
+    background: var(--glass-bg);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    padding: 15px 20px;
+    border-radius: 16px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.1);
+    min-width: 100px;
+}
+
+.stat-box .label {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-grey);
+    font-weight: 700;
+}
+
+.stat-box .value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-box .unit {
+    font-size: 0.8rem;
+    color: var(--accent-blue);
+}
+
+.drive-overlay-bottom {
+    position: absolute;
+    bottom: 40px; left: 20px; right: 20px;
+    z-index: 999;
+    text-align: center;
+}
+
+.drive-overlay-bottom .stat-row {
+    background: var(--glass-bg);
+    backdrop-filter: blur(15px);
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 15px;
+    display: inline-block;
+    border: 1px solid rgba(255,255,255,0.1);
+    font-weight: 600;
+}
+
+/* STATS SUMMARY CARD */
+.stats-card {
+    background: #1c1c1e;
+    border-radius: 20px;
+    padding: 30px;
+    width: 100%;
+    max-width: 320px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.stat-row-final {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.stat-row-final.single {
+    justify-content: center;
+    border-top: 1px solid #333;
+    padding-top: 20px;
+    margin-bottom: 0;
+}
+
+.final-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-white);
+}
