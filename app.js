@@ -1,33 +1,36 @@
-// --- KONFIGURATION ---
+// --- CONFIG & API ENDPOINTS ---
 const CONFIG = {
-    // OpenStreetMap API für Stadt-Namen (kostenlos)
     geoApi: "https://nominatim.openstreetmap.org/reverse?format=json",
+    weatherApi: "https://api.open-meteo.com/v1/forecast?current_weather=true",
     tileLayer: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 };
 
 // --- GLOBALE VARIABLEN ---
-let map, marker, watchId, intervalId, pathLine;
+let map, marker, watchId, intervalId, pathLine, detailMap;
 let startTime;
 let path = [];
 let currentDist = 0;
 let currentMaxSpeed = 0;
 let isDriving = false;
-let hasCityName = false; // Damit wir die Stadt nur 1x abfragen
+let hasLocationData = false; // Damit wir Wetter/Stadt nur 1x laden
 
-// --- DOM ELEMENTS ---
+// --- DOM ELEMENTE ---
 const els = {
     screens: {
         home: document.getElementById('home-screen'),
-        drive: document.getElementById('drive-ui'),
+        drive: document.getElementById('drive-screen'), // Korrigierte ID
         garage: document.getElementById('garage-screen'),
-        summary: document.getElementById('summary-screen')
+        summary: document.getElementById('summary-screen'),
+        detail: document.getElementById('detail-screen')
     },
     display: {
         speed: document.getElementById('d-speed'),
         time: document.getElementById('d-time'),
         dist: document.getElementById('d-dist'),
         loc: document.getElementById('current-location'),
-        greet: document.getElementById('greeting-text')
+        greet: document.getElementById('greeting-text'),
+        temp: document.getElementById('weather-temp'),
+        icon: document.getElementById('weather-icon')
     },
     summary: {
         dist: document.getElementById('s-dist'),
@@ -38,13 +41,13 @@ const els = {
     nav: document.getElementById('navbar')
 };
 
-// --- INITIALISIERUNG ---
+// --- STARTUP ---
 window.addEventListener('load', () => {
     initMap();
     setGreeting();
     loadGarage();
     
-    // Sofort GPS starten für Hintergrund-Map & Stadt-Name
+    // GPS Starten (für Hintergrund-Map & Wetter)
     if (navigator.geolocation) {
         navigator.geolocation.watchPosition(onLocationUpdate, onError, {
             enableHighAccuracy: true,
@@ -54,104 +57,103 @@ window.addEventListener('load', () => {
 });
 
 function initMap() {
-    // Karte erstellen (im Hintergrund Div)
-    map = L.map('map-background', {
+    map = L.map('map', { // Wir nutzen das Div im Drive-Screen auch für Background
         zoomControl: false,
         attributionControl: false,
         zoomAnimation: true
-    }).setView([51.1657, 10.4515], 13); // Default Start: DE
+    }).setView([51.1657, 10.4515], 13); // Start DE
 
-    L.tileLayer(CONFIG.tileLayer, {
-        detectRetina: true,
-        maxZoom: 19
-    }).addTo(map);
+    L.tileLayer(CONFIG.tileLayer, { maxZoom: 19 }).addTo(map);
 
-    // Marker Style
     const carIcon = L.divIcon({
-        className: 'custom-car-icon',
-        html: `<div style="
-            width: 20px; height: 20px; 
-            background: #4a90e2; 
-            border: 3px solid white; 
-            border-radius: 50%; 
-            box-shadow: 0 0 15px #4a90e2;"></div>`,
-        iconSize: [20, 20],
-        iconAnchor: [10, 10]
+        className: 'custom-car',
+        html: `<div style="width:20px;height:20px;background:#4a90e2;border:3px solid white;border-radius:50%;box-shadow:0 0 15px #4a90e2;"></div>`,
+        iconSize: [20, 20], iconAnchor: [10, 10]
     });
 
     marker = L.marker([0, 0], {icon: carIcon}).addTo(map);
 }
 
 function setGreeting() {
-    const hour = new Date().getHours();
-    let text = "Welcome Back";
-    if (hour >= 5 && hour < 12) text = "Good Morning";
-    else if (hour >= 12 && hour < 18) text = "Good Afternoon";
-    else if (hour >= 18 && hour < 22) text = "Good Evening";
-    else text = "Night Rider";
-    
+    const h = new Date().getHours();
+    let text = "Welcome";
+    if (h >= 5 && h < 12) text = "Good Morning";
+    else if (h >= 12 && h < 18) text = "Good Afternoon";
+    else if (h >= 18 && h < 22) text = "Good Evening";
+    else text = "Night Cruise";
     els.display.greet.innerText = text;
 }
 
-// --- CORE LOGIK: STANDORT UPDATE ---
+// --- CORE: LOCATION UPDATE ---
 function onLocationUpdate(pos) {
     const lat = pos.coords.latitude;
     const lng = pos.coords.longitude;
-    const speed = Math.max(0, (pos.coords.speed || 0) * 3.6); // km/h
-    
+    const speed = Math.max(0, (pos.coords.speed || 0) * 3.6);
     const latLng = [lat, lng];
 
-    // 1. Marker & Map bewegen
+    // Map & Marker bewegen
     marker.setLatLng(latLng);
-    
-    // Zoom Logik: Wenn wir fahren nah dran, sonst weiter weg (Übersicht)
-    if(isDriving) {
-        map.setView(latLng, 18);
-    } else {
-        // Nur zentrieren, wenn wir noch nie zentriert haben oder Karte weit weg ist
-        if(!hasCityName) map.setView(latLng, 15);
-    }
 
-    // 2. Stadt Name holen (Nur einmal am Anfang)
-    if (!hasCityName) {
-        getCityName(lat, lng);
-        hasCityName = true;
-    }
-
-    // 3. TRACKING (Nur wenn Drive Mode an ist)
     if (isDriving) {
+        // Drive Mode: Zoom nah dran
+        map.setView(latLng, 18);
         updateDriveStats(latLng, speed);
+    } else {
+        // Menu Mode: Zoom weiter weg (nur beim ersten Mal zentrieren)
+        if (!hasLocationData) map.setView(latLng, 15);
+    }
+
+    // Wetter & Stadt holen (nur 1x)
+    if (!hasLocationData) {
+        fetchLocationInfo(lat, lng);
+        hasLocationData = true;
     }
 }
 
-// Stadtname von API holen
-async function getCityName(lat, lng) {
+async function fetchLocationInfo(lat, lng) {
     try {
-        const res = await fetch(`${CONFIG.geoApi}&lat=${lat}&lon=${lng}`);
-        const data = await res.json();
-        // Wir suchen Stadt, Dorf oder Gemeinde
-        const city = data.address.city || data.address.town || data.address.village || "Unknown Location";
+        // 1. Stadt Name
+        const resGeo = await fetch(`${CONFIG.geoApi}&lat=${lat}&lon=${lng}`);
+        const dataGeo = await resGeo.json();
+        const city = dataGeo.address.city || dataGeo.address.town || dataGeo.address.village || "Unknown Area";
         els.display.loc.innerText = city;
+
+        // 2. Wetter
+        const resWeather = await fetch(`${CONFIG.weatherApi}&latitude=${lat}&longitude=${lng}`);
+        const dataWeather = await resWeather.json();
+        const temp = Math.round(dataWeather.current_weather.temperature);
+        const code = dataWeather.current_weather.weathercode;
+        
+        els.display.temp.innerText = temp + "°";
+        
+        // Icon Logik (Simpel)
+        let iconClass = "fa-cloud";
+        if(code <= 1) iconClass = "fa-sun";
+        else if(code <= 3) iconClass = "fa-cloud-sun";
+        else if(code <= 60) iconClass = "fa-cloud-rain";
+        else if(code <= 80) iconClass = "fa-snowflake";
+        
+        els.display.icon.className = `fa-solid ${iconClass}`;
+        
     } catch (e) {
-        els.display.loc.innerText = "GPS Active";
+        console.log("Weather/Loc Error", e);
     }
 }
 
 function updateDriveStats(latLng, speedKmh) {
-    // Max Speed
     if (speedKmh > currentMaxSpeed) currentMaxSpeed = speedKmh;
     
+    // Speed Update
+    els.display.speed.innerText = speedKmh.toFixed(0);
+
     // Distanz
     if (path.length > 0) {
-        const lastPoint = path[path.length - 1];
-        const dist = map.distance(lastPoint, latLng);
+        const last = path[path.length - 1];
+        const dist = map.distance(last, latLng);
         currentDist += dist;
+        els.display.dist.innerText = (currentDist / 1000).toFixed(2) + " km";
     }
     path.push(latLng);
-
-    // UI Updates
-    els.display.speed.innerText = speedKmh.toFixed(0);
-    els.display.dist.innerText = (currentDist / 1000).toFixed(2) + " km";
 
     // Linie zeichnen
     if (!pathLine) {
@@ -161,7 +163,7 @@ function updateDriveStats(latLng, speedKmh) {
     }
 }
 
-// --- BUTTON ACTIONS ---
+// --- ACTIONS ---
 
 // START
 document.getElementById('btn-start').addEventListener('click', () => {
@@ -170,15 +172,16 @@ document.getElementById('btn-start').addEventListener('click', () => {
     path = [];
     currentDist = 0;
     currentMaxSpeed = 0;
-    
+
     // UI Switch
     switchScreen('drive');
-    els.nav.style.display = 'none'; // Nav ausblenden
-    
-    // Map Filter entfernen (Klar machen)
-    document.getElementById('map-background').style.filter = "none";
-    
-    // Timer starten
+    els.nav.style.display = 'none';
+
+    // Map "aufwecken" (Filter entfernen)
+    document.getElementById('map').style.filter = "none";
+    map.invalidateSize(); // Wichtig damit Leaflet weiß, dass es jetzt fullscreen ist
+
+    // Timer
     intervalId = setInterval(() => {
         const diff = new Date() - startTime;
         els.display.time.innerText = new Date(diff).toISOString().substr(11, 8);
@@ -189,126 +192,126 @@ document.getElementById('btn-start').addEventListener('click', () => {
 document.getElementById('btn-stop').addEventListener('click', () => {
     isDriving = false;
     clearInterval(intervalId);
-    
-    // Summary berechnen
+
+    // Summary Data
     const diff = new Date() - startTime;
     const distKm = currentDist / 1000;
-    const durationHrs = diff / 3600000;
-    const avgSpeed = durationHrs > 0 ? (distKm / durationHrs).toFixed(1) : 0;
-    
+    const hrs = diff / 3600000;
+    const avg = hrs > 0 ? (distKm / hrs).toFixed(1) : 0;
+
     els.summary.dist.innerText = distKm.toFixed(2);
     els.summary.speed.innerText = currentMaxSpeed.toFixed(0);
-    els.summary.avg.innerText = avgSpeed;
+    els.summary.avg.innerText = avg;
     els.summary.time.innerText = new Date(diff).toISOString().substr(11, 8);
 
-    // Map wieder dunkel machen
-    document.getElementById('map-background').style.filter = "invert(100%) hue-rotate(180deg) brightness(75%) contrast(85%) grayscale(20%)";
-    
+    // Map wieder "schlafen legen" (Dark Mode)
+    document.getElementById('map').style.filter = "invert(100%) hue-rotate(180deg) brightness(85%) contrast(90%)";
+    if(pathLine) { pathLine.remove(); pathLine = null; }
+
     switchScreen('summary');
 });
 
-// SAVE & CLOSE
+// SAVE
 document.getElementById('btn-save').addEventListener('click', () => {
-    saveToGarage();
-    els.nav.style.display = 'flex'; // Nav wieder an
+    const diff = new Date() - startTime;
+    const entry = {
+        date: startTime.toISOString(),
+        dist: currentDist / 1000,
+        max: currentMaxSpeed,
+        path: path // Pfad speichern für Detail View
+    };
     
-    // Nav Button auf Garage setzen
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.nav-btn')[1].classList.add('active');
+    let data = JSON.parse(localStorage.getItem('dh_garage')) || [];
+    data.unshift(entry);
+    localStorage.setItem('dh_garage', JSON.stringify(data));
     
-    switchScreen('garage');
+    loadGarage();
+    els.nav.style.display = 'flex';
+    document.querySelectorAll('.nav-btn')[1].click(); // Zu Garage wechseln
 });
 
 // RESET
 document.getElementById('btn-reset').addEventListener('click', () => {
-    if(confirm("Delete History?")) {
+    if(confirm("Delete All Data?")) {
         localStorage.removeItem('dh_garage');
         loadGarage();
     }
+});
+
+// DETAIL VIEW
+document.getElementById('btn-close-detail').addEventListener('click', () => {
+    els.screens.detail.style.display = 'none';
+    if(detailMap) { detailMap.remove(); detailMap = null; }
 });
 
 // NAV SWITCHER
 document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         const target = btn.getAttribute('data-target');
-        
-        // Buttons updaten
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        
-        // Screen wechseln
         switchScreen(target.split('-')[0]);
     });
 });
 
-// Helper: Screen Manager
 function switchScreen(name) {
-    // Alle Overlay-Screens ausblenden
     Object.values(els.screens).forEach(s => s.classList.remove('active'));
-    
-    // Ziel Screen aktivieren
-    if(name === 'home') els.screens.home.classList.add('active');
-    if(name === 'drive') els.screens.drive.classList.add('active');
-    if(name === 'garage') els.screens.garage.classList.add('active');
-    if(name === 'summary') els.screens.summary.classList.add('active');
-    
-    // Map-Linie entfernen wenn nicht Drive
-    if(name !== 'drive' && pathLine) {
-        pathLine.remove();
-        pathLine = null;
+    // Home und Garage sind "Glas-Overlay" Screens über der Map
+    if(name === 'home' || name === 'garage') {
+        els.screens[name].classList.add('active');
+        // Map Container muss sichtbar sein für den Hintergrund
+        document.getElementById('drive-screen').style.display = 'flex'; 
+        // Aber Overlay UI verstecken
+        document.querySelector('.drive-overlay-top').style.display = 'none';
+        document.querySelector('.drive-overlay-bottom').style.display = 'none';
+    } 
+    else if (name === 'drive') {
+        els.screens.drive.classList.add('active');
+        document.getElementById('drive-screen').style.display = 'flex';
+        document.querySelector('.drive-overlay-top').style.display = 'flex';
+        document.querySelector('.drive-overlay-bottom').style.display = 'flex';
     }
-}
-
-// --- DATA STORAGE ---
-function saveToGarage() {
-    const diff = new Date() - startTime;
-    const entry = {
-        date: startTime.toISOString(),
-        dist: currentDist / 1000,
-        max: currentMaxSpeed,
-        time: new Date(diff).toISOString().substr(11, 8)
-    };
-    
-    let data = JSON.parse(localStorage.getItem('dh_garage')) || [];
-    data.unshift(entry); // Neuester oben
-    localStorage.setItem('dh_garage', JSON.stringify(data));
-    loadGarage();
+    else {
+        els.screens[name].classList.add('active');
+    }
 }
 
 function loadGarage() {
     const data = JSON.parse(localStorage.getItem('dh_garage')) || [];
+    let total = 0;
+    data.forEach(d => total += d.dist);
     
-    // Stats berechnen
-    let totalKm = 0;
-    data.forEach(d => totalKm += d.dist);
-    
-    document.getElementById('g-total-km').innerText = totalKm.toFixed(1) + " km";
+    document.getElementById('g-total-km').innerText = total.toFixed(1) + " km";
     document.getElementById('g-total-trips').innerText = data.length;
-    
-    // Liste rendern
+
     const list = document.getElementById('drive-list');
     list.innerHTML = '';
     
     data.forEach(d => {
-        const date = new Date(d.date);
-        const dateStr = date.toLocaleDateString('de-DE', {day: '2-digit', month: 'short'});
+        const date = new Date(d.date).toLocaleDateString('de-DE', {day:'2-digit', month:'short'});
+        const div = document.createElement('div');
+        div.className = 'drive-item';
+        div.innerHTML = `<div><span style="color:white;font-weight:700;">${date}</span></div><div><span style="color:#4a90e2;font-weight:700;">${d.dist.toFixed(1)} km</span></div>`;
         
-        const item = document.createElement('div');
-        item.className = 'drive-item';
-        item.innerHTML = `
-            <div>
-                <span style="color:white; font-weight:700;">${dateStr}</span>
-                <span style="color:#888; font-size:0.8rem; margin-left:10px;">${d.time}</span>
-            </div>
-            <div style="text-align:right;">
-                <span style="color:#4a90e2; font-weight:700;">${d.dist.toFixed(1)} km</span>
-            </div>
-        `;
-        list.appendChild(item);
+        div.onclick = () => {
+            els.screens.detail.style.display = 'flex';
+            document.getElementById('detail-dist').innerText = d.dist.toFixed(1);
+            document.getElementById('detail-max').innerText = d.max.toFixed(0);
+            
+            setTimeout(() => {
+                if(!detailMap) {
+                    detailMap = L.map('detail-map', {zoomControl:false}).setView([0,0], 13);
+                    L.tileLayer(CONFIG.tileLayer).addTo(detailMap);
+                }
+                detailMap.eachLayer(l => {if(!!l.toGeoJSON) detailMap.removeLayer(l)}); // Clear old lines
+                if(d.path && d.path.length) {
+                    const line = L.polyline(d.path, {color:'#4a90e2', weight:5}).addTo(detailMap);
+                    detailMap.fitBounds(line.getBounds(), {padding:[50,50]});
+                }
+            }, 200);
+        };
+        list.appendChild(div);
     });
 }
 
-function onError(err) {
-    console.warn("GPS Error", err);
-    els.display.loc.innerText = "GPS Error";
-}
+function onError(err) { console.log("GPS Error", err); }
