@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DriverHub</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="logo.png">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <section id="start-screen" class="screen active">
+        <div class="content-center">
+            <div class="logo-container">
+                <img src="logo.png" alt="DriverHub Logo" class="dh-logo">
+            </div>
+            <h1>DriverHub</h1>
+            <p class="slogan">Built for those who drive.</p>
+            
+            <button id="btn-start" class="btn-primary slide-up">
+                <i class="fa-solid fa-road"></i> Start Drive
+            </button>
+        </div>
+    </section>
+
+    <section id="drive-screen" class="screen">
+        <div id="map"></div>
+        
+        <div class="drive-overlay-top">
+            <div class="stat-box">
+                <span class="label">SPEED</span>
+                <span class="value" id="live-speed">0</span>
+                <span class="unit">km/h</span>
+            </div>
+            <div class="stat-box">
+                <span class="label">TIME</span>
+                <span class="value" id="live-time">00:00</span>
+            </div>
+        </div>
+
+        <div class="drive-overlay-bottom">
+            <div class="stat-row">
+                <span id="live-dist">0.0 km</span>
+            </div>
+            <button id="btn-stop" class="btn-danger">
+                <i class="fa-solid fa-stop"></i> End Drive
+            </button>
+        </div>
+    </section>
+
+    <section id="stats-screen" class="screen">
+        <div class="content-center">
+            <h2>Drive Summary</h2>
+            <div class="stats-card">
+                <div class="stat-row-final">
+                    <div>
+                        <span class="label">DISTANCE</span>
+                        <span class="final-value" id="final-dist">0.0</span>
+                        <span class="unit">km</span>
+                    </div>
+                    <div>
+                        <span class="label">MAX SPEED</span>
+                        <span class="final-value" id="final-speed">0</span>
+                        <span class="unit">km/h</span>
+                    </div>
+                </div>
+                <div class="stat-row-final single">
+                    <div>
+                        <span class="label">DURATION</span>
+                        <span class="final-value" id="final-time">00:00:00</span>
+                    </div>
+                </div>
+            </div>
+            <button id="btn-home" class="btn-secondary">Back to Hub</button>
+        </div>
+    </section>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
