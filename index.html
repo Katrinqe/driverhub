@@ -12,108 +12,357 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <link rel="stylesheet" href="style.css">
+
+    <style>
+        /* --- RESET & BASIC --- */
+        :root {
+            --bg: #000000;
+            --blue: #4a90e2;
+            --glass: rgba(20, 20, 20, 0.7);
+            --border: rgba(255, 255, 255, 0.15);
+            --white: #ffffff;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            background-color: var(--bg); color: var(--white);
+            font-family: var(--font);
+            width: 100vw; height: 100vh; overflow: hidden; position: fixed;
+        }
+
+        /* --- AURORA HINTERGRUND --- */
+        .aurora-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: radial-gradient(circle at 50% 30%, #1a3b6e 0%, #000000 70%);
+        }
+        .glow {
+            position: absolute; width: 300px; height: 300px; background: var(--blue);
+            border-radius: 50%; filter: blur(120px); opacity: 0.2;
+            animation: pulseGlow 10s infinite alternate;
+        }
+        .g1 { top: -50px; left: -50px; }
+        .g2 { bottom: -50px; right: -50px; animation-delay: -5s; }
+        @keyframes pulseGlow { from { opacity: 0.1; transform: scale(1); } to { opacity: 0.3; transform: scale(1.2); } }
+
+        /* --- SCREEN MANAGEMENT --- */
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column; z-index: 10;
+        }
+        .screen.active { display: flex; }
+
+        /* --- HOME SCREEN LAYOUT --- */
+        /* Oben: Widget */
+        .top-section {
+            padding-top: 60px; display: flex; justify-content: center; height: 20%;
+        }
+        .weather-widget {
+            background: var(--glass); backdrop-filter: blur(20px);
+            padding: 10px 20px; border-radius: 30px; border: 1px solid var(--border);
+            display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.9rem;
+            height: 44px;
+        }
+        .icon-blue { color: var(--blue); margin-right: 5px; }
+
+        /* Mitte: Logo */
+        .mid-section {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .greeting { color: var(--blue); letter-spacing: 2px; font-weight: 700; margin-bottom: 20px; font-size: 0.9rem; }
+        .hero-logo { width: 160px; animation: breath 4s infinite ease-in-out; }
+        @keyframes breath { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(74,144,226,0.3)); } 50% { transform: scale(1.05); filter: drop-shadow(0 0 25px rgba(74,144,226,0.5)); } }
+
+        /* Unten: Button */
+        .bottom-section {
+            height: 25%; display: flex; justify-content: center; align-items: flex-start;
+        }
+        .btn-main {
+            background: linear-gradient(135deg, rgba(74,144,226,0.3), rgba(0,0,0,0.6));
+            border: 1px solid rgba(74,144,226,0.5); color: white;
+            width: 80%; max-width: 300px; padding: 22px; border-radius: 20px;
+            font-size: 1.2rem; font-weight: 800; letter-spacing: 1px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+            cursor: pointer;
+        }
+
+        /* --- DRIVE SCREEN (MAP) --- */
+        #map {
+            width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 0;
+            filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(90%);
+        }
+        .hud-top {
+            position: absolute; top: 50px; left: 20px; right: 20px; z-index: 100;
+            display: flex; justify-content: space-between;
+        }
+        .hud-box {
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(10px);
+            padding: 10px 20px; border-radius: 16px; border: 1px solid var(--border);
+            text-align: center; min-width: 90px;
+        }
+        .hud-val { display: block; font-size: 1.6rem; font-weight: 700; }
+        .hud-lbl { font-size: 0.7rem; color: #aaa; font-weight: 700; }
+
+        .hud-bottom {
+            position: absolute; bottom: 40px; width: 100%; z-index: 100;
+            display: flex; flex-direction: column; align-items: center; gap: 20px;
+        }
+        .dist-badge {
+            background: rgba(0,0,0,0.7); padding: 8px 25px; border-radius: 30px;
+            font-weight: 700; border: 1px solid var(--border); backdrop-filter: blur(10px);
+        }
+        .btn-stop {
+            background: rgba(255, 59, 48, 0.2); border: 1px solid #ff3b30; color: #ff3b30;
+            padding: 18px 60px; border-radius: 30px; font-weight: 700; backdrop-filter: blur(10px);
+        }
+
+        /* --- GARAGE & SUMMARY --- */
+        .content-pad { padding: 80px 20px 100px; overflow-y: auto; height: 100%; }
+        .stats-card {
+            background: #111; border: 1px solid #333; padding: 20px; border-radius: 20px; margin-bottom: 20px;
+        }
+        .row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .val-big { font-size: 1.4rem; font-weight: 700; }
+        .drive-list { margin-top: 20px; }
+        .drive-item {
+            background: #161616; padding: 15px; border-radius: 14px; margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center; border: 1px solid #222;
+        }
+        .btn-save { background: var(--blue); color: white; width: 100%; padding: 18px; border-radius: 20px; font-weight: 700; border: none; margin-top: 20px; }
+        
+        /* --- NAVBAR --- */
+        .navbar {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 200px; height: 60px; background: rgba(30,30,30,0.85);
+            backdrop-filter: blur(20px); border-radius: 35px; border: 1px solid var(--border);
+            display: flex; justify-content: space-around; align-items: center; z-index: 200;
+        }
+        .nav-icon { font-size: 1.4rem; color: #666; background: none; border: none; width: 100%; height: 100%; }
+        .nav-icon.active { color: white; }
+
+        /* Detail View Back Button */
+        .btn-back { position: absolute; top: 50px; left: 20px; width: 45px; height: 45px; background: #222; border-radius: 50%; border: 1px solid #444; color: white; z-index: 300; display:flex; align-items:center; justify-content:center;}
+        #detail-map { position: absolute; top:0; left:0; width:100%; height:100%; filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(90%); }
+        .detail-info { position: absolute; bottom:40px; width:90%; left:5%; background: rgba(0,0,0,0.8); padding:15px; border-radius:15px; text-align:center; z-index:300; font-weight:bold; }
+    </style>
 </head>
 <body>
 
     <div class="aurora-bg">
-        <div class="blob b1"></div>
-        <div class="blob b2"></div>
+        <div class="glow g1"></div>
+        <div class="glow g2"></div>
     </div>
 
     <section id="home-screen" class="screen active">
-        <div class="top-bar">
-            <div class="status-widget">
-                <i class="fa-solid fa-location-arrow loc-icon"></i>
-                <span id="loc-text">Locating...</span>
-                <span class="sep">|</span>
-                <i id="weather-icon" class="fa-solid fa-cloud"></i>
-                <span id="weather-text">--°</span>
+        <div class="top-section">
+            <div class="weather-widget">
+                <i class="fa-solid fa-location-arrow icon-blue"></i> <span id="loc-txt">GPS...</span>
+                <span style="margin:0 10px; opacity:0.3">|</span>
+                <i id="weath-icon" class="fa-solid fa-cloud"></i> <span id="temp-txt" style="margin-left:5px">--°</span>
             </div>
         </div>
-
-        <div class="center-stage">
-            <h2 id="greet-text">WELCOME</h2>
-            <div class="logo-box">
-                <img src="logo.png" alt="DriverHub" class="main-logo">
-            </div>
-            <p class="slogan">BUILT FOR THOSE WHO DRIVE</p>
+        <div class="mid-section">
+            <div id="greeting" class="greeting">WELCOME</div>
+            <img src="logo.png" alt="Logo" class="hero-logo">
         </div>
-
-        <div class="bottom-bar">
-            <button id="btn-start" class="btn-start">
-                START DRIVE
-            </button>
+        <div class="bottom-section">
+            <button id="btn-start" class="btn-main">START DRIVE</button>
         </div>
     </section>
 
-    <section id="drive-screen" class="screen hidden">
-        <div id="map"></div> <div class="hud-top">
-            <div class="hud-stat">
-                <span class="lbl">KM/H</span>
-                <span class="val" id="d-speed">0</span>
-            </div>
-            <div class="hud-stat">
-                <span class="lbl">TIME</span>
-                <span class="val" id="d-time">00:00</span>
-            </div>
+    <section id="drive-screen" class="screen">
+        <div id="map"></div>
+        <div class="hud-top">
+            <div class="hud-box"><span class="hud-lbl">KM/H</span><span class="hud-val" id="d-spd">0</span></div>
+            <div class="hud-box"><span class="hud-lbl">TIME</span><span class="hud-val" id="d-time">00:00</span></div>
         </div>
-
         <div class="hud-bottom">
-            <div class="dist-pill">
-                <span id="d-dist">0.00 km</span>
-            </div>
+            <div class="dist-badge"><span id="d-dist">0.00 km</span></div>
             <button id="btn-stop" class="btn-stop">END DRIVE</button>
         </div>
     </section>
 
-    <section id="summary-screen" class="screen hidden">
-        <div class="center-stage">
-            <h2>SUMMARY</h2>
-            <div class="stats-box">
-                <div class="row">
-                    <span>DIST</span> <span id="s-dist" class="res">0.0 km</span>
-                </div>
-                <div class="row">
-                    <span>MAX</span> <span id="s-speed" class="res">0</span>
-                </div>
-                <div class="row">
-                    <span>TIME</span> <span id="s-time" class="res">00:00</span>
-                </div>
+    <section id="summary-screen" class="screen">
+        <div class="content-pad" style="display:flex; flex-direction:column; justify-content:center;">
+            <h2 style="text-align:center; margin-bottom:30px;">DRIVE SUMMARY</h2>
+            <div class="stats-card">
+                <div class="row"><span>DISTANCE</span><span id="s-dist" class="val-big">0.0</span></div>
+                <div class="row"><span>TOP SPEED</span><span id="s-spd" class="val-big">0</span></div>
+                <div class="row"><span>TIME</span><span id="s-time" class="val-big">00:00</span></div>
             </div>
             <button id="btn-save" class="btn-save">SAVE TO GARAGE</button>
         </div>
     </section>
 
-    <section id="garage-screen" class="screen hidden">
-        <div class="garage-head">
+    <section id="garage-screen" class="screen">
+        <div class="content-pad">
             <h2>GARAGE</h2>
-            <div class="total-badge"><span id="g-total">0</span> km total</div>
+            <div class="stats-card" style="margin-top:20px;">
+                <div class="row"><span>TOTAL DISTANCE</span><span id="g-total" class="val-big">0.0 km</span></div>
+            </div>
+            <h3 style="color:#888; font-size:0.9rem; margin-bottom:15px;">HISTORY</h3>
+            <div id="garage-list" class="drive-list"></div>
+            <button id="btn-reset" style="background:none; border:none; color:#666; width:100%; padding:20px;">Reset Data</button>
         </div>
-        <div class="garage-list" id="garage-list"></div>
-        <button id="btn-reset" class="btn-text">Reset Data</button>
-        <div style="height: 100px;"></div>
     </section>
 
-    <section id="detail-screen" class="screen hidden">
+    <section id="detail-screen" class="screen">
         <button id="btn-back" class="btn-back"><i class="fa-solid fa-arrow-left"></i></button>
         <div id="detail-map"></div>
-        <div class="detail-panel">
-            <span id="det-info">0 km • 0 km/h</span>
-        </div>
+        <div class="detail-info" id="det-info">Loading...</div>
     </section>
 
-    <nav class="navbar" id="navbar">
-        <button class="nav-btn active" data-target="home-screen">
-            <i class="fa-solid fa-house"></i>
-        </button>
-        <button class="nav-btn" data-target="garage-screen">
-            <i class="fa-solid fa-layer-group"></i>
-        </button>
+    <nav id="navbar" class="navbar">
+        <button class="nav-icon active" onclick="goHome()"><i class="fa-solid fa-house"></i></button>
+        <button class="nav-icon" onclick="goGarage()"><i class="fa-solid fa-layer-group"></i></button>
     </nav>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js"></script>
+    <script>
+        // SETUP
+        let map, marker, line, detailMap, interval;
+        let start, path=[], dist=0, max=0, driving=false;
+        let gotLoc=false;
+
+        const ui = {
+            home: document.getElementById('home-screen'),
+            drive: document.getElementById('drive-screen'),
+            summ: document.getElementById('summary-screen'),
+            gar: document.getElementById('garage-screen'),
+            det: document.getElementById('detail-screen'),
+            nav: document.getElementById('navbar'),
+            loc: document.getElementById('loc-txt'),
+            weath: document.getElementById('temp-txt'),
+            icon: document.getElementById('weath-icon')
+        };
+
+        window.onload = () => {
+            // Greeting
+            const h = new Date().getHours();
+            let t = "WELCOME";
+            if(h>=5 && h<12) t="GOOD MORNING";
+            else if(h>=12 && h<18) t="GOOD AFTERNOON";
+            else if(h>=18 && h<22) t="GOOD EVENING";
+            document.getElementById('greeting').innerText = t;
+
+            loadGarage();
+
+            // GPS
+            if(navigator.geolocation) {
+                navigator.geolocation.watchPosition(pos => {
+                    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+                    const spd = Math.max(0, (pos.coords.speed||0)*3.6);
+
+                    // Weather (Once)
+                    if(!gotLoc) {
+                        gotLoc=true;
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                            .then(r=>r.json()).then(d=> ui.loc.innerText = d.address.city||d.address.town||"Unknown");
+                        fetch(`https://api.open-meteo.com/v1/forecast?current_weather=true&latitude=${lat}&longitude=${lng}`)
+                            .then(r=>r.json()).then(d=> {
+                                ui.weath.innerText = Math.round(d.current_weather.temperature)+"°";
+                                ui.icon.className = d.current_weather.weathercode<=1 ? "fa-solid fa-sun icon-blue" : "fa-solid fa-cloud icon-blue";
+                            });
+                    }
+
+                    // Driving
+                    if(driving) {
+                        const pt = [lat, lng];
+                        marker.setLatLng(pt); map.setView(pt, 18);
+                        if(spd>max) max=spd;
+                        document.getElementById('d-spd').innerText = spd.toFixed(0);
+                        
+                        if(path.length>0) {
+                            dist += map.distance(path[path.length-1], pt);
+                            document.getElementById('d-dist').innerText = (dist/1000).toFixed(2)+" km";
+                        }
+                        path.push(pt);
+                        if(!line) line=L.polyline(path, {color:'#4a90e2', weight:5}).addTo(map);
+                        else line.setLatLngs(path);
+                    }
+                }, e=>console.log(e), {enableHighAccuracy:true});
+            }
+        };
+
+        // NAVIGATION
+        function hideAll() { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); }
+        function goHome() { 
+            hideAll(); ui.home.classList.add('active'); ui.nav.style.display='flex'; 
+            document.querySelectorAll('.nav-icon')[0].classList.add('active');
+            document.querySelectorAll('.nav-icon')[1].classList.remove('active');
+        }
+        function goGarage() { 
+            hideAll(); ui.gar.classList.add('active'); ui.nav.style.display='flex';
+            document.querySelectorAll('.nav-icon')[0].classList.remove('active');
+            document.querySelectorAll('.nav-icon')[1].classList.add('active');
+        }
+
+        // ACTIONS
+        document.getElementById('btn-start').onclick = () => {
+            driving=true; start=new Date(); path=[]; dist=0; max=0;
+            hideAll(); ui.drive.classList.add('active'); ui.nav.style.display='none';
+            
+            // MAP INIT
+            if(!map) {
+                map = L.map('map', {zoomControl:false}).setView([0,0], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                marker = L.marker([0,0], {icon: L.divIcon({html:'<div style="width:20px;height:20px;background:#4a90e2;border:3px solid white;border-radius:50%"></div>', className:'x'})}).addTo(map);
+            }
+            map.invalidateSize(); // Fixes grey map bug
+
+            interval = setInterval(() => {
+                document.getElementById('d-time').innerText = new Date(new Date()-start).toISOString().substr(11,8);
+            }, 1000);
+        };
+
+        document.getElementById('btn-stop').onclick = () => {
+            driving=false; clearInterval(interval);
+            hideAll(); ui.summ.classList.add('active');
+            
+            document.getElementById('s-dist').innerText = (dist/1000).toFixed(2)+" km";
+            document.getElementById('s-spd').innerText = max.toFixed(0);
+            document.getElementById('s-time').innerText = document.getElementById('d-time').innerText;
+            if(line) { line.remove(); line=null; }
+        };
+
+        document.getElementById('btn-save').onclick = () => {
+            const entry = { d: new Date().toISOString(), km: dist/1000, mx: max, pt: path };
+            let db = JSON.parse(localStorage.getItem('dh_db')) || [];
+            db.unshift(entry);
+            localStorage.setItem('dh_db', JSON.stringify(db));
+            loadGarage(); goGarage();
+        };
+
+        document.getElementById('btn-reset').onclick = () => {
+            if(confirm('Delete all?')) { localStorage.removeItem('dh_db'); loadGarage(); }
+        };
+
+        function loadGarage() {
+            const db = JSON.parse(localStorage.getItem('dh_db')) || [];
+            let tot=0; db.forEach(x=>tot+=x.km);
+            document.getElementById('g-total').innerText = tot.toFixed(1)+" km";
+            
+            const l = document.getElementById('garage-list'); l.innerHTML='';
+            db.forEach(x => {
+                const el = document.createElement('div');
+                el.className='drive-item';
+                el.innerHTML = `<span>${new Date(x.d).toLocaleDateString()}</span><span style="color:#4a90e2;font-weight:700">${x.km.toFixed(1)} km</span>`;
+                el.onclick = () => {
+                    hideAll(); ui.det.classList.add('active'); ui.nav.style.display='none';
+                    document.getElementById('det-info').innerText = `${x.km.toFixed(1)} km • Max ${x.mx.toFixed(0)}`;
+                    setTimeout(() => {
+                        if(!detailMap) { detailMap=L.map('detail-map',{zoomControl:false}); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(detailMap); }
+                        detailMap.eachLayer(l=>{if(!!l.toGeoJSON) detailMap.removeLayer(l)});
+                        if(x.pt && x.pt.length) {
+                            const pl = L.polyline(x.pt, {color:'#4a90e2', weight:5}).addTo(detailMap);
+                            detailMap.fitBounds(pl.getBounds(), {padding:[50,50]});
+                        }
+                    }, 100);
+                };
+                l.appendChild(el);
+            });
+        }
+        
+        document.getElementById('btn-back').onclick = goGarage;
+    </script>
 </body>
 </html>
