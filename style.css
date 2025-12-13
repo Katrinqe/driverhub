@@ -1,215 +1,192 @@
 :root {
-    --bg-color: #050505;
-    --accent-blue: #4a90e2; /* Deine DriverHub Blue Farbe */
+    --bg-color: #000000; /* True Black */
+    --accent-blue: #4a90e2;
     --accent-glow: rgba(74, 144, 226, 0.6);
     --text-white: #ffffff;
     --text-grey: #8e8e93;
-    --glass-bg: rgba(20, 20, 20, 0.7);
+    --glass-bg: rgba(20, 20, 20, 0.85);
     --danger: #ff3b30;
     --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 body {
     background-color: var(--bg-color);
     color: var(--text-white);
     font-family: var(--font-stack);
-    overflow: hidden; /* App-Feeling, kein Scrollen */
+    overflow: hidden;
     height: 100vh;
     width: 100vw;
 }
 
-/* SCREEN MANAGEMENT */
+/* --- INTRO SPLASH SCREEN --- */
+#splash-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: #000000;
+    z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.8s ease;
+}
+.splash-logo {
+    width: 150px;
+    animation: introAnim 2.5s ease-out forwards;
+}
+@keyframes introAnim {
+    0% { opacity: 0; transform: scale(0.8); filter: blur(10px); }
+    30% { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 0 30px var(--accent-blue)); }
+    100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 0px var(--accent-blue)); }
+}
+
+/* --- SCREEN TRANSITIONS --- */
 .screen {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    display: none;
-    flex-direction: column;
-    opacity: 0;
-    transition: opacity 0.4s ease;
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: none; flex-direction: column;
+    opacity: 0; transform: scale(0.98);
+    transition: opacity 0.4s ease, transform 0.4s ease;
 }
-
 .screen.active {
-    display: flex;
-    opacity: 1;
-    z-index: 10;
+    display: flex; opacity: 1; transform: scale(1); z-index: 10;
 }
+.screen-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: none; flex-direction: column; z-index: 2000;
+    background: var(--bg-color);
+    animation: slideUp 0.4s ease forwards;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
+/* --- LAYOUTS --- */
 .content-center {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    text-align: center;
-    background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px; text-align: center;
+    background: radial-gradient(circle at center, #111 0%, #000 70%);
+}
+.content-scroll {
+    flex: 1; overflow-y: auto; padding: 80px 20px 100px 20px;
+}
+.header-bar {
+    position: absolute; top: 0; left: 0; width: 100%; padding: 50px 20px 10px 20px;
+    background: linear-gradient(to bottom, black, transparent); z-index: 20;
 }
 
-/* LOGO & ANIMATION */
-.logo-container {
+/* --- NEW: WEATHER WIDGET STYLES --- */
+.greeting-area {
     margin-bottom: 20px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
 }
+.welcome-text {
+    font-size: 0.9rem; color: var(--accent-blue); letter-spacing: 2px;
+    text-transform: uppercase; font-weight: 700;
+}
+.weather-pill {
+    background: rgba(30,30,30,0.6); backdrop-filter: blur(10px);
+    padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 600;
+}
+#weather-icon { color: var(--accent-blue); }
 
-.dh-logo {
-    width: 180px;
-    height: auto;
-    /* Die Animation imitiert dein Video */
-    animation: pulse-blue 3s infinite ease-in-out;
+/* --- BOTTOM NAV --- */
+.bottom-nav {
+    position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+    width: 90%; max-width: 350px;
+    height: 70px;
+    background: rgba(30, 30, 30, 0.8);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-radius: 35px;
+    display: flex; justify-content: space-around; align-items: center;
+    border: 1px solid rgba(255,255,255,0.1);
+    z-index: 100;
 }
+.nav-item {
+    background: none; border: none; color: #666; font-size: 0.8rem;
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    width: auto; padding: 0;
+}
+.nav-item i { font-size: 1.4rem; transition: color 0.3s; }
+.nav-item.active { color: var(--accent-blue); }
+.nav-item.active i { text-shadow: 0 0 15px rgba(74, 144, 226, 0.5); }
 
-@keyframes pulse-blue {
-    0% { filter: drop-shadow(0 0 0px rgba(74,144,226,0)); transform: scale(1); }
-    50% { filter: drop-shadow(0 0 20px var(--accent-glow)); transform: scale(1.02); }
-    100% { filter: drop-shadow(0 0 0px rgba(74,144,226,0)); transform: scale(1); }
-}
+/* --- COMPONENTS --- */
+.logo-container { margin-bottom: 20px; }
+.dh-logo { width: 180px; height: auto; }
 
 h1 {
-    font-size: 2.5rem;
-    font-weight: 800;
-    letter-spacing: -1px;
-    margin-bottom: 5px;
+    font-size: 2.5rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 5px;
     background: linear-gradient(to right, #fff, #a0a0a0);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
-
-.slogan {
-    color: var(--text-grey);
-    font-size: 1rem;
-    margin-bottom: 60px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-}
+.slogan { color: var(--text-grey); font-size: 1rem; margin-bottom: 60px; letter-spacing: 1px; text-transform: uppercase; }
 
 /* BUTTONS */
-button {
-    border: none;
-    padding: 16px 32px;
-    border-radius: 30px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    width: 100%;
-    max-width: 280px;
-    transition: transform 0.2s;
-    font-family: var(--font-stack);
-}
-
-button:active { transform: scale(0.95); }
-
+button { font-family: var(--font-stack); cursor: pointer; }
 .btn-primary {
-    background: linear-gradient(135deg, var(--accent-blue), #2c5f9e);
-    color: white;
-    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
+    border: none; padding: 16px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600;
+    width: 100%; max-width: 280px;
+    background: linear-gradient(135deg, var(--accent-blue), #2c5f9e); color: white;
+    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
 }
-
 .btn-danger {
-    background: rgba(255, 59, 48, 0.2);
-    color: var(--danger);
-    border: 1px solid var(--danger);
+    border: 1px solid var(--danger); background: rgba(255, 59, 48, 0.15); color: var(--danger);
+    padding: 16px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px;
     backdrop-filter: blur(10px);
 }
-
-.btn-secondary {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    margin-top: 20px;
+.icon-btn-floating {
+    position: absolute; top: 40px; left: 20px; width: 45px; height: 45px;
+    background: var(--glass-bg); border-radius: 50%; border: none; color: white;
+    z-index: 3000; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
 }
+.btn-text { background: transparent; color: #555; font-size: 0.9rem; margin-top: 40px; width: 100%; border: none; }
 
-/* MAP STYLING (DARK MODE HACK) */
-#map {
-    height: 100%;
-    width: 100%;
-    z-index: 1;
-    /* Macht die Karte dunkel und bläulich */
+/* --- MAP & DRIVE UI --- */
+#map, #detail-map {
+    height: 100%; width: 100%; z-index: 1;
     filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
 }
 
-/* DRIVE UI OVERLAYS */
-.drive-overlay-top {
-    position: absolute;
-    top: 50px; left: 20px; right: 20px;
-    z-index: 999;
-    display: flex;
-    justify-content: space-between;
-}
-
+/* OVERLAYS */
+.drive-overlay-top { position: absolute; top: 50px; left: 20px; right: 20px; z-index: 999; display: flex; justify-content: space-between; }
 .stat-box {
-    background: var(--glass-bg);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    padding: 15px 20px;
-    border-radius: 16px;
-    text-align: center;
-    border: 1px solid rgba(255,255,255,0.1);
-    min-width: 100px;
+    background: var(--glass-bg); backdrop-filter: blur(15px); padding: 15px 20px;
+    border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.1); min-width: 100px;
 }
+.stat-box .value { font-size: 1.8rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat-box .label { font-size: 0.7rem; color: var(--text-grey); font-weight: 700; }
+.stat-box .unit { font-size: 0.8rem; color: var(--accent-blue); }
 
-.stat-box .label {
-    display: block;
-    font-size: 0.7rem;
-    color: var(--text-grey);
-    font-weight: 700;
-}
-
-.stat-box .value {
-    font-size: 1.8rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-}
-
-.stat-box .unit {
-    font-size: 0.8rem;
-    color: var(--accent-blue);
-}
-
-.drive-overlay-bottom {
-    position: absolute;
-    bottom: 40px; left: 20px; right: 20px;
-    z-index: 999;
-    text-align: center;
-}
-
+.drive-overlay-bottom { position: absolute; bottom: 40px; left: 0; right: 0; z-index: 999; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px;}
 .drive-overlay-bottom .stat-row {
-    background: var(--glass-bg);
-    backdrop-filter: blur(15px);
-    border-radius: 12px;
-    padding: 10px;
-    margin-bottom: 15px;
-    display: inline-block;
-    border: 1px solid rgba(255,255,255,0.1);
-    font-weight: 600;
+    background: var(--glass-bg); backdrop-filter: blur(15px); border-radius: 12px;
+    padding: 10px 20px; display: inline-block; border: 1px solid rgba(255,255,255,0.1); font-weight: 600;
 }
 
-/* STATS SUMMARY CARD */
+/* --- STATS & DETAIL VIEW --- */
 .stats-card {
-    background: #1c1c1e;
-    border-radius: 20px;
-    padding: 30px;
-    width: 100%;
-    max-width: 320px;
-    margin-bottom: 30px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    background: #1c1c1e; border-radius: 20px; padding: 30px; width: 100%; max-width: 320px;
+    margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
+.stat-row-final { display: flex; justify-content: space-between; margin-bottom: 20px; text-align: left; }
+.stat-row-final .final-value { font-size: 1.8rem; font-weight: 700; color: white; display: block; }
 
-.stat-row-final {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
+.drives-list { width: 100%; max-width: 340px; margin: 0 auto; }
+.drive-item {
+    background: #111; border: 1px solid #222; padding: 20px; border-radius: 16px;
+    margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer; transition: background 0.2s;
 }
+.drive-item:active { background: #222; }
+.drive-item h4 { font-size: 1rem; color: white; margin-bottom: 5px; }
+.drive-item span { color: var(--text-grey); font-size: 0.85rem; }
+.drive-item .right-side { text-align: right; }
+.drive-item .dist { font-size: 1.2rem; color: var(--accent-blue); font-weight: 700; }
 
-.stat-row-final.single {
-    justify-content: center;
-    border-top: 1px solid #333;
-    padding-top: 20px;
-    margin-bottom: 0;
+/* Detail Overlay Stats */
+.detail-stats-overlay {
+    position: absolute; bottom: 40px; left: 20px; right: 20px;
+    background: var(--glass-bg); backdrop-filter: blur(20px);
+    border-radius: 20px; padding: 20px; z-index: 2500;
+    border: 1px solid rgba(255,255,255,0.1);
 }
-
-.final-value {
-    display: block;
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--text-white);
-}
+.mini { margin-bottom: 0; text-align: center; }
+.mini > div { flex: 1; }
+.mini .val { font-size: 1.4rem; font-weight: 700; display: block; }
