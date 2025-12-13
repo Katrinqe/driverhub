@@ -17,114 +17,94 @@
 </head>
 <body>
 
-    <div class="aurora-container">
-        <div class="aurora-blob blob-1"></div>
-        <div class="aurora-blob blob-2"></div>
-        <div class="aurora-blob blob-3"></div>
+    <div class="aurora-bg">
+        <div class="blob b1"></div>
+        <div class="blob b2"></div>
     </div>
 
     <section id="home-screen" class="screen active">
-        
-        <div class="top-info-bar">
-            <h2 id="greeting-text">Welcome</h2>
-            
-            <div class="status-pill">
-                <div class="loc-part">
-                    <i class="fa-solid fa-location-arrow"></i>
-                    <span id="current-location">Locating...</span>
-                </div>
-                <div class="divider"></div>
-                <div class="weather-part">
-                    <i id="weather-icon" class="fa-solid fa-cloud"></i>
-                    <span id="weather-temp">--°</span>
-                </div>
+        <div class="top-bar">
+            <div class="status-widget">
+                <i class="fa-solid fa-location-arrow loc-icon"></i>
+                <span id="loc-text">Locating...</span>
+                <span class="sep">|</span>
+                <i id="weather-icon" class="fa-solid fa-cloud"></i>
+                <span id="weather-text">--°</span>
             </div>
         </div>
 
-        <div class="content-center">
-            <div class="logo-wrapper">
-                <img src="logo.png" alt="DriverHub" class="dh-logo-animated">
+        <div class="center-stage">
+            <h2 id="greet-text">WELCOME</h2>
+            <div class="logo-box">
+                <img src="logo.png" alt="DriverHub" class="main-logo">
             </div>
-            
-            <h1>DriverHub</h1>
-            <p class="slogan">Built for those who drive.</p>
+            <p class="slogan">BUILT FOR THOSE WHO DRIVE</p>
         </div>
 
-        <div class="bottom-action-area">
-            <button id="btn-start" class="btn-primary-glass">
-                Start Drive
+        <div class="bottom-bar">
+            <button id="btn-start" class="btn-start">
+                START DRIVE
             </button>
         </div>
     </section>
 
-    <section id="drive-screen" class="screen-overlay">
-        <div id="map"></div>
-        
-        <div class="drive-overlay-top">
-            <div class="glass-box">
-                <span class="label">SPEED</span>
+    <section id="drive-screen" class="screen hidden">
+        <div id="map"></div> <div class="hud-top">
+            <div class="hud-stat">
+                <span class="lbl">KM/H</span>
                 <span class="val" id="d-speed">0</span>
             </div>
-            <div class="glass-box">
-                <span class="label">TIME</span>
+            <div class="hud-stat">
+                <span class="lbl">TIME</span>
                 <span class="val" id="d-time">00:00</span>
             </div>
         </div>
 
-        <div class="drive-overlay-bottom">
-            <div class="dist-badge">
-                <span id="d-dist">0.0 km</span>
+        <div class="hud-bottom">
+            <div class="dist-pill">
+                <span id="d-dist">0.00 km</span>
             </div>
-            <button id="btn-stop" class="btn-danger-glass">End Drive</button>
+            <button id="btn-stop" class="btn-stop">END DRIVE</button>
         </div>
     </section>
 
-    <section id="garage-screen" class="screen">
-        <div class="header-bar">
-            <h2>Garage</h2>
-        </div>
-        <div class="scroll-content">
-            <div class="stats-card">
+    <section id="summary-screen" class="screen hidden">
+        <div class="center-stage">
+            <h2>SUMMARY</h2>
+            <div class="stats-box">
                 <div class="row">
-                    <div><span class="lbl">TOTAL KM</span><span class="res" id="g-total-km">0</span></div>
-                    <div><span class="lbl">TRIPS</span><span class="res" id="g-total-trips">0</span></div>
+                    <span>DIST</span> <span id="s-dist" class="res">0.0 km</span>
                 </div>
-            </div>
-            <h3 class="sub-header">Recent Drives</h3>
-            <div id="drive-list"></div>
-            <button id="btn-reset" class="text-link">Reset Data</button>
-            <div style="height: 100px;"></div>
-        </div>
-    </section>
-
-    <section id="summary-screen" class="screen-overlay glass-bg">
-        <div class="content-center">
-            <h2>Drive Summary</h2>
-            <div class="stats-card">
                 <div class="row">
-                    <div><span class="lbl">DISTANCE</span><span class="res" id="s-dist">0.0</span></div>
-                    <div><span class="lbl">MAX SPEED</span><span class="res" id="s-speed">0</span></div>
+                    <span>MAX</span> <span id="s-speed" class="res">0</span>
                 </div>
-                <div class="row spacer-top">
-                    <div><span class="lbl">AVG SPEED</span><span class="res" id="s-avg">0</span></div>
-                    <div><span class="lbl">TIME</span><span class="res" id="s-time">00:00</span></div>
+                <div class="row">
+                    <span>TIME</span> <span id="s-time" class="res">00:00</span>
                 </div>
             </div>
-            <button id="btn-save" class="btn-primary-glass">Save to Garage</button>
+            <button id="btn-save" class="btn-save">SAVE TO GARAGE</button>
         </div>
     </section>
 
-    <section id="detail-screen" class="screen-overlay">
-        <button id="btn-close-detail" class="icon-btn-floating"><i class="fa-solid fa-arrow-left"></i></button>
+    <section id="garage-screen" class="screen hidden">
+        <div class="garage-head">
+            <h2>GARAGE</h2>
+            <div class="total-badge"><span id="g-total">0</span> km total</div>
+        </div>
+        <div class="garage-list" id="garage-list"></div>
+        <button id="btn-reset" class="btn-text">Reset Data</button>
+        <div style="height: 100px;"></div>
+    </section>
+
+    <section id="detail-screen" class="screen hidden">
+        <button id="btn-back" class="btn-back"><i class="fa-solid fa-arrow-left"></i></button>
         <div id="detail-map"></div>
-        <div class="detail-stats-box">
-            <div><span class="lbl">DIST</span><span id="detail-dist" class="val">0</span></div>
-            <div><span class="lbl">MAX</span><span id="detail-max" class="val">0</span></div>
-            <div><span class="lbl">AVG</span><span id="detail-avg" class="val">0</span></div>
+        <div class="detail-panel">
+            <span id="det-info">0 km • 0 km/h</span>
         </div>
     </section>
 
-    <nav class="bottom-nav" id="navbar">
+    <nav class="navbar" id="navbar">
         <button class="nav-btn active" data-target="home-screen">
             <i class="fa-solid fa-house"></i>
         </button>
