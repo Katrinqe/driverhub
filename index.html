@@ -16,71 +16,133 @@
 </head>
 <body>
 
-    <section id="start-screen" class="screen active">
-        <div class="content-center">
-            <div class="logo-container">
-                <img src="logo.png" alt="DriverHub Logo" class="dh-logo">
-            </div>
-            <h1>DriverHub</h1>
-            <p class="slogan">Built for those who drive.</p>
-            
-            <button id="btn-start" class="btn-primary slide-up">
-                <i class="fa-solid fa-road"></i> Start Drive
-            </button>
-        </div>
-    </section>
+    <div id="splash-screen">
+        <img src="logo.png" alt="Logo" class="splash-logo">
+    </div>
 
-    <section id="drive-screen" class="screen">
-        <div id="map"></div>
+    <div id="app-container">
         
-        <div class="drive-overlay-top">
-            <div class="stat-box">
-                <span class="label">SPEED</span>
-                <span class="value" id="live-speed">0</span>
-                <span class="unit">km/h</span>
+        <section id="home-screen" class="screen active">
+            <div class="content-center">
+                <div class="logo-container">
+                    <img src="logo.png" alt="DriverHub Logo" class="dh-logo">
+                </div>
+                <h1>DriverHub</h1>
+                <p class="slogan">Built for those who drive.</p>
+                
+                <button id="btn-start" class="btn-primary slide-up">
+                    <i class="fa-solid fa-road"></i> Start Drive
+                </button>
             </div>
-            <div class="stat-box">
-                <span class="label">TIME</span>
-                <span class="value" id="live-time">00:00</span>
-            </div>
-        </div>
+        </section>
 
-        <div class="drive-overlay-bottom">
-            <div class="stat-row">
-                <span id="live-dist">0.0 km</span>
+        <section id="garage-screen" class="screen">
+            <div class="header-bar">
+                <h2>Your Garage</h2>
             </div>
-            <button id="btn-stop" class="btn-danger">
-                <i class="fa-solid fa-stop"></i> End Drive
+            <div class="content-scroll">
+                <div class="stats-card profile-card">
+                    <div class="stat-row-final">
+                        <div>
+                            <span class="label">TOTAL KM</span>
+                            <span class="final-value" id="total-km">0</span>
+                        </div>
+                        <div>
+                            <span class="label">DRIVES</span>
+                            <span class="final-value" id="total-drives">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Recent Drives</h3>
+                <div id="drives-list" class="drives-list">
+                    </div>
+                
+                <button id="btn-reset-data" class="btn-text">Reset Data</button>
+                <div style="height: 100px;"></div> </div>
+        </section>
+
+        <section id="drive-screen" class="screen-overlay">
+            <div id="map"></div>
+            
+            <div class="drive-overlay-top">
+                <div class="stat-box">
+                    <span class="label">SPEED</span>
+                    <span class="value" id="live-speed">0</span>
+                    <span class="unit">km/h</span>
+                </div>
+                <div class="stat-box">
+                    <span class="label">TIME</span>
+                    <span class="value" id="live-time">00:00</span>
+                </div>
+            </div>
+
+            <div class="drive-overlay-bottom">
+                <div class="stat-row">
+                    <span id="live-dist">0.0 km</span>
+                </div>
+                <button id="btn-stop" class="btn-danger">
+                    <i class="fa-solid fa-stop"></i> End Drive
+                </button>
+            </div>
+        </section>
+
+        <section id="summary-screen" class="screen-overlay">
+            <div class="content-center">
+                <h2>Drive Summary</h2>
+                <div class="stats-card">
+                    <div class="stat-row-final">
+                        <div>
+                            <span class="label">DISTANCE</span>
+                            <span class="final-value" id="sum-dist">0.0</span>
+                            <span class="unit">km</span>
+                        </div>
+                        <div>
+                            <span class="label">MAX SPEED</span>
+                            <span class="final-value" id="sum-speed">0</span>
+                            <span class="unit">km/h</span>
+                        </div>
+                    </div>
+                    <div class="stat-row-final">
+                         <div>
+                            <span class="label">AVG SPEED</span>
+                            <span class="final-value" id="sum-avg">0</span>
+                            <span class="unit">km/h</span>
+                        </div>
+                        <div>
+                            <span class="label">DURATION</span>
+                            <span class="final-value" id="sum-time">00:00:00</span>
+                        </div>
+                    </div>
+                </div>
+                <button id="btn-save-drive" class="btn-primary">Save to Garage</button>
+            </div>
+        </section>
+
+        <section id="detail-screen" class="screen-overlay">
+            <button id="btn-close-detail" class="icon-btn-floating"><i class="fa-solid fa-arrow-left"></i></button>
+            <div id="detail-map"></div>
+            <div class="detail-stats-overlay">
+                <div class="stat-row-final mini">
+                    <div><span class="label">KM</span><span id="detail-dist" class="val">0</span></div>
+                    <div><span class="label">MAX</span><span id="detail-max" class="val">0</span></div>
+                    <div><span class="label">AVG</span><span id="detail-avg" class="val">0</span></div>
+                </div>
+            </div>
+        </section>
+
+        <nav class="bottom-nav" id="main-nav">
+            <button class="nav-item active" data-target="home-screen">
+                <i class="fa-solid fa-house"></i>
+                <span>Home</span>
             </button>
-        </div>
-    </section>
+            <button class="nav-item" data-target="garage-screen">
+                <i class="fa-solid fa-layer-group"></i>
+                <span>Garage</span>
+            </button>
+        </nav>
 
-    <section id="stats-screen" class="screen">
-        <div class="content-center">
-            <h2>Drive Summary</h2>
-            <div class="stats-card">
-                <div class="stat-row-final">
-                    <div>
-                        <span class="label">DISTANCE</span>
-                        <span class="final-value" id="final-dist">0.0</span>
-                        <span class="unit">km</span>
-                    </div>
-                    <div>
-                        <span class="label">MAX SPEED</span>
-                        <span class="final-value" id="final-speed">0</span>
-                        <span class="unit">km/h</span>
-                    </div>
-                </div>
-                <div class="stat-row-final single">
-                    <div>
-                        <span class="label">DURATION</span>
-                        <span class="final-value" id="final-time">00:00:00</span>
-                    </div>
-                </div>
-            </div>
-            <button id="btn-home" class="btn-secondary">Back to Hub</button>
-        </div>
-    </section>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
