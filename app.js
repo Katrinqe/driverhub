@@ -1,80 +1,77 @@
-let map = L.map("map", {
-  zoomControl: false,
-}).setView([52.52, 13.405], 15);
-
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: "",
-}).addTo(map);
-
-let watchId = null;
-let route = [];
-let polyline = L.polyline([], { color: "#5fa9ff", weight: 4 }).addTo(map);
-
-let startTime = null;
-let distance = 0;
-let driving = false;
+let tracking = false;
+let watchID = null;
 
 const speedEl = document.getElementById("speed");
 const distanceEl = document.getElementById("distance");
 const timeEl = document.getElementById("time");
-const driveButton = document.getElementById("driveButton");
 
-function haversine(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) *
-    Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
+let startTime = 0;
+let totalDistance = 0;
+let lastPos = null;
 
-driveButton.addEventListener("click", () => {
-  if (!driving) startDrive();
-  else stopDrive();
+// Leaflet Map
+const map = L.map('map').setView([0,0], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: 'Map data © OpenStreetMap contributors'
+}).addTo(map);
+
+document.getElementById("startDrive").addEventListener("click", () => {
+  if (!tracking) {
+    startDrive();
+  } else {
+    stopDrive();
+  }
 });
 
 function startDrive() {
-  driving = true;
+  tracking = true;
   startTime = Date.now();
-  distance = 0;
-  route = [];
-  polyline.setLatLngs([]);
+  totalDistance = 0;
+  lastPos = null;
+  document.getElementById("startDrive").innerText = "Stop Drive";
 
-  driveButton.textContent = "Stop Drive";
-
-  watchId = navigator.geolocation.watchPosition(
-    pos => {
-      const { latitude, longitude, speed } = pos.coords;
-
-      map.setView([latitude, longitude], 17);
-
-      route.push([latitude, longitude]);
-      polyline.addLatLng([latitude, longitude]);
-
-      if (route.length > 1) {
-        const last = route[route.length - 2];
-        distance += haversine(last[0], last[1], latitude, longitude);
-      }
-
-      speedEl.textContent = speed ? (speed * 3.6).toFixed(1) : "0";
-      distanceEl.textContent = distance.toFixed(2);
-      timeEl.textContent = Math.floor((Date.now() - startTime) / 60000);
-    },
-    err => {
-      alert("Location access is required.");
-    },
-    {
-      enableHighAccuracy: true,
-      maximumAge: 0,
-    }
-  );
+  if (navigator.geolocation) {
+    watchID = navigator.geolocation.watchPosition(updatePosition, err => {
+      alert("GPS Error: " + err.message);
+    }, { enableHighAccuracy: true });
+  } else {
+    alert("GPS not supported");
+  }
 }
 
 function stopDrive() {
-  driving = false;
-  navigator.geolocation.clearWatch(watchId);
-  driveButton.textContent = "Start Drive";
+  tracking = false;
+  navigator.geolocation.clearWatch(watchID);
+  document.getElementById("startDrive").innerText = "Start Drive";
 }
+
+function updatePosition(pos) {
+  const lat = pos.coords.latitude;
+  const lon = pos.coords.longitude;
+  const speed = pos.coords.speed ? (pos.coords.speed * 3.6).toFixed(1) : 0;
+
+  speedEl.innerText = speed;
+
+  if (lastPos) {
+    const R = 6371; // km
+    const dLat = (lat - lastPos.lat) * Math.PI / 180;
+    const dLon = (lon - lastPos.lon) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lastPos.lat*Math.PI/180) * Math.cos(lat*Math.PI/180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const d = R * c;
+    totalDistance += d;
+  }
+
+  lastPos = { lat, lon };
+  distanceEl.innerText = totalDistance.toFixed(2);
+
+  const elapsed = (Date.now() - startTime) / 60000;
+  timeEl.innerText = elapsed.toFixed(1);
+
+  // Map update
+  map.setView([lat, lon], 16);
+  L.marker([lat, lon]).addTo(map); // Auto Icon später anpassen
+}
+
