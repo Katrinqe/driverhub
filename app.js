@@ -1,8 +1,8 @@
 // --- STATE VARIABLES ---
 let map, marker, watchId, intervalId;
-let detailMap, detailPolyline; // Für Detail View
+let detailMap, detailPolyline; 
 let startTime;
-let path = []; // Speichert [lat, lng]
+let path = []; 
 let currentDistance = 0;
 let currentMaxSpeed = 0;
 let isDriving = false;
@@ -11,6 +11,7 @@ let isDriving = false;
 const app = {
     splash: document.getElementById('splash-screen'),
     nav: document.getElementById('main-nav'),
+    welcomeMsg: document.getElementById('welcome-msg'), // Neu für Begrüßung
     screens: {
         home: document.getElementById('home-screen'),
         garage: document.getElementById('garage-screen'),
@@ -29,22 +30,51 @@ const app = {
     }
 };
 
-// --- INIT ---
+// --- INIT (Startsequenz) ---
 window.addEventListener('load', () => {
-    // 1. Splash Screen Timer
+    // 1. Smart Greeting setzen
+    setSmartGreeting();
+
+    // 2. Splash Screen entfernen nach Animation
     setTimeout(() => {
         app.splash.style.opacity = '0';
         setTimeout(() => app.splash.style.display = 'none', 800);
-    }, 2200); // Intro läuft 2.2 Sekunden
+    }, 2200); 
 
-    // 2. Daten laden
+    // 3. Daten aus Speicher laden
     renderGarage();
 });
 
+// --- SMART GREETING LOGIC ---
+function setSmartGreeting() {
+    const hour = new Date().getHours();
+    let greeting = "SYSTEM ONLINE";
+
+    if (hour >= 5 && hour < 12) {
+        greeting = "GOOD MORNING, DRIVER";
+    } else if (hour >= 12 && hour < 18) {
+        greeting = "READY FOR THE ROAD?";
+    } else if (hour >= 18 && hour < 22) {
+        greeting = "GOOD EVENING";
+    } else {
+        greeting = "NIGHT RIDER MODE";
+    }
+    
+    app.welcomeMsg.innerText = "INITIALIZING...";
+    
+    // Kleiner "Hack"-Effekt: Text wechselt nach kurzem Delay
+    setTimeout(() => {
+        app.welcomeMsg.innerText = greeting;
+        app.welcomeMsg.style.opacity = 1; 
+    }, 1500);
+}
+
 // --- NAVIGATION SYSTEM ---
-// Bottom Nav Click Handling
 document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', (e) => {
+        // Button Click Animation verhindern wenn schon aktiv
+        if(btn.classList.contains('active')) return;
+
         const targetId = btn.getAttribute('data-target');
         
         // Active State UI
@@ -57,17 +87,23 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 });
 
 function showMainScreen(id) {
-    // Nur Home und Garage sind Main Screens
     app.screens.home.classList.remove('active');
     app.screens.garage.classList.remove('active');
-    app.screens[id.split('-')[0]].classList.add('active');
+    app.screens[id.split('-')[0]].classList.add('active'); // home-screen -> home
 }
 
 // Drive UI Actions
 document.getElementById('btn-start').addEventListener('click', () => {
-    app.screens.drive.style.display = 'flex'; // Overlay an
-    app.nav.style.display = 'none'; // Nav ausblenden beim Fahren
-    startTracking();
+    // Kurzes Feedback bevor es losgeht
+    const btn = document.getElementById('btn-start');
+    btn.innerText = "IGNITION...";
+    
+    setTimeout(() => {
+        app.screens.drive.style.display = 'flex'; 
+        app.nav.style.display = 'none'; 
+        startTracking();
+        btn.innerText = "START ENGINE"; // Reset Text
+    }, 800);
 });
 
 document.getElementById('btn-stop').addEventListener('click', () => {
@@ -79,9 +115,9 @@ document.getElementById('btn-stop').addEventListener('click', () => {
 document.getElementById('btn-save-drive').addEventListener('click', () => {
     saveDriveToStorage();
     app.screens.summary.style.display = 'none';
-    app.nav.style.display = 'flex'; // Nav wieder an
+    app.nav.style.display = 'flex'; 
     
-    // Gehe zur Garage
+    // Automatisch zur Garage wechseln
     document.querySelectorAll('.nav-item')[1].click(); 
 });
 
@@ -92,7 +128,7 @@ document.getElementById('btn-close-detail').addEventListener('click', () => {
 });
 
 document.getElementById('btn-reset-data').addEventListener('click', () => {
-    if(confirm("Alles löschen?")) {
+    if(confirm("Factory Reset: Alle Fahrten löschen?")) {
         localStorage.removeItem('dh_drives_v2');
         renderGarage();
     }
@@ -110,6 +146,7 @@ function startTracking() {
     // Map initialisieren
     if (!map) {
         map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
+        // Dark Mode Map Layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map);
         
         const carIcon = L.divIcon({
@@ -145,14 +182,12 @@ function updatePosition(position) {
 
     if (path.length > 0) {
         const lastPoint = path[path.length - 1];
-        // Leaflet distanceTo needs LatLng object
         const dist = map.distance(lastPoint, newLatLng);
         currentDistance += dist;
         app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km";
     }
     path.push(newLatLng);
     
-    // Polyline zeichnen (nur die letzten Punkte um Performance zu sparen, oder alles)
     L.polyline(path, {color: '#4a90e2', weight: 5, opacity: 0.8}).addTo(map);
 }
 
@@ -167,8 +202,7 @@ function stopTracking() {
     clearInterval(intervalId);
     navigator.geolocation.clearWatch(watchId);
 
-    // Berechnungen für Summary
-    const diff = new Date() - startTime; // ms
+    const diff = new Date() - startTime;
     const durationHours = diff / (1000 * 60 * 60);
     const distKm = currentDistance / 1000;
     
@@ -177,7 +211,6 @@ function stopTracking() {
         avgSpeed = (distKm / durationHours).toFixed(1);
     }
 
-    // UI füllen
     app.display.sumDist.innerText = distKm.toFixed(2);
     app.display.sumSpeed.innerText = currentMaxSpeed;
     app.display.sumAvg.innerText = avgSpeed;
@@ -201,7 +234,7 @@ function saveDriveToStorage() {
         maxSpeed: currentMaxSpeed,
         avgSpeed: avgSpeed,
         duration: new Date(diff).toISOString().substr(11, 8),
-        pathData: path // Array von [lat, lng]
+        pathData: path 
     };
 
     let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || [];
@@ -227,16 +260,15 @@ function renderGarage() {
         item.className = 'drive-item';
         item.innerHTML = `
             <div>
-                <h4>${dateStr} • ${drive.duration}</h4>
-                <span>Avg ${drive.avgSpeed} km/h</span>
+                <h4 style="color:white; margin-bottom:4px;">${dateStr} • ${drive.duration}</h4>
+                <span style="color:#888; font-size:0.8rem;">Avg ${drive.avgSpeed} km/h</span>
             </div>
-            <div class="right-side">
-                <span class="dist">${drive.distance.toFixed(1)} km</span>
-                <span>Max ${drive.maxSpeed}</span>
+            <div class="right-side" style="text-align:right;">
+                <span class="dist" style="color:#4a90e2; font-weight:700; font-size:1.1rem; display:block;">${drive.distance.toFixed(1)} km</span>
+                <span style="color:#666; font-size:0.8rem;">Max ${drive.maxSpeed}</span>
             </div>
         `;
         
-        // Klick Event für Detail View
         item.addEventListener('click', () => openDetailView(drive));
         list.appendChild(item);
     });
@@ -250,25 +282,21 @@ function renderGarage() {
 function openDetailView(drive) {
     app.screens.detail.style.display = 'block';
     
-    // Werte setzen
     document.getElementById('detail-dist').innerText = drive.distance.toFixed(1);
     document.getElementById('detail-max').innerText = drive.maxSpeed;
     document.getElementById('detail-avg').innerText = drive.avgSpeed;
 
-    // Karte Timeout (weil Container erst sichtbar sein muss)
     setTimeout(() => {
         if(!detailMap) {
             detailMap = L.map('detail-map', { zoomControl: false });
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(detailMap);
         }
         
-        // Alte Layer entfernen
         detailMap.eachLayer((layer) => {
             if (!!layer.toGeoJSON) { detailMap.removeLayer(layer); }
         });
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(detailMap);
 
-        // Pfad zeichnen
         if(drive.pathData && drive.pathData.length > 0) {
             const polyline = L.polyline(drive.pathData, {color: '#4a90e2', weight: 5}).addTo(detailMap);
             detailMap.fitBounds(polyline.getBounds(), {padding: [50, 50]});
