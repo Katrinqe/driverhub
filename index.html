@@ -4,13 +4,136 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DriverHub</title>
+    
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="logo.png">
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        /* --- CSS DESIGN --- */
+        :root {
+            --bg-color: #000000;
+            --accent-blue: #4a90e2;
+            --accent-glow: rgba(74, 144, 226, 0.5);
+            --text-white: #ffffff;
+            --text-grey: #8e8e93;
+            --glass-bg: rgba(20, 20, 20, 0.85);
+            --danger: #ff3b30;
+            --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-white);
+            font-family: var(--font-stack);
+            overflow: hidden;
+            width: 100%; height: 100%; position: fixed;
+        }
+
+        /* AURORA HINTERGRUND */
+        .aurora-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            pointer-events: none; overflow: hidden;
+        }
+        .aurora-blob {
+            position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.4;
+            animation: float 20s infinite ease-in-out;
+        }
+        .blob-1 { top: -10%; left: -10%; width: 80vw; height: 80vw; background: radial-gradient(circle, #1c3d6e 0%, transparent 70%); }
+        .blob-2 { bottom: -10%; right: -10%; width: 70vw; height: 70vw; background: radial-gradient(circle, #2c5f9e 0%, transparent 70%); animation-delay: -5s; }
+        .blob-3 { top: 40%; left: 20%; width: 50vw; height: 50vw; background: radial-gradient(circle, #4a90e2 0%, transparent 80%); opacity: 0.2; }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(20px, -20px) scale(1.1); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+
+        /* SCREEN LAYOUTS */
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column; opacity: 0; transition: opacity 0.3s ease; z-index: 1;
+        }
+        .screen.active { display: flex; opacity: 1; z-index: 10; }
+        
+        .screen-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column; z-index: 2000; background: #000;
+        }
+
+        /* HOME SCREEN */
+        .content-center {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; text-align: center; width: 100%;
+        }
+        .welcome-text {
+            font-size: 0.8rem; color: var(--accent-blue); letter-spacing: 2px;
+            text-transform: uppercase; margin-bottom: 20px; font-weight: 700; opacity: 0.8;
+        }
+        .dh-logo { width: 150px; height: auto; margin-bottom: 20px; }
+        h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 5px; color: white; }
+        .slogan { color: var(--text-grey); font-size: 0.9rem; margin-bottom: 50px; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* PULSE BUTTON */
+        .btn-pulse-container { position: relative; width: 100%; max-width: 260px; display: flex; justify-content: center; }
+        .btn-primary {
+            border: none; padding: 18px 32px; border-radius: 50px;
+            font-size: 1.1rem; font-weight: 700; width: 100%;
+            background: linear-gradient(135deg, var(--accent-blue), #254e85); color: white;
+            box-shadow: 0 5px 20px rgba(74, 144, 226, 0.3);
+            z-index: 2; cursor: pointer;
+        }
+        .btn-pulse-ring {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 100%; height: 100%; border-radius: 50px;
+            border: 2px solid var(--accent-blue);
+            animation: pulse-ring 2s infinite; z-index: 1; pointer-events: none;
+        }
+        @keyframes pulse-ring { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.9); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.4); } }
+
+        /* BOTTOM NAV */
+        .bottom-nav {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 85%; max-width: 300px; height: 60px;
+            background: rgba(30,30,30,0.8); backdrop-filter: blur(20px);
+            border-radius: 30px; border: 1px solid rgba(255,255,255,0.1);
+            display: flex; justify-content: space-around; align-items: center; z-index: 100;
+        }
+        .nav-item { background: none; border: none; color: #666; font-size: 0.7rem; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .nav-item.active { color: white; }
+        .nav-item.active i { color: var(--accent-blue); }
+        .nav-item i { font-size: 1.2rem; }
+
+        /* SPLASH SCREEN */
+        #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 9999; display: flex; align-items: center; justify-content: center; transition: opacity 0.5s; }
+        .splash-logo-img { width: 120px; animation: introAnim 2s ease-out forwards; }
+        @keyframes introAnim { 0% { opacity: 0; transform: scale(0.8); filter: blur(10px); } 40% { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 0 30px var(--accent-blue)); } 100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 0px var(--accent-blue)); } }
+
+        /* MAP & DRIVE UI */
+        #map, #detail-map { width: 100%; height: 100%; filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(90%); }
+        .drive-overlay-top { position: absolute; top: 50px; left: 20px; right: 20px; display: flex; justify-content: space-between; z-index: 1000; }
+        .drive-overlay-bottom { position: absolute; bottom: 40px; width: 100%; text-align: center; z-index: 1000; display: flex; flex-direction: column; align-items: center; }
+        .stat-box { background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); padding: 10px 20px; border-radius: 12px; min-width: 90px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        .stat-box .value { font-size: 1.5rem; font-weight: 700; display: block; color: white; }
+        .stat-box .label { font-size: 0.6rem; color: #ccc; font-weight: 700; }
+        .btn-danger { background: rgba(255,50,50,0.2); border: 1px solid #ff3b30; color: #ff3b30; padding: 15px 40px; border-radius: 30px; font-weight: 700; backdrop-filter: blur(10px); }
+
+        /* GARAGE & LISTS */
+        .content-scroll { padding: 80px 20px 100px 20px; overflow-y: auto; height: 100%; width: 100%; }
+        .stats-card { background: #111; border-radius: 20px; padding: 20px; margin-bottom: 20px; width: 100%; border: 1px solid #222; }
+        .stat-row-final { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .stat-row-final .final-value { font-size: 1.4rem; font-weight: 700; }
+        .header-bar { position: absolute; top: 0; left: 0; width: 100%; padding: 40px 20px 10px 20px; background: linear-gradient(to bottom, black, transparent); z-index: 50; }
+        .drive-item { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
+        .icon-btn-floating { position: absolute; top: 40px; left: 20px; width: 40px; height: 40px; background: rgba(50,50,50,0.8); border-radius: 50%; color: white; z-index: 3000; border: none; font-size: 1.2rem; }
+    </style>
 </head>
 <body>
 
@@ -21,7 +144,7 @@
     </div>
 
     <div id="splash-screen">
-        <img src="logo.png" alt="Logo" class="splash-logo">
+        <img src="logo.png" alt="Logo" class="splash-logo-img">
     </div>
 
     <div id="app-container">
@@ -29,18 +152,14 @@
         <section id="home-screen" class="screen active">
             <div class="content-center">
                 <p id="welcome-msg" class="welcome-text">SYSTEM ONLINE</p>
-                
                 <div class="logo-container">
                     <img src="logo.png" alt="DriverHub" class="dh-logo">
                 </div>
                 <h1>DriverHub</h1>
                 <p class="slogan">Built for those who drive.</p>
-                
                 <div class="btn-pulse-container">
                     <div class="btn-pulse-ring"></div>
-                    <button id="btn-start" class="btn-primary">
-                        START ENGINE
-                    </button>
+                    <button id="btn-start" class="btn-primary">START ENGINE</button>
                 </div>
             </div>
         </section>
@@ -56,9 +175,9 @@
                         <div><span class="label">DRIVES</span><span class="final-value" id="total-drives">0</span></div>
                     </div>
                 </div>
-                <h3>Recent Drives</h3>
-                <div id="drives-list" class="drives-list"></div>
-                <button id="btn-reset-data" style="background:transparent; color:#444; margin-top:30px; font-size:0.8rem;">Reset ECU</button>
+                <h3 style="color:#666; font-size:0.9rem; margin-bottom:10px; text-transform:uppercase;">Recent Drives</h3>
+                <div id="drives-list"></div>
+                <button id="btn-reset-data" style="background:transparent; border:none; color:#444; margin-top:30px; width:100%;">Reset Data</button>
                 <div style="height: 100px;"></div>
             </div>
         </section>
@@ -66,14 +185,13 @@
         <section id="drive-screen" class="screen-overlay">
             <div id="map"></div>
             <div class="drive-overlay-top">
-                <div class="stat-box"><span class="label">SPEED</span><span class="value" id="live-speed">0</span><span class="unit">km/h</span></div>
+                <div class="stat-box"><span class="label">SPEED</span><span class="value" id="live-speed">0</span></div>
                 <div class="stat-box"><span class="label">TIME</span><span class="value" id="live-time">00:00</span></div>
             </div>
             <div class="drive-overlay-bottom">
-                <div style="background:rgba(0,0,0,0.6); backdrop-filter:blur(10px); padding:8px 20px; border-radius:20px; display:inline-block; margin-bottom:20px; border:1px solid rgba(255,255,255,0.1);">
-                    <span id="live-dist" style="font-weight:700;">0.00 km</span>
+                <div style="background:rgba(0,0,0,0.6); backdrop-filter:blur(10px); padding:8px 20px; border-radius:20px; margin-bottom:20px; border:1px solid rgba(255,255,255,0.1);">
+                    <span id="live-dist" style="font-weight:700; color:white;">0.00 km</span>
                 </div>
-                <br>
                 <button id="btn-stop" class="btn-danger">STOP ENGINE</button>
             </div>
         </section>
@@ -81,7 +199,7 @@
         <section id="summary-screen" class="screen-overlay">
             <div class="content-center">
                 <h2 style="margin-bottom:30px;">Drive Summary</h2>
-                <div class="stats-card">
+                <div class="stats-card" style="max-width:300px;">
                     <div class="stat-row-final">
                         <div><span class="label">DISTANCE</span><span class="final-value" id="sum-dist">0.0</span></div>
                         <div><span class="label">MAX SPEED</span><span class="final-value" id="sum-speed">0</span></div>
@@ -91,7 +209,7 @@
                         <div><span class="label">TIME</span><span class="final-value" id="sum-time">00:00</span></div>
                     </div>
                 </div>
-                <button id="btn-save-drive" class="btn-primary">Save to Garage</button>
+                <button id="btn-save-drive" class="btn-primary" style="max-width:250px;">Save to Garage</button>
             </div>
         </section>
 
@@ -111,7 +229,179 @@
         </nav>
 
     </div>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js"></script>
+
+    <script>
+        // --- JAVASCRIPT LOGIC ---
+        let map, marker, watchId, intervalId, detailMap, startTime;
+        let path = [], currentDistance = 0, currentMaxSpeed = 0;
+
+        const app = {
+            splash: document.getElementById('splash-screen'),
+            nav: document.getElementById('main-nav'),
+            screens: {
+                home: document.getElementById('home-screen'),
+                garage: document.getElementById('garage-screen'),
+                drive: document.getElementById('drive-screen'),
+                summary: document.getElementById('summary-screen'),
+                detail: document.getElementById('detail-screen')
+            },
+            display: {
+                speed: document.getElementById('live-speed'),
+                time: document.getElementById('live-time'),
+                dist: document.getElementById('live-dist'),
+                sumDist: document.getElementById('sum-dist'),
+                sumSpeed: document.getElementById('sum-speed'),
+                sumAvg: document.getElementById('sum-avg'),
+                sumTime: document.getElementById('sum-time')
+            }
+        };
+
+        window.addEventListener('load', () => {
+            // Begrüßung
+            const h = new Date().getHours();
+            let msg = "SYSTEM ONLINE";
+            if (h >= 5 && h < 12) msg = "GOOD MORNING";
+            else if (h >= 12 && h < 18) msg = "READY TO DRIVE?";
+            else if (h >= 18 && h < 22) msg = "GOOD EVENING";
+            else msg = "NIGHT RIDE MODE";
+            document.getElementById('welcome-msg').innerText = msg;
+
+            // Intro weg
+            setTimeout(() => {
+                app.splash.style.opacity = '0';
+                setTimeout(() => app.splash.style.display = 'none', 500);
+            }, 1500);
+
+            renderGarage();
+        });
+
+        // Navigation
+        document.querySelectorAll('.nav-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = btn.getAttribute('data-target');
+                document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                app.screens.home.classList.remove('active');
+                app.screens.garage.classList.remove('active');
+                app.screens[target.split('-')[0]].classList.add('active');
+            });
+        });
+
+        document.getElementById('btn-start').addEventListener('click', () => {
+            app.screens.drive.style.display = 'flex';
+            app.nav.style.display = 'none';
+            startTracking();
+        });
+
+        document.getElementById('btn-stop').addEventListener('click', () => {
+            stopTracking();
+            app.screens.drive.style.display = 'none';
+            app.screens.summary.style.display = 'flex';
+        });
+
+        document.getElementById('btn-save-drive').addEventListener('click', () => {
+            saveDrive();
+            app.screens.summary.style.display = 'none';
+            app.nav.style.display = 'flex';
+            document.querySelectorAll('.nav-item')[1].click();
+        });
+
+        document.getElementById('btn-close-detail').addEventListener('click', () => {
+            app.screens.detail.style.display = 'none';
+            if(detailMap) { detailMap.remove(); detailMap = null; }
+        });
+
+        document.getElementById('btn-reset-data').addEventListener('click', () => {
+            if(confirm("Alles löschen?")) { localStorage.removeItem('dh_drives_v2'); renderGarage(); }
+        });
+
+        // Tracking
+        function startTracking() {
+            startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0;
+            if (!map) {
+                map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map);
+                const icon = L.divIcon({ className: 'c-icon', html: '<div style="background:#4a90e2;width:16px;height:16px;border-radius:50%;border:2px solid white;box-shadow:0 0 10px #4a90e2;"></div>', iconSize: [20,20] });
+                marker = L.marker([0,0], {icon: icon}).addTo(map);
+            }
+            intervalId = setInterval(() => {
+                const diff = new Date() - startTime;
+                app.display.time.innerText = new Date(diff).toISOString().substr(11, 8);
+            }, 1000);
+            if (navigator.geolocation) {
+                watchId = navigator.geolocation.watchPosition(pos => {
+                    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+                    const spd = Math.max(0, (pos.coords.speed || 0) * 3.6).toFixed(0);
+                    if (spd > currentMaxSpeed) currentMaxSpeed = parseInt(spd);
+                    app.display.speed.innerText = spd;
+                    const pt = [lat, lng];
+                    marker.setLatLng(pt); map.setView(pt, 18);
+                    if(path.length > 0) currentDistance += map.distance(path[path.length-1], pt);
+                    app.display.dist.innerText = (currentDistance/1000).toFixed(2) + " km";
+                    path.push(pt);
+                    L.polyline(path, {color:'#4a90e2', weight:5}).addTo(map);
+                }, err => console.warn(err), {enableHighAccuracy:true});
+            }
+        }
+
+        function stopTracking() {
+            clearInterval(intervalId); navigator.geolocation.clearWatch(watchId);
+            const diff = new Date() - startTime;
+            const distKm = currentDistance / 1000;
+            const hrs = diff / 3600000;
+            app.display.sumDist.innerText = distKm.toFixed(2);
+            app.display.sumSpeed.innerText = currentMaxSpeed;
+            app.display.sumAvg.innerText = hrs > 0 ? (distKm/hrs).toFixed(1) : 0;
+            app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8);
+        }
+
+        function saveDrive() {
+            const diff = new Date() - startTime;
+            const distKm = currentDistance / 1000;
+            const hrs = diff / 3600000;
+            const drive = {
+                id: Date.now(), date: startTime.toISOString(),
+                dist: parseFloat(distKm.toFixed(2)), max: currentMaxSpeed,
+                avg: hrs > 0 ? (distKm/hrs).toFixed(1) : 0,
+                dur: new Date(diff).toISOString().substr(11, 8),
+                path: path
+            };
+            let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || [];
+            drives.unshift(drive);
+            localStorage.setItem('dh_drives_v2', JSON.stringify(drives));
+            renderGarage();
+        }
+
+        function renderGarage() {
+            const drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || [];
+            let total = 0;
+            const list = document.getElementById('drives-list');
+            list.innerHTML = '';
+            drives.forEach(d => {
+                total += d.dist;
+                const date = new Date(d.date).toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit'});
+                const div = document.createElement('div');
+                div.className = 'drive-item';
+                div.innerHTML = `<div><h4 style="color:white;font-size:0.9rem;margin-bottom:3px;">${date} • ${d.dur}</h4><span style="color:#666;font-size:0.8rem;">Avg ${d.avg} km/h</span></div><div style="text-align:right;"><span style="color:#4a90e2;font-weight:bold;">${d.dist.toFixed(1)} km</span><br><span style="color:#555;font-size:0.7rem;">Max ${d.max}</span></div>`;
+                div.onclick = () => {
+                    app.screens.detail.style.display = 'block';
+                    document.getElementById('detail-dist').innerText = d.dist;
+                    document.getElementById('detail-max').innerText = d.max;
+                    document.getElementById('detail-avg').innerText = d.avg;
+                    setTimeout(() => {
+                        if(!detailMap) { detailMap = L.map('detail-map', {zoomControl:false}); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(detailMap); }
+                        detailMap.eachLayer(l => {if(!!l.toGeoJSON) detailMap.removeLayer(l)});
+                        if(d.path && d.path.length) {
+                            const line = L.polyline(d.path, {color:'#4a90e2', weight:5}).addTo(detailMap);
+                            detailMap.fitBounds(line.getBounds(), {padding:[50,50]});
+                        }
+                    }, 200);
+                };
+                list.appendChild(div);
+            });
+            document.getElementById('total-km').innerText = total.toFixed(1);
+            document.getElementById('total-drives').innerText = drives.length;
+        }
+    </script>
 </body>
 </html>
