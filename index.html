@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>DriverHub</title>
+
+  <!-- Leaflet Map -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.json" />
+</head>
+
+<body>
+  <!-- HEADER -->
+  <header class="header">
+    <h1>DriverHub</h1>
+    <span class="status">Ready</span>
+  </header>
+
+  <!-- MAP -->
+  <div id="map"></div>
+
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-item">
+      <span class="label">Speed</span>
+      <span class="value"><span id="speed">0</span> km/h</span>
+    </div>
+    <div class="hud-item">
+      <span class="label">Distance</span>
+      <span class="value"><span id="distance">0.00</span> km</span>
+    </div>
+    <div class="hud-item">
+      <span class="label">Time</span>
+      <span class="value"><span id="time">0</span> min</span>
+    </div>
+  </div>
+
+  <!-- ACTION BUTTON -->
+  <button id="driveButton" class="drive-button">
+    Start Drive
+  </button>
+
+  <!-- JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
