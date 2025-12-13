@@ -16,29 +16,32 @@
 </head>
 <body>
 
-    <div id="splash-screen">
-        <img src="logo.png" alt="Logo" class="splash-logo">
+    <div class="aurora-bg">
+        <div class="blob b1"></div>
+        <div class="blob b2"></div>
     </div>
 
     <div id="app-container">
         
         <section id="home-screen" class="screen active">
-            <div class="content-center">
+            <div class="content-home-layout">
                 
-                <div class="greeting-area">
-                    <p id="welcome-msg" class="welcome-text">SYSTEM LOADING...</p>
-                    <div id="weather-widget" class="weather-pill" style="display:none;">
-                        <i id="weather-icon" class="fa-solid fa-cloud"></i>
-                        <span id="weather-temp">--°</span>
-                    </div>
+                <div id="status-widget" class="status-pill" style="display:flex;">
+                    <i class="fa-solid fa-location-arrow loc-icon"></i>
+                    <span id="loc-text">Locating...</span>
+                    <span class="divider">|</span>
+                    <i id="weather-icon" class="fa-solid fa-cloud"></i>
+                    <span id="weather-temp">--°</span>
                 </div>
 
                 <div class="logo-container">
                     <img src="logo.png" alt="DriverHub Logo" class="dh-logo">
                 </div>
-                <h1>DriverHub</h1>
+                
+                <h1 id="greeting-text">WELCOME</h1>
                 <p class="slogan">Built for those who drive.</p>
                 
+                <div class="spacer-flex"></div>
                 <button id="btn-start" class="btn-primary">
                     <i class="fa-solid fa-road"></i> Start Drive
                 </button>
@@ -52,47 +55,26 @@
             <div class="content-scroll">
                 <div class="stats-card profile-card">
                     <div class="stat-row-final">
-                        <div>
-                            <span class="label">TOTAL KM</span>
-                            <span class="final-value" id="total-km">0</span>
-                        </div>
-                        <div>
-                            <span class="label">DRIVES</span>
-                            <span class="final-value" id="total-drives">0</span>
-                        </div>
+                        <div><span class="label">TOTAL KM</span><span class="final-value" id="total-km">0</span></div>
+                        <div><span class="label">DRIVES</span><span class="final-value" id="total-drives">0</span></div>
                     </div>
                 </div>
-
                 <h3>Recent Drives</h3>
-                <div id="drives-list" class="drives-list">
-                    </div>
-                
+                <div id="drives-list" class="drives-list"></div>
                 <button id="btn-reset-data" class="btn-text">Reset Data</button>
-                <div style="height: 100px;"></div> </div>
+                <div style="height: 100px;"></div>
+            </div>
         </section>
 
         <section id="drive-screen" class="screen-overlay">
             <div id="map"></div>
-            
             <div class="drive-overlay-top">
-                <div class="stat-box">
-                    <span class="label">SPEED</span>
-                    <span class="value" id="live-speed">0</span>
-                    <span class="unit">km/h</span>
-                </div>
-                <div class="stat-box">
-                    <span class="label">TIME</span>
-                    <span class="value" id="live-time">00:00</span>
-                </div>
+                <div class="stat-box"><span class="label">SPEED</span><span class="value" id="live-speed">0</span><span class="unit">km/h</span></div>
+                <div class="stat-box"><span class="label">TIME</span><span class="value" id="live-time">00:00</span></div>
             </div>
-
             <div class="drive-overlay-bottom">
-                <div class="stat-row">
-                    <span id="live-dist">0.0 km</span>
-                </div>
-                <button id="btn-stop" class="btn-danger">
-                    <i class="fa-solid fa-stop"></i> End Drive
-                </button>
+                <div class="stat-row"><span id="live-dist">0.0 km</span></div>
+                <button id="btn-stop" class="btn-danger"><i class="fa-solid fa-stop"></i> End Drive</button>
             </div>
         </section>
 
@@ -101,27 +83,12 @@
                 <h2>Drive Summary</h2>
                 <div class="stats-card">
                     <div class="stat-row-final">
-                        <div>
-                            <span class="label">DISTANCE</span>
-                            <span class="final-value" id="sum-dist">0.0</span>
-                            <span class="unit">km</span>
-                        </div>
-                        <div>
-                            <span class="label">MAX SPEED</span>
-                            <span class="final-value" id="sum-speed">0</span>
-                            <span class="unit">km/h</span>
-                        </div>
+                        <div><span class="label">DISTANCE</span><span class="final-value" id="sum-dist">0.0</span><span class="unit">km</span></div>
+                        <div><span class="label">MAX SPEED</span><span class="final-value" id="sum-speed">0</span><span class="unit">km/h</span></div>
                     </div>
                     <div class="stat-row-final">
-                         <div>
-                            <span class="label">AVG SPEED</span>
-                            <span class="final-value" id="sum-avg">0</span>
-                            <span class="unit">km/h</span>
-                        </div>
-                        <div>
-                            <span class="label">DURATION</span>
-                            <span class="final-value" id="sum-time">00:00:00</span>
-                        </div>
+                         <div><span class="label">AVG SPEED</span><span class="final-value" id="sum-avg">0</span><span class="unit">km/h</span></div>
+                        <div><span class="label">DURATION</span><span class="final-value" id="sum-time">00:00:00</span></div>
                     </div>
                 </div>
                 <button id="btn-save-drive" class="btn-primary">Save to Garage</button>
@@ -142,12 +109,10 @@
 
         <nav class="bottom-nav" id="main-nav">
             <button class="nav-item active" data-target="home-screen">
-                <i class="fa-solid fa-house"></i>
-                <span>Home</span>
+                <i class="fa-solid fa-house"></i><span>Home</span>
             </button>
             <button class="nav-item" data-target="garage-screen">
-                <i class="fa-solid fa-layer-group"></i>
-                <span>Garage</span>
+                <i class="fa-solid fa-layer-group"></i><span>Garage</span>
             </button>
         </nav>
 
