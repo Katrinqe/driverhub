@@ -1,22 +1,29 @@
-// --- STATE ---
-let map, marker, watchId, intervalId, detailMap;
-let startTime, path = [], currentDistance = 0, currentMaxSpeed = 0, isDriving = false;
+// --- STATE VARIABLES (Speicher) ---
+let map = null;
+let marker = null;
+let watchId = null;
+let intervalId = null;
+let detailMap = null; // Für die Detail-Ansicht
+let startTime = null;
+let path = []; // Speichert die Route
+let currentDistance = 0;
+let currentMaxSpeed = 0;
+let isDriving = false;
 
-// --- DOM ELEMENTS ---
+// --- DOM ELEMENTS (Verknüpfungen zum HTML) ---
+// Wir holen uns alle Elemente sicher ab
 const app = {
     splash: document.getElementById('splash-screen'),
     nav: document.getElementById('main-nav'),
+    
+    // Text Elemente
     greet: document.getElementById('greeting-text'),
     locText: document.getElementById('loc-text'),
     tempText: document.getElementById('weather-temp'),
     weatherIcon: document.getElementById('weather-icon'),
     weatherWidget: document.getElementById('status-widget'),
-    
-    // NEW MACHINE INPUTS
-    carInput: document.getElementById('car-name-input'),
-    carTypeBtn: document.getElementById('btn-car-type'),
-    carIcon: document.getElementById('car-icon'),
 
+    // Screens
     screens: {
         home: document.getElementById('home-screen'),
         garage: document.getElementById('garage-screen'),
@@ -24,6 +31,8 @@ const app = {
         summary: document.getElementById('summary-screen'),
         detail: document.getElementById('detail-screen')
     },
+
+    // Display während der Fahrt
     display: {
         speed: document.getElementById('live-speed'),
         time: document.getElementById('live-time'),
@@ -35,52 +44,30 @@ const app = {
     }
 };
 
-// --- INIT ---
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        app.splash.style.opacity = '0';
-        setTimeout(() => app.splash.style.display = 'none', 800);
+// --- STARTUP (Wenn die App lädt) ---
+window.addEventListener('load', function() {
+    
+    // 1. Splash Screen Timer (Logo Animation)
+    setTimeout(function() {
+        if(app.splash) {
+            app.splash.style.opacity = '0';
+            setTimeout(function() { app.splash.style.display = 'none'; }, 800);
+        }
     }, 2200);
 
+    // 2. Daten laden
     renderGarage();
     updateTimeGreeting();
-    loadCarSettings(); // Lade Auto-Info
 
-    if(navigator.geolocation) navigator.geolocation.getCurrentPosition(initWeatherLoc, err => console.log(err));
-});
-
-// --- MACHINE LOGIC ---
-const iconTypes = ["fa-car", "fa-car-side", "fa-truck-pickup", "fa-motorcycle"];
-let currentIconIndex = 0;
-
-// Load saved data
-function loadCarSettings() {
-    const savedName = localStorage.getItem('dh_car_name');
-    const savedType = localStorage.getItem('dh_car_type');
-    
-    if(savedName) app.carInput.value = savedName;
-    if(savedType) {
-        currentIconIndex = iconTypes.indexOf(savedType);
-        if(currentIconIndex === -1) currentIconIndex = 0;
-        app.carIcon.className = `fa-solid ${iconTypes[currentIconIndex]}`;
+    // 3. GPS & Wetter starten
+    if(navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(initWeatherLoc, function(err){
+            console.log("GPS Init Error: ", err);
+        });
     }
-}
-
-// Icon Switcher click
-app.carTypeBtn.addEventListener('click', () => {
-    currentIconIndex = (currentIconIndex + 1) % iconTypes.length;
-    const newClass = iconTypes[currentIconIndex];
-    app.carIcon.className = `fa-solid ${newClass}`;
-    localStorage.setItem('dh_car_type', newClass);
 });
 
-// Name Input save on change
-app.carInput.addEventListener('input', () => {
-    localStorage.setItem('dh_car_name', app.carInput.value);
-});
-
-
-// --- WEATHER & GREETING ---
+// --- WETTER & BEGRÜßUNG ---
 function updateTimeGreeting() {
     const h = new Date().getHours();
     let txt = "WELCOME";
@@ -88,140 +75,320 @@ function updateTimeGreeting() {
     else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON";
     else if (h >= 18 && h < 22) txt = "GOOD EVENING";
     else txt = "NIGHT CRUISE";
-    app.greet.innerText = txt;
+    
+    if(app.greet) app.greet.innerText = txt;
 }
 
 function initWeatherLoc(pos) {
-    const lat = pos.coords.latitude, lng = pos.coords.longitude;
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`).then(r => r.json()).then(d => {
-        app.locText.innerText = d.address.city || d.address.town || "Located";
-    });
-    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`).then(r => r.json()).then(d => {
-        const t = Math.round(d.current_weather.temperature);
-        const c = d.current_weather.weathercode;
-        app.tempText.innerText = t + "°";
-        app.weatherIcon.className = c<=1?"fa-solid fa-sun":c<=3?"fa-solid fa-cloud-sun":"fa-solid fa-cloud";
-    });
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    
+    // 1. Stadt Name holen
+    fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng)
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if(app.locText) app.locText.innerText = d.address.city || d.address.town || "Located";
+        })
+        .catch(function(e) { console.log("Loc Error", e); });
+
+    // 2. Wetter holen
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lng + '&current_weather=true')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if(d.current_weather) {
+                const t = Math.round(d.current_weather.temperature);
+                const c = d.current_weather.weathercode;
+                
+                if(app.tempText) app.tempText.innerText = t + "°";
+                
+                // Icon setzen
+                let iconClass = "fa-cloud";
+                if(c <= 1) iconClass = "fa-sun";
+                else if(c <= 3) iconClass = "fa-cloud-sun";
+                else if(c <= 60) iconClass = "fa-cloud-rain";
+                else if(c <= 80) iconClass = "fa-snowflake";
+                else if(c > 80) iconClass = "fa-bolt";
+
+                if(app.weatherIcon) {
+                    app.weatherIcon.className = "fa-solid " + iconClass;
+                    // Widget sichtbar machen
+                    if(app.weatherWidget) app.weatherWidget.style.display = 'flex';
+                }
+            }
+        })
+        .catch(function(e) { console.log("Weather Error", e); });
 }
 
-// --- NAV & ACTIONS (STANDARD) ---
-document.querySelectorAll('.nav-item').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+// --- NAVIGATION (Buttons unten) ---
+const navItems = document.querySelectorAll('.nav-item');
+navItems.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        const targetId = btn.getAttribute('data-target');
+        
+        // Active Klasse wechseln
+        navItems.forEach(function(b) { b.classList.remove('active'); });
         btn.classList.add('active');
-        showMainScreen(btn.getAttribute('data-target'));
+
+        // Screen wechseln
+        showMainScreen(targetId);
     });
 });
 
 function showMainScreen(id) {
-    app.screens.home.classList.remove('active');
-    app.screens.garage.classList.remove('active');
-    app.screens[id.split('-')[0]].classList.add('active');
+    // Verstecke alle Haupt-Screens
+    if(app.screens.home) app.screens.home.classList.remove('active');
+    if(app.screens.garage) app.screens.garage.classList.remove('active');
+    
+    // Zeige den gewählten (Schutz vor null)
+    const target = id.split('-')[0]; // "home" oder "garage"
+    if(app.screens[target]) app.screens[target].classList.add('active');
 }
 
-document.getElementById('btn-start').addEventListener('click', () => {
-    app.screens.drive.style.display = 'flex'; app.nav.style.display = 'none'; startTracking();
-});
+// --- BUTTON EVENT LISTENERS ---
 
-document.getElementById('btn-stop').addEventListener('click', () => {
-    stopTracking(); app.screens.drive.style.display = 'none'; app.screens.summary.style.display = 'flex';
-});
+// Start Button
+const btnStart = document.getElementById('btn-start');
+if(btnStart) {
+    btnStart.addEventListener('click', function() {
+        app.screens.drive.style.display = 'flex';
+        app.nav.style.display = 'none';
+        startTracking();
+    });
+}
 
-document.getElementById('btn-save-drive').addEventListener('click', () => {
-    saveDriveToStorage(); app.screens.summary.style.display = 'none'; app.nav.style.display = 'flex';
-    document.querySelectorAll('.nav-item')[1].click(); 
-});
+// Stop Button
+const btnStop = document.getElementById('btn-stop');
+if(btnStop) {
+    btnStop.addEventListener('click', function() {
+        stopTracking();
+        app.screens.drive.style.display = 'none';
+        app.screens.summary.style.display = 'flex';
+    });
+}
 
-document.getElementById('btn-close-detail').addEventListener('click', () => {
-    app.screens.detail.style.display = 'none'; if(detailMap) { detailMap.remove(); detailMap = null; }
-});
+// Save Button
+const btnSave = document.getElementById('btn-save-drive');
+if(btnSave) {
+    btnSave.addEventListener('click', function() {
+        saveDriveToStorage();
+        app.screens.summary.style.display = 'none';
+        app.nav.style.display = 'flex';
+        // Simuliere Klick auf Garage-Button
+        const garageBtn = document.querySelectorAll('.nav-item')[1];
+        if(garageBtn) garageBtn.click();
+    });
+}
 
-document.getElementById('btn-reset-data').addEventListener('click', () => {
-    if(confirm("Reset All?")) { localStorage.removeItem('dh_drives_v2'); renderGarage(); }
-});
+// Close Detail Button
+const btnCloseDetail = document.getElementById('btn-close-detail');
+if(btnCloseDetail) {
+    btnCloseDetail.addEventListener('click', function() {
+        app.screens.detail.style.display = 'none';
+        if(detailMap) { detailMap.remove(); detailMap = null; }
+    });
+}
 
-// --- TRACKING ---
+// Reset Button
+const btnReset = document.getElementById('btn-reset-data');
+if(btnReset) {
+    btnReset.addEventListener('click', function() {
+        if(confirm("Alle Fahrten löschen?")) {
+            localStorage.removeItem('dh_drives_v2');
+            renderGarage();
+        }
+    });
+}
+
+// --- TRACKING ENGINE ---
+
 function startTracking() {
-    isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0;
+    isDriving = true;
+    startTime = new Date();
+    path = [];
+    currentDistance = 0;
+    currentMaxSpeed = 0;
+
+    // Karte initialisieren
     if (!map) {
         map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map);
-        marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 0 15px #4a90e2'></div>", iconSize: [20, 20]})}).addTo(map);
+        
+        const carIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>",
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+        });
+        marker = L.marker([0, 0], {icon: carIcon}).addTo(map);
     }
-    setTimeout(() => map.invalidateSize(), 200);
-    intervalId = setInterval(() => {
-        const diff = new Date() - startTime;
-        app.display.time.innerText = new Date(diff).toISOString().substr(11, 8);
-    }, 1000);
-    if (navigator.geolocation) watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true});
+    
+    // Fix: Map Größe neu berechnen, da sie vorher unsichtbar war
+    setTimeout(function() { map.invalidateSize(); }, 200);
+
+    intervalId = setInterval(updateTimer, 1000);
+
+    if (navigator.geolocation) {
+        watchId = navigator.geolocation.watchPosition(updatePosition, function(err){console.warn(err);}, {
+            enableHighAccuracy: true
+        });
+    }
 }
 
-function updatePosition(pos) {
-    const lat = pos.coords.latitude, lng = pos.coords.longitude;
-    const s = Math.max(0, (pos.coords.speed || 0) * 3.6).toFixed(0);
-    if (parseFloat(s) > currentMaxSpeed) currentMaxSpeed = parseFloat(s);
-    app.display.speed.innerText = s;
-    const pt = [lat, lng]; marker.setLatLng(pt); map.setView(pt, 18);
+function updatePosition(position) {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    // Speed in km/h umrechnen (verhindert negative Werte)
+    const speedMs = position.coords.speed || 0;
+    const speedKmh = Math.max(0, speedMs * 3.6).toFixed(0);
+
+    if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh);
+
+    // UI Update
+    if(app.display.speed) app.display.speed.innerText = speedKmh;
+    
+    const newLatLng = [lat, lng];
+    if(marker) marker.setLatLng(newLatLng);
+    if(map) map.setView(newLatLng, 18);
+
+    // Distanz
     if (path.length > 0) {
-        currentDistance += map.distance(path[path.length - 1], pt);
-        app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km";
+        // Leaflet distanceTo braucht LatLng Objekt, wir erzeugen eins temporär
+        const prev = L.latLng(path[path.length - 1]);
+        const curr = L.latLng(newLatLng);
+        const dist = prev.distanceTo(curr);
+        currentDistance += dist;
+        if(app.display.dist) app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km";
     }
-    path.push(pt);
-    L.polyline(path, {color: '#4a90e2', weight: 5}).addTo(map);
+    path.push(newLatLng);
+    
+    if(map) L.polyline(path, {color: '#4a90e2', weight: 5, opacity: 0.8}).addTo(map);
+}
+
+function updateTimer() {
+    const diff = new Date() - startTime;
+    const date = new Date(diff);
+    // Zeit formatieren
+    const timeStr = date.toISOString().substr(11, 8);
+    if(app.display.time) app.display.time.innerText = timeStr;
 }
 
 function stopTracking() {
-    isDriving = false; clearInterval(intervalId); navigator.geolocation.clearWatch(watchId);
+    isDriving = false;
+    clearInterval(intervalId);
+    if(watchId) navigator.geolocation.clearWatch(watchId);
+
+    // Stats berechnen
     const diff = new Date() - startTime;
-    const dist = currentDistance / 1000;
-    const dur = diff / 3600000;
-    app.display.sumDist.innerText = dist.toFixed(2);
-    app.display.sumSpeed.innerText = currentMaxSpeed;
-    app.display.sumAvg.innerText = dur > 0 ? (dist / dur).toFixed(1) : 0;
-    app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8);
+    const distKm = currentDistance / 1000;
+    const durationHours = diff / (1000 * 60 * 60); // ms in stunden
+    
+    // Durchschnitt berechnen (Schutz vor Division durch 0)
+    let avgSpeed = 0;
+    if(durationHours > 0 && distKm > 0) {
+        avgSpeed = (distKm / durationHours).toFixed(1);
+    }
+
+    // UI Updates
+    if(app.display.sumDist) app.display.sumDist.innerText = distKm.toFixed(2);
+    if(app.display.sumSpeed) app.display.sumSpeed.innerText = currentMaxSpeed;
+    if(app.display.sumAvg) app.display.sumAvg.innerText = avgSpeed;
+    if(app.display.sumTime) app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8);
 }
 
-function handleError(err) { console.warn(err); }
+// --- SPEICHERN & LADEN ---
 
 function saveDriveToStorage() {
     const diff = new Date() - startTime;
-    const dist = currentDistance / 1000;
-    const dur = diff / 3600000;
-    const drive = {
-        id: Date.now(), date: startTime.toISOString(), distance: parseFloat(dist.toFixed(2)),
-        maxSpeed: currentMaxSpeed, avgSpeed: dur > 0 ? (dist / dur).toFixed(1) : 0,
-        duration: new Date(diff).toISOString().substr(11, 8), pathData: path
+    const distKm = currentDistance / 1000;
+    const durationHours = diff / (1000 * 60 * 60);
+    
+    let avgSpeed = 0;
+    if(durationHours > 0) avgSpeed = (distKm / durationHours).toFixed(1);
+
+    const newDrive = {
+        id: Date.now(),
+        date: startTime.toISOString(),
+        distance: parseFloat(distKm.toFixed(2)),
+        maxSpeed: currentMaxSpeed,
+        avgSpeed: avgSpeed,
+        duration: new Date(diff).toISOString().substr(11, 8),
+        pathData: path // Pfad speichern
     };
-    let d = JSON.parse(localStorage.getItem('dh_drives_v2')) || [];
-    d.unshift(drive); localStorage.setItem('dh_drives_v2', JSON.stringify(d));
+
+    // Laden, Hinzufügen, Speichern
+    let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || [];
+    drives.unshift(newDrive);
+    localStorage.setItem('dh_drives_v2', JSON.stringify(drives));
+    
     renderGarage();
 }
 
 function renderGarage() {
-    let d = JSON.parse(localStorage.getItem('dh_drives_v2')) || [];
-    let t = 0; const list = document.getElementById('drives-list'); list.innerHTML = '';
-    d.forEach(x => {
-        t += x.distance;
-        const div = document.createElement('div'); div.className = 'drive-item';
-        div.innerHTML = `<div><h4>${new Date(x.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})} • ${x.duration}</h4><span>Avg ${x.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${x.distance.toFixed(1)} km</span><span>Max ${x.maxSpeed}</span></div>`;
-        div.onclick = () => openDetailView(x);
-        list.appendChild(div);
+    let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || [];
+    let totalKm = 0;
+    
+    const list = document.getElementById('drives-list');
+    if(!list) return;
+    
+    list.innerHTML = '';
+
+    drives.forEach(function(drive) {
+        totalKm += drive.distance;
+        
+        const dateObj = new Date(drive.date);
+        const dateStr = dateObj.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+        
+        const item = document.createElement('div');
+        item.className = 'drive-item';
+        // HTML für Listenelement
+        item.innerHTML = '<div>' +
+                         '<h4>' + dateStr + ' • ' + drive.duration + '</h4>' +
+                         '<span>Avg ' + drive.avgSpeed + ' km/h</span>' +
+                         '</div>' +
+                         '<div class="right-side">' +
+                         '<span class="dist">' + drive.distance.toFixed(1) + ' km</span>' +
+                         '<span>Max ' + drive.maxSpeed + '</span>' +
+                         '</div>';
+        
+        // Klick Event
+        item.addEventListener('click', function() { openDetailView(drive); });
+        list.appendChild(item);
     });
-    document.getElementById('total-km').innerText = t.toFixed(1);
-    document.getElementById('total-drives').innerText = d.length;
+
+    const elTotalKm = document.getElementById('total-km');
+    const elTotalDrives = document.getElementById('total-drives');
+    if(elTotalKm) elTotalKm.innerText = totalKm.toFixed(1);
+    if(elTotalDrives) elTotalDrives.innerText = drives.length;
 }
 
-function openDetailView(x) {
-    app.screens.detail.style.display = 'block';
-    document.getElementById('detail-dist').innerText = x.distance.toFixed(1);
-    document.getElementById('detail-max').innerText = x.maxSpeed;
-    document.getElementById('detail-avg').innerText = x.avgSpeed;
-    setTimeout(() => {
-        if(!detailMap) { detailMap = L.map('detail-map', { zoomControl: false }); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(detailMap); }
-        detailMap.eachLayer(l => { if (!!l.toGeoJSON) detailMap.removeLayer(l); });
-        if(x.pathData && x.pathData.length) {
-            const line = L.polyline(x.pathData, {color: '#4a90e2', weight: 5}).addTo(detailMap);
-            detailMap.fitBounds(line.getBounds(), {padding: [50, 50]});
+// --- DETAIL VIEW ---
+
+function openDetailView(drive) {
+    if(app.screens.detail) app.screens.detail.style.display = 'block';
+    
+    document.getElementById('detail-dist').innerText = drive.distance.toFixed(1);
+    document.getElementById('detail-max').innerText = drive.maxSpeed;
+    document.getElementById('detail-avg').innerText = drive.avgSpeed;
+
+    // Map Timeout (damit div sichtbar ist)
+    setTimeout(function() {
+        if(!detailMap) {
+            detailMap = L.map('detail-map', { zoomControl: false });
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(detailMap);
+        }
+        
+        // Alte Layer entfernen
+        detailMap.eachLayer(function(layer) {
+            if (!!layer.toGeoJSON) { detailMap.removeLayer(layer); }
+        });
+        
+        // Background Tile wieder hinzufügen (wird manchmal mitgelöscht)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(detailMap);
+
+        // Linie zeichnen
+        if(drive.pathData && drive.pathData.length > 0) {
+            const polyline = L.polyline(drive.pathData, {color: '#4a90e2', weight: 5}).addTo(detailMap);
+            detailMap.fitBounds(polyline.getBounds(), {padding: [50, 50]});
         }
     }, 100);
 }
