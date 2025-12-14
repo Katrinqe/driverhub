@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 3.1 Weather Watch</title>
+    <title>DriverHub 3.1.1</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -19,7 +19,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
     <style>
-        /* --- CSS (UNCHANGED FROM 3.0) --- */
+        /* --- CSS (STYLE) --- */
         :root {
             --bg-color: #000000;
             --accent-blue: #4a90e2;
@@ -40,6 +40,24 @@
             overscroll-behavior: none;
         }
 
+        /* VERSION TAG */
+        .version-tag { position: fixed; bottom: 2px; right: 5px; opacity: 0.3; font-size: 0.6rem; z-index: 9999; pointer-events: none; font-family: monospace; }
+
+        /* INTRO */
+        #splash-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000000; z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.8s ease;
+        }
+        .splash-logo { width: 150px; animation: introAnim 2.5s ease-out forwards; }
+        @keyframes introAnim {
+            0% { opacity: 0; transform: scale(0.8); filter: blur(10px); }
+            30% { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 0 30px var(--accent-blue)); }
+            100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 0px var(--accent-blue)); }
+        }
+
+        /* AUTH SCREEN */
         #auth-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: #000000; z-index: 5000;
@@ -54,26 +72,15 @@
         .btn-google { background: white; color: black; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .auth-switch { color: var(--accent-blue); font-size: 0.9rem; margin-top: 20px; cursor: pointer; }
 
-        #splash-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #000000; z-index: 9999;
-            display: flex; align-items: center; justify-content: center;
-            transition: opacity 0.8s ease;
-        }
-        .splash-logo { width: 150px; animation: introAnim 2.5s ease-out forwards; }
-        @keyframes introAnim {
-            0% { opacity: 0; transform: scale(0.8); filter: blur(10px); }
-            30% { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 0 30px var(--accent-blue)); }
-            100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 0px var(--accent-blue)); }
-        }
-
+        /* BG */
         .aurora-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; overflow: hidden; }
         .blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.25; animation: float 15s infinite ease-in-out; }
         .b1 { top: -10%; left: -10%; width: 80vw; height: 80vw; background: #1c3d6e; }
         .b2 { bottom: -10%; right: -10%; width: 80vw; height: 80vw; background: #2c5f9e; animation-delay: -5s; }
         @keyframes float { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(20px, -20px); } }
 
-        .status-pill { background: rgba(30,30,30,0.6); backdrop-filter: blur(15px); padding: 8px 18px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); align-items: center; gap: 12px; font-size: 0.9rem; font-weight: 600; margin-bottom: 30px; cursor: pointer; } /* Added cursor pointer */
+        /* UI */
+        .status-pill { background: rgba(30,30,30,0.6); backdrop-filter: blur(15px); padding: 8px 18px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); align-items: center; gap: 12px; font-size: 0.9rem; font-weight: 600; margin-bottom: 30px; cursor: pointer; }
         .loc-icon, #weather-icon { color: var(--accent-blue); }
         .divider { opacity: 0.3; }
         .logo-container { margin-bottom: 25px; position: relative; display: inline-block; transition: transform 0.2s; }
@@ -88,7 +95,8 @@
         .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; opacity: 0; transition: opacity 0.3s ease; }
         .screen.active { display: flex; opacity: 1; z-index: 10; }
         .screen-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; z-index: 2000; background: #000; animation: slideUp 0.4s ease forwards; }
-        
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
         .content-home-layout { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 80px 20px 20px 20px; text-align: center; }
         .content-scroll { flex: 1; overflow-y: auto; padding: 80px 20px 100px 20px; }
         .content-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
@@ -101,6 +109,7 @@
         .icon-btn-floating { position: absolute; top: 40px; left: 20px; width: 45px; height: 45px; background: var(--glass-bg); border-radius: 50%; border: none; color: white; z-index: 3000; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
         .btn-text { background: transparent; color: #555; font-size: 0.9rem; margin-top: 40px; width: 100%; border: none; }
 
+        /* COMMUNITY */
         .feed-container { width: 100%; max-width: 360px; margin: 0 auto; }
         .post-card { background: #1c1c1e; border-radius: 16px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
         .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
@@ -116,15 +125,16 @@
         .btn-send-post { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-green); border: none; color: white; font-size: 1rem; cursor: pointer; }
         .user-search-bar { width: 100%; padding: 12px; border-radius: 12px; background: #111; border: 1px solid #333; color: white; margin-bottom: 20px; outline: none; }
 
-        .stat-box { background: var(--glass-bg); backdrop-filter: blur(15px); padding: 15px 20px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.1); min-width: 100px; } .stat-box .value { font-size: 1.8rem; font-weight: 700; } .stat-box .label { font-size: 0.7rem; color: var(--text-grey); font-weight: 700; } .stat-box .unit { font-size: 0.8rem; color: var(--accent-blue); }
+        /* ALL MODULES */
+        #map, #detail-map { height: 100%; width: 100%; z-index: 1; filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
         .drive-overlay-top { position: absolute; top: 50px; left: 20px; right: 20px; z-index: 999; display: flex; justify-content: space-between; }
         .drive-overlay-bottom { position: absolute; bottom: 40px; left: 0; right: 0; z-index: 999; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px;}
+        .stat-box { background: var(--glass-bg); backdrop-filter: blur(15px); padding: 15px 20px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.1); min-width: 100px; } .stat-box .value { font-size: 1.8rem; font-weight: 700; } .stat-box .label { font-size: 0.7rem; color: var(--text-grey); font-weight: 700; } .stat-box .unit { font-size: 0.8rem; color: var(--accent-blue); }
         .drive-overlay-bottom .stat-row { background: var(--glass-bg); backdrop-filter: blur(15px); border-radius: 12px; padding: 10px 20px; display: inline-block; border: 1px solid rgba(255,255,255,0.1); font-weight: 600; }
         .stats-card { background: #1c1c1e; border-radius: 20px; padding: 30px; width: 100%; max-width: 320px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .stat-row-final { display: flex; justify-content: space-between; margin-bottom: 20px; text-align: left; } .stat-row-final .final-value { font-size: 1.8rem; font-weight: 700; color: white; display: block; }
         .drives-list { width: 100%; max-width: 340px; margin: 0 auto; } .drive-item { background: #111; border: 1px solid #222; padding: 20px; border-radius: 16px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; } .drive-item:active { background: #222; } .drive-item h4 { font-size: 1rem; color: white; margin-bottom: 5px; } .drive-item span { color: var(--text-grey); font-size: 0.85rem; } .drive-item .right-side { text-align: right; } .drive-item .dist { font-size: 1.2rem; color: var(--accent-blue); font-weight: 700; }
         .detail-stats-overlay { position: absolute; bottom: 40px; left: 20px; right: 20px; background: var(--glass-bg); backdrop-filter: blur(20px); border-radius: 20px; padding: 20px; z-index: 2500; border: 1px solid rgba(255,255,255,0.1); } .mini { margin-bottom: 0; text-align: center; } .mini > div { flex: 1; } .mini .val { font-size: 1.4rem; font-weight: 700; display: block; }
-        #map, #detail-map { height: 100%; width: 100%; z-index: 1; filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
         .perf-display { text-align: center; margin-bottom: 40px; } .perf-speed { font-size: 5rem; font-weight: 900; color: white; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 0 40px rgba(255, 59, 48, 0.4); } .perf-unit { font-size: 1.2rem; color: var(--text-grey); font-weight: 600; }
         .perf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 320px; margin-bottom: 30px; } .perf-box { background: #1c1c1e; padding: 15px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.05); } .perf-box.active { border-color: var(--accent-red); box-shadow: 0 0 15px rgba(255,59,48,0.2); } .perf-val { display: block; font-size: 1.5rem; font-weight: 700; color: white; margin-top: 5px; } .perf-lbl { font-size: 0.75rem; color: var(--text-grey); font-weight: 700; letter-spacing: 1px; }
         .g-force-container { width: 100%; max-width: 320px; margin-bottom: 40px; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px; display: flex; align-items: center; justify-content: space-between; } .g-val { font-weight: bold; font-size: 1.2rem; color: var(--accent-blue); }
@@ -136,6 +146,7 @@
         .btn-load-file { background: rgba(255,255,255,0.1); color: var(--accent-purple); border: 1px solid var(--accent-purple); padding: 10px 20px; border-radius: 20px; font-size: 0.9rem; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
         .playlist { width: 100%; text-align: left; } .track-row { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer; display: flex; align-items: center; justify-content: space-between; } .track-row.active { color: var(--accent-purple); } .track-row h5 { font-size: 1rem; margin-bottom: 2px; } .track-row p { font-size: 0.8rem; opacity: 0.6; }
 
+        /* NAV */
         .bottom-nav { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 98%; max-width: 400px; height: 70px; background: rgba(30, 30, 30, 0.8); backdrop-filter: blur(20px); border-radius: 35px; display: flex; justify-content: space-around; align-items: center; border: 1px solid rgba(255,255,255,0.1); z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { background: none; border: none; color: #666; font-size: 0.75rem; display: flex; flex-direction: column; align-items: center; gap: 5px; width: auto; padding: 0; min-width: 50px; }
         .nav-item i { font-size: 1.1rem; }
@@ -146,6 +157,8 @@
     </style>
 </head>
 <body>
+
+    <div class="version-tag">v3.1.1</div>
 
     <div id="auth-screen">
         <div class="auth-box">
@@ -370,6 +383,7 @@
         window.addEventListener('load', () => {
             setTimeout(() => { app.splash.style.opacity = '0'; setTimeout(() => app.splash.style.display = 'none', 800); }, 2200);
             
+            // Auth Check
             auth.onAuthStateChanged(user => {
                 if (user) {
                     currentUser = user;
@@ -382,14 +396,8 @@
 
             renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
             
-            // NEW WATCHER STRATEGY FOR WEATHER
-            if(navigator.geolocation) { 
-                navigator.geolocation.watchPosition(
-                    initWeatherLoc, 
-                    err => { console.warn(err); app.locText.innerText = "GPS Wait..."; }, 
-                    { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
-                );
-            }
+            // AUTO WEATHER REFRESH
+            manualRefreshWeather();
         });
 
         // --- AUTH ---
@@ -453,7 +461,7 @@
             app.copilotTrigger.addEventListener('click', () => {
                 if (isListening) { recognition.stop(); } else {
                     speak("Hey da. DriverHub CoPilot hier, wie kann ich helfen?");
-                    setTimeout(() => recognition.start(), 2000);
+                    setTimeout(() => recognition.start(), 2200);
                 }
             });
         }
@@ -519,11 +527,23 @@
         document.getElementById('btn-close-detail').addEventListener('click', () => { app.screens.detail.style.display = 'none'; if(detailMap) { detailMap.remove(); detailMap = null; } });
         document.getElementById('btn-reset-data').addEventListener('click', () => { if(confirm("Alles löschen?")) { localStorage.removeItem('dh_drives_v2'); renderGarage(); } });
 
-        // --- UTIL (MANUAL WEATHER TRIGGER) ---
+        // --- PERF ---
+        app.perf.btn.addEventListener('click', () => { if(perfState === 'idle' || perfState === 'finished') { perfState = 'armed'; app.perf.btn.innerText = "READY"; app.perf.btn.classList.add('armed'); app.perf.status.innerText = "Launch when ready!"; app.perf.val50.innerText = "--.- s"; app.perf.val100.innerText = "--.- s"; app.perf.box50.classList.remove('active'); app.perf.box100.classList.remove('active'); maxG = 0; result50 = null; result100 = null; if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') { DeviceMotionEvent.requestPermission().then(s => { if (s === 'granted') startPerfSensors(); }).catch(console.error); } else { startPerfSensors(); } if (navigator.geolocation) { perfWatchId = navigator.geolocation.watchPosition(updatePerfLogic, handleError, {enableHighAccuracy: true}); } } else { resetPerfMode(); } });
+        function startPerfSensors() { window.addEventListener('devicemotion', handleMotion); }
+        function handleMotion(event) { if(perfState !== 'running') return; const x = event.acceleration.x || 0; const y = event.acceleration.y || 0; const z = event.acceleration.z || 0; const totalAccel = Math.sqrt(x*x + y*y + z*z); const currentG = totalAccel / 9.81; if(currentG > maxG) { maxG = currentG; app.perf.gVal.innerText = maxG.toFixed(2) + " G"; } }
+        function updatePerfLogic(position) { const speedKmh = (position.coords.speed || 0) * 3.6; app.perf.speed.innerText = speedKmh.toFixed(0); if(perfState === 'armed') { if(speedKmh > 2.0) { perfState = 'running'; perfStartTime = Date.now(); app.perf.btn.innerText = "GO!"; app.perf.status.innerText = "Recording..."; } } else if(perfState === 'running') { const duration = (Date.now() - perfStartTime) / 1000; if(!result50 && speedKmh >= 50) { result50 = duration.toFixed(2); app.perf.val50.innerText = result50 + " s"; app.perf.box50.classList.add('active'); } if(!result100 && speedKmh >= 100) { result100 = duration.toFixed(2); app.perf.val100.innerText = result100 + " s"; app.perf.box100.classList.add('active'); perfState = 'finished'; app.perf.btn.innerText = "RESET"; app.perf.btn.classList.remove('armed'); app.perf.status.innerText = "Run Complete!"; speak("Hundert erreicht in " + result100.replace('.', ',') + " Sekunden."); savePerfRun(); } } }
+        function resetPerfMode() { perfState = 'idle'; app.perf.btn.innerText = "ARM"; app.perf.btn.classList.remove('armed'); app.perf.status.innerText = "Tap to arm, then launch."; if(perfWatchId) navigator.geolocation.clearWatch(perfWatchId); window.removeEventListener('devicemotion', handleMotion); app.perf.speed.innerText = "0"; }
+        function savePerfRun() { const run = { id: Date.now(), date: new Date().toISOString(), res50: result50, res100: result100, maxG: maxG.toFixed(2) }; let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; runs.unshift(run); localStorage.setItem('dh_perf_v1', JSON.stringify(runs)); renderPerfHistory(); }
+        function renderPerfHistory() { let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; const list = app.perf.list; list.innerHTML = ''; runs.forEach(run => { const dateStr = new Date(run.date).toLocaleDateString('de-DE'); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h4>${dateStr}</h4><span>Max ${run.maxG} G</span></div><div class="right-side"><span style="color:#ff3b30; font-weight:bold;">0-100: ${run.res100}s</span><br><span style="font-size:0.75rem">0-50: ${run.res50}s</span></div>`; list.appendChild(item); }); }
+
+        // --- WEATHER UTIL (MANUAL REFRESH) ---
         function manualRefreshWeather() { 
             app.locText.innerText = "Refreshing...";
             if(navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(initWeatherLoc, err => { alert("Please enable GPS"); }, {enableHighAccuracy:false, timeout:10000});
+                navigator.geolocation.getCurrentPosition(initWeatherLoc, err => { 
+                    console.log("Auto-Refresh: GPS failed (expected in background)", err);
+                    // Don't show alert on auto-refresh, just let it fail silently
+                }, {enableHighAccuracy:false, timeout:5000});
             }
         }
         function updateTimeGreeting() { const h = new Date().getHours(); let txt = "WELCOME"; if (h >= 5 && h < 12) txt = "GOOD MORNING"; else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON"; else if (h >= 18 && h < 22) txt = "GOOD EVENING"; else txt = "NIGHT CRUISE"; app.greet.innerText = txt; }
