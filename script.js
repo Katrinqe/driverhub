@@ -123,7 +123,7 @@ window.addEventListener('load', () => {
     // RECENTER BUTTON LOGIC
     document.getElementById('btn-recenter').addEventListener('click', () => {
         isMapFollowing = true;
-        document.getElementById('btn-recenter').style.display = 'none'; // Button ausblenden
+        document.getElementById('btn-recenter').style.display = 'none'; 
         if(marker) {
             map.setView(marker.getLatLng(), 18);
         }
