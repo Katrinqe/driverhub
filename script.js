@@ -186,24 +186,24 @@ function initUserProfile() {
     });
 }
 
-// --- 3D GARAGE LOGIC (MIT ECHTEM MODELL) ---
+// --- 3D GARAGE LOGIC (AUTO-SCALER INTEGRATED) ---
 function init3DGarage() {
     const container = document.getElementById('garage-canvas-container');
     if (!container) return;
 
-    // Scene
+    // Scene setup
     scene3D = new THREE.Scene();
     scene3D.background = new THREE.Color(0x111111);
     
-    // Camera
+    // Camera setup
     camera3D = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
     camera3D.position.set(4, 2, 4);
     camera3D.lookAt(0, 0.5, 0);
 
-    // Renderer
+    // Renderer setup
     renderer3D = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer3D.setSize(container.clientWidth, container.clientHeight);
-    renderer3D.outputEncoding = THREE.sRGBEncoding; // Wichtig für Farben
+    renderer3D.outputEncoding = THREE.sRGBEncoding;
     container.appendChild(renderer3D.domElement);
 
     // Lights
@@ -217,41 +217,35 @@ function init3DGarage() {
     const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
     scene3D.add(gridHelper);
 
-    // --- MODELL LADEN ---
-   // --- MODELL LADEN (NEU: MIT AUTO-SCALER) ---
+    // --- LOAD MODEL ---
     const loader = new THREE.GLTFLoader();
-    
-    // Deine URL (Fest eingebaut)
     const modelUrl = 'https://firebasestorage.googleapis.com/v0/b/driverhub-5a567.firebasestorage.app/o/models%2Fhatchback-sports.glb?alt=media&token=f2e4fb7f-6e1b-43d1-8cc3-6b8a7d57be3e';
 
     loader.load(modelUrl, function (gltf) {
         carMesh = gltf.scene;
         
-        // 1. Box berechnen (Wie groß ist das Auto wirklich?)
+        // 1. Box berechnen
         const box = new THREE.Box3().setFromObject(carMesh);
         const size = box.getSize(new THREE.Vector3());
         
-        // 2. Skalierungs-Faktor berechnen
-        // Wir wollen, dass das Auto maximal 3.5 Einheiten groß ist
+        // 2. Skalieren (Auto soll ca. 3.5 Einheiten groß sein)
         const maxDim = Math.max(size.x, size.y, size.z);
         const scaleFactor = 3.5 / maxDim;
-        
         carMesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
         
-        // 3. Zentrieren und auf den Boden setzen
-        box.setFromObject(carMesh); // Box neu berechnen nach Skalierung
+        // 3. Zentrieren und auf Boden setzen
+        box.setFromObject(carMesh); 
         const center = box.getCenter(new THREE.Vector3());
         
         carMesh.position.x = carMesh.position.x - center.x;
         carMesh.position.z = carMesh.position.z - center.z;
-        carMesh.position.y = -box.min.y; // Reifen exakt auf den Boden
+        carMesh.position.y = -box.min.y;
 
         // 4. Schatten & Farbe aktivieren
         carMesh.traverse((node) => {
             if (node.isMesh) {
                 node.castShadow = true;
                 node.receiveShadow = true;
-                // Alles färben, außer es heißt "Glass" oder "Window"
                 if(!node.name.toLowerCase().includes('glass') && !node.name.toLowerCase().includes('window')) {
                      node.name = "Body";
                 }
@@ -259,37 +253,9 @@ function init3DGarage() {
         });
 
         scene3D.add(carMesh);
-        console.log("Auto erfolgreich geladen und skaliert!");
+        console.log("Auto erfolgreich geladen!");
 
-        // 5. Gespeicherte Farbe laden (falls vorhanden)
-        if(currentUser) {
-            db_fire.collection('users').doc(currentUser.uid).get().then(doc => {
-                if(doc.exists && doc.data().carColor) {
-                    updateCarColor(doc.data().carColor);
-                }
-            });
-        }
-
-    }, undefined, function (error) {
-        console.error('Fehler beim Laden:', error);
-    });
-        
-        // Auto skalieren & positionieren
-        carMesh.scale.set(1, 1, 1); 
-        carMesh.position.y = 0; 
-        
-        // Schatten und Farbe aktivieren
-        carMesh.traverse((node) => {
-            if (node.isMesh) {
-                node.castShadow = true;
-                node.receiveShadow = true;
-                node.name = "Body"; // Tag für Color Picker
-            }
-        });
-
-        scene3D.add(carMesh);
-        
-        // Wenn User Farbe hat, laden
+        // 5. Farbe laden
         if(currentUser) {
             db_fire.collection('users').doc(currentUser.uid).get().then(doc => {
                 if(doc.exists && doc.data().carColor) {
@@ -300,6 +266,9 @@ function init3DGarage() {
 
     }, undefined, function (error) {
         console.error('Fehler beim Laden des Autos:', error);
+        // Falls Fehler (z.B. CORS), zeige Notfall-Würfel
+        // const geo = new THREE.BoxGeometry(1,1,1); const mat = new THREE.MeshBasicMaterial({color:0xff0000});
+        // carMesh = new THREE.Mesh(geo, mat); scene3D.add(carMesh);
     });
 
     // Animation Loop
@@ -340,11 +309,10 @@ function updateCarColor(hex) {
     if(!carMesh) return;
     carMesh.traverse((child) => {
         if (child.isMesh) {
-            // Einfache Färbung aller Teile (kann verfeinert werden)
             if(child.name === "Body" || child.name.includes("Paint") || child.name.includes("Body")) {
                 child.material.color.set(hex);
             } else {
-                // Fallback: Material klonen und färben
+                // Fallback
                 child.material = child.material.clone();
                 child.material.color.set(hex);
             }
@@ -737,18 +705,7 @@ function stopTracking() {
 
 function handleError(err) { console.warn(err); }
 function saveDriveToStorage() { const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; const newDrive = { id: Date.now(), date: startTime.toISOString(), distance: parseFloat(distKm.toFixed(2)), maxSpeed: currentMaxSpeed, avgSpeed: avgSpeed, duration: new Date(diff).toISOString().substr(11, 8), pathData: path }; let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; drives.unshift(newDrive); localStorage.setItem('dh_drives_v2', JSON.stringify(drives)); renderGarage(); }
-function renderGarage() { let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; let totalKm = 0; const list = document.getElementById('drives-list'); list.innerHTML = ''; drives.forEach(drive => { totalKm += drive.distance; const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h4>${dateStr} • ${drive.duration}</h4><span>Avg ${drive.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${drive.distance.toFixed(1)} km</span><span>Max ${drive.maxSpeed}</span></div>`; item.addEventListener('click', () => openDetailView(drive)); list.appendChild(item); }); document.getElementById('total-km').innerText = totalKm.toFixed(1); document.getElementById('total-drives').innerText = drives.length; }
-function openDetailView(drive) { app.screens.detail.style.display = 'block'; document.getElementById('detail-dist').innerText = drive.distance.toFixed(1); document.getElementById('detail-max').innerText = drive.maxSpeed; document.getElementById('detail-avg').innerText = drive.avgSpeed; setTimeout(() => { if(!detailMap) { detailMap = L.map('detail-map', { zoomControl: false }); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(detailMap); } detailMap.eachLayer((layer) => { if (!!layer.toGeoJSON) { detailMap.removeLayer(layer); } }); if(drive.pathData && drive.pathData.length > 0) { const polyline = L.polyline(drive.pathData, {color: '#4a90e2', weight: 5}).addTo(detailMap); detailMap.fitBounds(polyline.getBounds(), {padding: [50, 50]}); } }, 100); }
-document.getElementById('btn-close-detail').addEventListener('click', () => { app.screens.detail.style.display = 'none'; if(detailMap) { detailMap.remove(); detailMap = null; } });
-document.getElementById('btn-reset-data').addEventListener('click', () => { if(confirm("Alles löschen?")) { localStorage.removeItem('dh_drives_v2'); renderGarage(); } });
-
-app.perf.btn.addEventListener('click', () => { if(perfState === 'idle' || perfState === 'finished') { perfState = 'armed'; app.perf.btn.innerText = "READY"; app.perf.btn.classList.add('armed'); app.perf.status.innerText = "Launch when ready!"; app.perf.val50.innerText = "--.- s"; app.perf.val100.innerText = "--.- s"; app.perf.box50.classList.remove('active'); app.perf.box100.classList.remove('active'); maxG = 0; result50 = null; result100 = null; if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') { DeviceMotionEvent.requestPermission().then(s => { if (s === 'granted') startPerfSensors(); }).catch(console.error); } else { startPerfSensors(); } if (navigator.geolocation) { perfWatchId = navigator.geolocation.watchPosition(updatePerfLogic, handleError, {enableHighAccuracy: true}); } } else { resetPerfMode(); } });
-function startPerfSensors() { window.addEventListener('devicemotion', handleMotion); }
-function handleMotion(event) { if(perfState !== 'running') return; const x = event.acceleration.x || 0; const y = event.acceleration.y || 0; const z = event.acceleration.z || 0; const totalAccel = Math.sqrt(x*x + y*y + z*z); const currentG = totalAccel / 9.81; if(currentG > maxG) { maxG = currentG; app.perf.gVal.innerText = maxG.toFixed(2) + " G"; } }
-function updatePerfLogic(position) { const speedKmh = (position.coords.speed || 0) * 3.6; app.perf.speed.innerText = speedKmh.toFixed(0); if(perfState === 'armed') { if(speedKmh > 2.0) { perfState = 'running'; perfStartTime = Date.now(); app.perf.btn.innerText = "GO!"; app.perf.status.innerText = "Recording..."; } } else if(perfState === 'running') { const duration = (Date.now() - perfStartTime) / 1000; if(!result50 && speedKmh >= 50) { result50 = duration.toFixed(2); app.perf.val50.innerText = result50 + " s"; app.perf.box50.classList.add('active'); } if(!result100 && speedKmh >= 100) { result100 = duration.toFixed(2); app.perf.val100.innerText = result100 + " s"; app.perf.box100.classList.add('active'); perfState = 'finished'; app.perf.btn.innerText = "RESET"; app.perf.btn.classList.remove('armed'); app.perf.status.innerText = "Run Complete!"; speak("Hundert erreicht in " + result100.replace('.', ',') + " Sekunden."); savePerfRun(); } } }
-function resetPerfMode() { perfState = 'idle'; app.perf.btn.innerText = "ARM"; app.perf.btn.classList.remove('armed'); app.perf.status.innerText = "Tap to arm, then launch."; if(perfWatchId) navigator.geolocation.clearWatch(perfWatchId); window.removeEventListener('devicemotion', handleMotion); app.perf.speed.innerText = "0"; }
-function savePerfRun() { const run = { id: Date.now(), date: new Date().toISOString(), res50: result50, res100: result100, maxG: maxG.toFixed(2) }; let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; runs.unshift(run); localStorage.setItem('dh_perf_v1', JSON.stringify(runs)); renderPerfHistory(); }
-function renderPerfHistory() { let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; const list = app.perf.list; list.innerHTML = ''; runs.forEach(run => { const dateStr = new Date(run.date).toLocaleDateString('de-DE'); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h5>${dateStr}</h5><span>Max ${run.maxG} G</span></div><div class="right-side"><span style="color:#ff3b30; font-weight:bold;">0-100: ${run.res100}s</span><br><span style="font-size:0.75rem">0-50: ${run.res50}s</span></div>`; list.appendChild(item); }); }
+function renderGarage() { let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; let totalKm = 0; const list = document.getElementById('drives-list'); list.innerHTML = ''; drives.forEach(drive => { totalKm += drive.distance; const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h4>${dateStr}</h4><span>Max ${run.maxG} G</span></div><div class="right-side"><span style="color:#ff3b30; font-weight:bold;">0-100: ${run.res100}s</span><br><span style="font-size:0.75rem">0-50: ${run.res50}s</span></div>`; list.appendChild(item); }); }
 
 function manualRefreshWeather() { 
     app.locText.innerText = "Locating...";
@@ -826,4 +783,3 @@ document.querySelectorAll('.nav-item').forEach(btn => {
         if(app.screens[targetId.split('-')[0]]) { app.screens[targetId.split('-')[0]].classList.add('active'); }
     });
 });
-
