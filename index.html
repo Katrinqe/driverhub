@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 1.7.2 MP3 Fix</title>
+    <title>DriverHub 1.8 Final</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -332,7 +332,19 @@
         let recognition = null;
         let isListening = false;
         let synth = window.speechSynthesis;
-        let preferredVoice = null;
+        let preferredVoice = null; 
+
+        // --- DATABASE FOR MUSIC ---
+        let db;
+        const request = indexedDB.open("DriverHubDB", 1);
+        request.onupgradeneeded = function(event) {
+            db = event.target.result;
+            db.createObjectStore("music", { keyPath: "id" });
+        };
+        request.onsuccess = function(event) {
+            db = event.target.result;
+            loadMusicFromDB();
+        };
 
         // --- DOM ---
         const app = {
@@ -391,17 +403,30 @@
         window.addEventListener('load', () => {
             setTimeout(() => { app.splash.style.opacity = '0'; setTimeout(() => app.splash.style.display = 'none', 800); }, 2200);
             renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot();
-            // Load Voices
-            if(synth) { synth.onvoiceschanged = loadVoices; loadVoices(); }
             if(navigator.geolocation) { navigator.geolocation.getCurrentPosition(initWeatherLoc, err => console.log(err)); }
         });
 
-        // --- VOICE ENGINE ---
-        function loadVoices() {
-            const voices = synth.getVoices();
-            // Prefer Google, Siri or Premium voices
-            preferredVoice = voices.find(v => v.lang.includes('de') && (v.name.includes('Google') || v.name.includes('Premium') || v.name.includes('Siri')));
-            if(!preferredVoice) preferredVoice = voices.find(v => v.lang.includes('de'));
+        // --- DATABASE LOGIC ---
+        function saveTrackToDB(track) {
+            const transaction = db.transaction(["music"], "readwrite");
+            const store = transaction.objectStore("music");
+            store.add(track);
+        }
+
+        function loadMusicFromDB() {
+            const transaction = db.transaction(["music"], "readonly");
+            const store = transaction.objectStore("music");
+            const req = store.getAll();
+            req.onsuccess = function() {
+                if(req.result && req.result.length > 0) {
+                    req.result.forEach(t => playlist.push(t));
+                    // Sort descending by id (newest first)
+                    playlist.sort((a,b) => b.id - a.id);
+                    renderPlaylist();
+                    // Load first track ready
+                    if(playlist.length > 0) loadTrack(0, false);
+                }
+            };
         }
 
         // --- CO-PILOT LOGIC ---
@@ -423,8 +448,8 @@
 
             app.copilotTrigger.addEventListener('click', () => {
                 if (isListening) { recognition.stop(); } else {
-                    speak("Co Pilot bereit.");
-                    setTimeout(() => recognition.start(), 800);
+                    speak("Hey da. DriverHub CoPilot hier, wie kann ich helfen?");
+                    setTimeout(() => recognition.start(), 2000); // Wait for greeting
                 }
             });
         }
@@ -456,13 +481,12 @@
         function speak(text) {
             if (!synth) return;
             const utter = new SpeechSynthesisUtterance(text);
-            if(preferredVoice) utter.voice = preferredVoice;
-            utter.rate = 0.9; // Etwas langsamer = cooler
-            utter.pitch = 0.9; // Etwas tiefer
+            utter.rate = 0.9; 
+            utter.pitch = 0.9;
             synth.speak(utter);
         }
 
-        // --- EXISTING FUNCTIONS (UNCHANGED) ---
+        // --- EXISTING FUNCTIONS ---
         function updateTimeGreeting() {
             const h = new Date().getHours(); let txt = "WELCOME";
             if (h >= 5 && h < 12) txt = "GOOD MORNING"; else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON"; else if (h >= 18 && h < 22) txt = "GOOD EVENING"; else txt = "NIGHT CRUISE";
@@ -488,7 +512,7 @@
             });
         });
 
-        // --- MUSIC LOGIC (FILE READER FOR IOS FIX) ---
+        // --- MUSIC LOGIC (PERSISTENT DB) ---
         function initMusicPlayer() {
             app.music.playBtn.addEventListener('click', togglePlay);
             app.music.nextBtn.addEventListener('click', nextTrack);
@@ -499,15 +523,23 @@
                 const file = e.target.files[0];
                 if (!file) return;
                 
-                // FILE READER LOGIC (iOS FIX)
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const audioData = e.target.result; // Base64 Data URI
-                    playlist.unshift({ title: file.name.replace(/\.[^/.]+$/, ""), artist: "Local File", src: audioData });
+                    const audioData = e.target.result;
+                    const newTrack = {
+                        id: Date.now(),
+                        title: file.name.replace(/\.[^/.]+$/, ""),
+                        artist: "Local File",
+                        src: audioData
+                    };
+                    
+                    saveTrackToDB(newTrack); // SAVE TO DB
+                    
+                    playlist.unshift(newTrack);
                     renderPlaylist();
                     loadTrack(0, true);
                 };
-                reader.readAsDataURL(file); // This converts file to data string
+                reader.readAsDataURL(file);
             });
             audioPlayer.addEventListener('error', (e) => { console.error("Audio Error", e); isPlaying = false; updatePlayBtn(); });
         }
@@ -525,6 +557,7 @@
         }
 
         function loadTrack(index, autoPlay = true) {
+            if(index < 0 || index >= playlist.length) return;
             currentTrackIdx = index;
             const track = playlist[index];
             audioPlayer.src = track.src;
