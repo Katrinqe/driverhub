@@ -21,7 +21,10 @@ let result50 = null, result100 = null, maxG = 0;
 const playlist = []; let currentTrackIdx = 0; const audioPlayer = new Audio(); let isPlaying = false;
 let recognition = null; let isListening = false; let synth = window.speechSynthesis;
 let currentUser = null; 
-let currentUserName = ""; // NEU
+let currentUserName = ""; 
+
+// MAP LOGIC VARS
+let isMapFollowing = true; 
 
 // Social Vars
 let viewingUserUid = null; 
@@ -116,6 +119,15 @@ window.addEventListener('load', () => {
 
     renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
     setInterval(manualRefreshWeather, 60000); 
+    
+    // RECENTER BUTTON LOGIC
+    document.getElementById('btn-recenter').addEventListener('click', () => {
+        isMapFollowing = true;
+        document.getElementById('btn-recenter').style.display = 'none'; // Button ausblenden
+        if(marker) {
+            map.setView(marker.getLatLng(), 18);
+        }
+    });
 });
 
 // --- 5. SOCIAL LOGIC ---
@@ -171,13 +183,10 @@ function initUserProfile() {
             db_fire.collection('users').doc(currentUser.uid).set(baseData, {merge:true});
         } else {
             const data = doc.data();
-            
-            // NEU: Name laden
             if(data.username) {
                 currentUserName = data.username;
                 updateTimeGreeting();
             }
-
             if(data.photoURL) {
                 app.comm.profileIcon.style.backgroundImage = `url('${data.photoURL}')`;
                 app.comm.profileIcon.style.backgroundSize = 'cover';
@@ -390,18 +399,43 @@ document.getElementById('btn-stop').addEventListener('click', () => { stopTracki
 document.getElementById('btn-save-drive').addEventListener('click', () => { saveDriveToStorage(); app.screens.summary.style.display = 'none'; app.nav.style.display = 'flex'; document.querySelectorAll('.nav-item')[4].click(); });
 
 function startTracking() { 
-    isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0; 
+    isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0; isMapFollowing = true; 
+    document.getElementById('btn-recenter').style.display = 'none'; // Hide button initially
+    
     if (!map) { 
         map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map); 
         marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map); 
+        
+        // DETECT MANUAL DRAG
+        map.on('dragstart', () => {
+            if(isDriving) {
+                isMapFollowing = false;
+                document.getElementById('btn-recenter').style.display = 'flex'; // Show button
+            }
+        });
     } 
     setTimeout(() => { map.invalidateSize(); }, 200); 
     intervalId = setInterval(updateTimer, 1000); 
     if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
 }
 
-function updatePosition(position) { const lat = position.coords.latitude; const lng = position.coords.longitude; const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0); if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh); app.display.speed.innerText = speedKmh; const newLatLng = [lat, lng]; marker.setLatLng(newLatLng); map.setView(newLatLng, 18); if (path.length > 0) { currentDistance += map.distance(path[path.length - 1], newLatLng); app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; } path.push(newLatLng); L.polyline(path, {color: '#4a90e2', weight: 5}).addTo(map); }
+function updatePosition(position) { 
+    const lat = position.coords.latitude; const lng = position.coords.longitude; 
+    const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0); 
+    if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh); 
+    app.display.speed.innerText = speedKmh; 
+    const newLatLng = [lat, lng]; 
+    marker.setLatLng(newLatLng); 
+    
+    if(isMapFollowing) {
+        map.setView(newLatLng, 18); 
+    }
+
+    if (path.length > 0) { currentDistance += map.distance(path[path.length - 1], newLatLng); app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; } 
+    path.push(newLatLng); L.polyline(path, {color: '#4a90e2', weight: 5}).addTo(map); 
+}
+
 function updateTimer() { const diff = new Date() - startTime; app.display.time.innerText = new Date(diff).toISOString().substr(11, 8); }
 function stopTracking() { isDriving = false; clearInterval(intervalId); if(watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; } const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; app.display.sumDist.innerText = distKm.toFixed(2); app.display.sumSpeed.innerText = currentMaxSpeed; app.display.sumAvg.innerText = avgSpeed; app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); }
 function handleError(err) { console.warn(err); }
@@ -436,7 +470,6 @@ function renderPerfHistory() { let runs = JSON.parse(localStorage.getItem('dh_pe
 
 function manualRefreshWeather() { app.locText.innerText = "Locating..."; app.tempText.innerText = "--°"; if(navigator.geolocation) { navigator.geolocation.getCurrentPosition(initWeatherLoc, err => { console.log("GPS Fehler", err); app.locText.innerText = "No GPS"; }, {enableHighAccuracy:false, timeout:10000}); } else { app.locText.innerText = "Not Supported"; } }
 
-// HIER: BEGRÜSSUNG OPTIMIERT (NAME IN NEUER CSS KLASSE)
 function updateTimeGreeting() { 
     const h = new Date().getHours(); 
     let txt = "WELCOME"; 
@@ -445,7 +478,6 @@ function updateTimeGreeting() {
     else if (h >= 18 && h < 22) txt = "GOOD EVENING"; 
     else txt = "NIGHT CRUISE"; 
     
-    // Wir benutzen jetzt die neue CSS Klasse statt Inline-Styles
     if (currentUserName) {
         app.greet.innerHTML = `${txt}<span class="greeting-username">${escapeHtml(currentUserName).toUpperCase()}</span>`;
     } else {
