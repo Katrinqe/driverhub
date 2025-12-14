@@ -67,14 +67,29 @@ body {
 .logo-container.listening .dh-logo { filter: drop-shadow(0 0 30px rgba(255, 59, 48, 0.8)); animation: pulse-listen 1.5s infinite; }
 @keyframes pulse-listen { 0% { filter: drop-shadow(0 0 20px rgba(255, 59, 48, 0.6)); transform: scale(1); } 50% { filter: drop-shadow(0 0 50px rgba(255, 59, 48, 1)); transform: scale(1.02); } 100% { filter: drop-shadow(0 0 20px rgba(255, 59, 48, 0.6)); transform: scale(1); } }
 
-/* HIER: h1 repariert (Gradient entfernt, Farbe Weiß) */
+/* HIER NEUES STYLING FÜR DIE BEGRÜSSUNG */
 h1 { 
-    font-size: 2.2rem; 
-    font-weight: 800; 
+    font-size: 2.6rem; /* Größer */
+    font-weight: 900; /* Fetter */
     letter-spacing: 1px; 
-    margin-bottom: 5px; 
-    color: #ffffff; 
+    margin-bottom: 2px; 
+    color: white; /* Fallback für alte Browser */
+    background: linear-gradient(to right bottom, #ffffff, #a0a0a0); /* Heller Gradient */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
     text-transform: uppercase; 
+    line-height: 1;
+}
+
+/* DIE NEUE KLASSE FÜR DEN NAMEN */
+.greeting-username {
+    display: block;
+    font-size: 1.1rem;
+    color: var(--accent-blue); /* BLAU statt Grau */
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    margin-bottom: 20px; /* Abstand zum Slogan */
+    text-transform: uppercase;
 }
 
 .slogan { color: var(--text-grey); font-size: 0.9rem; margin-bottom: 20px; letter-spacing: 1px; text-transform: uppercase; }
@@ -157,7 +172,7 @@ button { font-family: var(--font-stack); cursor: pointer; }
 .no-friends-box { text-align: center; padding: 40px 20px; color: #666; display: none; }
 .no-friends-box i { font-size: 3rem; margin-bottom: 15px; opacity: 0.5; }
 
-/* CORE MODULES (FILTER WEG) */
+/* CORE MODULES */
 #map, #detail-map { height: 100%; width: 100%; z-index: 1; }
 .drive-overlay-top { position: absolute; top: 50px; left: 20px; right: 20px; z-index: 999; display: flex; justify-content: space-between; }
 .drive-overlay-bottom { position: absolute; bottom: 40px; left: 0; right: 0; z-index: 999; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px;}
