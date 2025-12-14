@@ -27,6 +27,9 @@ let viewingUserUid = null;
 let activeChatId = null;
 let feedUnsubscribe = null;
 
+// 3D Garage Vars
+let scene3D, camera3D, renderer3D, carMesh, garageAnimId;
+
 // --- 3. DOM ELEMENTS ---
 const app = {
     splash: document.getElementById('splash-screen'),
@@ -108,6 +111,8 @@ window.addEventListener('load', () => {
             app.authScreen.classList.add('hidden');
             initUserProfile(); 
             loadFriendsFeed(); 
+            // Init 3D Scene hidden initially
+            init3DGarage();
         } else {
             app.authScreen.classList.remove('hidden');
         }
@@ -120,12 +125,7 @@ window.addEventListener('load', () => {
 // --- 5. SOCIAL LOGIC ---
 function escapeHtml(text) {
     if (!text) return "";
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
 window.refreshSocial = function() {
@@ -170,7 +170,8 @@ function initUserProfile() {
                 followers: 0,
                 following: 0,
                 searchKey: currentUser.email.split('@')[0].toLowerCase(), 
-                joined: new Date()
+                joined: new Date(),
+                carColor: "#ff0000" // Default color
             };
             db_fire.collection('users').doc(currentUser.uid).set(baseData, {merge:true});
         } else {
@@ -184,6 +185,111 @@ function initUserProfile() {
         }
     });
 }
+
+// --- 3D GARAGE LOGIC (NEU) ---
+function init3DGarage() {
+    const container = document.getElementById('garage-canvas-container');
+    if (!container) return;
+
+    // Scene
+    scene3D = new THREE.Scene();
+    scene3D.background = new THREE.Color(0x111111);
+    scene3D.fog = new THREE.Fog(0x111111, 5, 20);
+
+    // Camera
+    camera3D = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
+    camera3D.position.set(3, 2, 4);
+    camera3D.lookAt(0, 0, 0);
+
+    // Renderer
+    renderer3D = new THREE.WebGLRenderer({ antialias: true });
+    renderer3D.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer3D.domElement);
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene3D.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(5, 10, 7);
+    scene3D.add(dirLight);
+
+    // Grid Floor
+    const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
+    scene3D.add(gridHelper);
+
+    // BUILD THE "CYBER CAR" (Procedural)
+    carMesh = new THREE.Group();
+
+    // Body
+    const bodyGeo = new THREE.BoxGeometry(2, 0.5, 4);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff0000, metalness: 0.7, roughness: 0.2 });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = 0.5;
+    body.name = "Body"; // Tag for coloring
+    carMesh.add(body);
+
+    // Cabin
+    const cabinGeo = new THREE.BoxGeometry(1.4, 0.4, 2);
+    const cabinMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.9, roughness: 0.1 });
+    const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+    cabin.position.y = 0.95;
+    carMesh.add(cabin);
+
+    // Wheels
+    const wheelGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+    
+    const w1 = new THREE.Mesh(wheelGeo, wheelMat); w1.rotation.z = Math.PI/2; w1.position.set(1.1, 0.4, 1.2); carMesh.add(w1);
+    const w2 = new THREE.Mesh(wheelGeo, wheelMat); w2.rotation.z = Math.PI/2; w2.position.set(-1.1, 0.4, 1.2); carMesh.add(w2);
+    const w3 = new THREE.Mesh(wheelGeo, wheelMat); w3.rotation.z = Math.PI/2; w3.position.set(1.1, 0.4, -1.2); carMesh.add(w3);
+    const w4 = new THREE.Mesh(wheelGeo, wheelMat); w4.rotation.z = Math.PI/2; w4.position.set(-1.1, 0.4, -1.2); carMesh.add(w4);
+
+    scene3D.add(carMesh);
+
+    // Animation Loop
+    const animate = function () {
+        requestAnimationFrame(animate);
+        if(carMesh) carMesh.rotation.y += 0.005; // Slow rotation
+        renderer3D.render(scene3D, camera3D);
+    };
+    animate();
+
+    // Handle Resize
+    window.addEventListener('resize', () => {
+        if(container && camera3D && renderer3D) {
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            renderer3D.setSize(width, height);
+            camera3D.aspect = width / height;
+            camera3D.updateProjectionMatrix();
+        }
+    });
+
+    // Save Logic
+    document.getElementById('btn-save-car').addEventListener('click', () => {
+        const color = document.getElementById('car-color-picker').value;
+        if(currentUser) {
+            db_fire.collection('users').doc(currentUser.uid).update({ carColor: color })
+            .then(() => alert("Lackierung gespeichert!"));
+        }
+    });
+
+    // Color Picker Logic (Live Preview)
+    document.getElementById('car-color-picker').addEventListener('input', (e) => {
+        updateCarColor(e.target.value);
+    });
+}
+
+function updateCarColor(hex) {
+    if(!carMesh) return;
+    carMesh.children.forEach(child => {
+        if(child.name === "Body") {
+            child.material.color.set(hex);
+        }
+    });
+}
+
+// --- END 3D LOGIC ---
 
 function loadChatInbox() {
     const list = document.getElementById('chats-list-container');
@@ -354,6 +460,8 @@ function openProfile(uid) {
     const btnFollow = document.getElementById('btn-follow-action');
     const btnMsg = document.getElementById('btn-msg-action');
     const postList = document.getElementById('profile-posts-list');
+    
+    const garageControls = document.getElementById('garage-controls');
 
     pName.innerText = "Lade..."; pBio.innerText = "..."; pImg.style.backgroundImage = "none"; postList.innerHTML = "";
     
@@ -365,6 +473,13 @@ function openProfile(uid) {
         if(data.photoURL) pImg.style.backgroundImage = `url('${data.photoURL}')`;
         document.getElementById('p-followers').innerText = data.followers || 0;
         document.getElementById('p-following').innerText = data.following || 0;
+
+        // 3D Car Update
+        if(data.carColor) {
+            updateCarColor(data.carColor);
+            // Wenn es mein Profil ist, Picker updaten
+            if(isMe) document.getElementById('car-color-picker').value = data.carColor;
+        }
     });
 
     db_fire.collection('posts').where('uid', '==', uid).orderBy('timestamp', 'desc').limit(10).get().then(snap => {
@@ -375,10 +490,12 @@ function openProfile(uid) {
         btnEditImg.style.display = 'flex'; btnEditBio.style.display = 'inline-block';
         btnFollow.style.display = 'none'; btnMsg.style.display = 'none';
         document.getElementById('profile-post-section').style.display = 'block';
+        garageControls.style.display = 'flex'; // Show controls only for me
     } else {
         btnEditImg.style.display = 'none'; btnEditBio.style.display = 'none';
         btnFollow.style.display = 'inline-block'; btnMsg.style.display = 'inline-block';
         document.getElementById('profile-post-section').style.display = 'none';
+        garageControls.style.display = 'none'; // Hide controls for others
         checkIfFollowing(uid);
     }
 }
