@@ -1,8 +1,8 @@
 // --- STATE VARIABLES ---
 let map, marker, watchId, intervalId;
-let detailMap, detailPolyline; // Für Detail View
+let detailMap;
 let startTime;
-let path = []; // Speichert [lat, lng]
+let path = [];
 let currentDistance = 0;
 let currentMaxSpeed = 0;
 let isDriving = false;
@@ -11,10 +11,13 @@ let isDriving = false;
 const app = {
     splash: document.getElementById('splash-screen'),
     nav: document.getElementById('main-nav'),
-    welcomeMsg: document.getElementById('welcome-msg'),
-    weatherWidget: document.getElementById('weather-widget'),
-    weatherTemp: document.getElementById('weather-temp'),
+    
+    // NEW WIDGET ELEMENTS
+    greet: document.getElementById('greeting-text'),
+    locText: document.getElementById('loc-text'),
+    tempText: document.getElementById('weather-temp'),
     weatherIcon: document.getElementById('weather-icon'),
+
     screens: {
         home: document.getElementById('home-screen'),
         garage: document.getElementById('garage-screen'),
@@ -35,73 +38,65 @@ const app = {
 
 // --- INIT ---
 window.addEventListener('load', () => {
-    // 1. Splash Screen Timer
+    // 1. Intro
     setTimeout(() => {
         app.splash.style.opacity = '0';
         setTimeout(() => app.splash.style.display = 'none', 800);
-    }, 2200);
+    }, 2000);
 
-    // 2. Daten laden
+    // 2. Load Data
     renderGarage();
+    updateTimeGreeting();
     
-    // 3. Begrüßung & Wetter laden
-    updateGreeting();
-    getWeather();
+    // 3. Start GPS for Weather
+    if(navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(initWeatherLoc, err => console.log(err));
+    }
 });
 
-// --- NEW: WEATHER & GREETING LOGIC ---
-function updateGreeting() {
+// --- NEW: WEATHER & LOC LOGIC ---
+function updateTimeGreeting() {
     const h = new Date().getHours();
-    let msg = "SYSTEM ONLINE";
-    if (h >= 5 && h < 12) msg = "GOOD MORNING";
-    else if (h >= 12 && h < 18) msg = "GOOD AFTERNOON";
-    else if (h >= 18 && h < 22) msg = "GOOD EVENING";
-    else msg = "NIGHT CRUISE";
-    
-    if(app.welcomeMsg) app.welcomeMsg.innerText = msg;
+    let txt = "WELCOME";
+    if (h >= 5 && h < 12) txt = "GOOD MORNING";
+    else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON";
+    else if (h >= 18 && h < 22) txt = "GOOD EVENING";
+    else txt = "NIGHT CRUISE";
+    app.greet.innerText = txt;
 }
 
-function getWeather() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(position => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            
-            // Open-Meteo API (Kostenlos, kein Key nötig)
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`;
-            
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    const temp = Math.round(data.current_weather.temperature);
-                    const code = data.current_weather.weathercode;
-                    
-                    app.weatherTemp.innerText = `${temp}°`;
-                    app.weatherWidget.style.display = 'flex'; // Jetzt anzeigen
-                    
-                    // Simple Icon Logic
-                    if(code <= 1) app.weatherIcon.className = "fa-solid fa-sun";
-                    else if(code <= 3) app.weatherIcon.className = "fa-solid fa-cloud-sun";
-                    else if(code <= 60) app.weatherIcon.className = "fa-solid fa-cloud-rain";
-                    else if(code <= 80) app.weatherIcon.className = "fa-solid fa-snowflake";
-                    else app.weatherIcon.className = "fa-solid fa-bolt";
-                    
-                })
-                .catch(err => console.log("Weather Error", err));
+function initWeatherLoc(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    
+    // 1. City Name (Nominatim)
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+        .then(r => r.json())
+        .then(d => {
+            app.locText.innerText = d.address.city || d.address.town || "Location Found";
         });
-    }
+
+    // 2. Weather (Open-Meteo)
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`)
+        .then(r => r.json())
+        .then(d => {
+            const t = Math.round(d.current_weather.temperature);
+            const c = d.current_weather.weathercode;
+            app.tempText.innerText = t + "°";
+            
+            if(c <= 1) app.weatherIcon.className = "fa-solid fa-sun";
+            else if(c <= 3) app.weatherIcon.className = "fa-solid fa-cloud-sun";
+            else app.weatherIcon.className = "fa-solid fa-cloud";
+        });
 }
+
 
 // --- NAVIGATION SYSTEM ---
 document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', (e) => {
         const targetId = btn.getAttribute('data-target');
-        
-        // Active State UI
         document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-
-        // Screen Switch
         showMainScreen(targetId);
     });
 });
@@ -112,10 +107,9 @@ function showMainScreen(id) {
     app.screens[id.split('-')[0]].classList.add('active');
 }
 
-// Drive UI Actions
 document.getElementById('btn-start').addEventListener('click', () => {
-    app.screens.drive.style.display = 'flex'; // Overlay an
-    app.nav.style.display = 'none'; // Nav ausblenden beim Fahren
+    app.screens.drive.style.display = 'flex';
+    app.nav.style.display = 'none';
     startTracking();
 });
 
@@ -128,13 +122,10 @@ document.getElementById('btn-stop').addEventListener('click', () => {
 document.getElementById('btn-save-drive').addEventListener('click', () => {
     saveDriveToStorage();
     app.screens.summary.style.display = 'none';
-    app.nav.style.display = 'flex'; // Nav wieder an
-    
-    // Gehe zur Garage
+    app.nav.style.display = 'flex';
     document.querySelectorAll('.nav-item')[1].click(); 
 });
 
-// Detail View Actions
 document.getElementById('btn-close-detail').addEventListener('click', () => {
     app.screens.detail.style.display = 'none';
     if(detailMap) { detailMap.remove(); detailMap = null; }
@@ -148,7 +139,6 @@ document.getElementById('btn-reset-data').addEventListener('click', () => {
 });
 
 // --- TRACKING ENGINE ---
-
 function startTracking() {
     isDriving = true;
     startTime = new Date();
@@ -156,61 +146,43 @@ function startTracking() {
     currentDistance = 0;
     currentMaxSpeed = 0;
 
-    // Map initialisieren
     if (!map) {
         map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map);
-        
-        const carIcon = L.divIcon({
-            className: 'custom-div-icon',
-            html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>",
-            iconSize: [20, 20], iconAnchor: [10, 10]
-        });
-        marker = L.marker([0, 0], {icon: carIcon}).addTo(map);
+        marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map);
     }
     
-    // Map Resize Fix für Mobile
-    setTimeout(() => { map.invalidateSize(); }, 200);
-
+    setTimeout(() => { map.invalidateSize(); }, 200); // Fix Map Size
     intervalId = setInterval(updateTimer, 1000);
 
     if (navigator.geolocation) {
-        watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {
-            enableHighAccuracy: true, maximumAge: 0
-        });
+        watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true});
     }
 }
 
 function updatePosition(position) {
     const lat = position.coords.latitude;
     const lng = position.coords.longitude;
-    const speedMs = position.coords.speed || 0; 
-    const speedKmh = Math.max(0, (speedMs * 3.6).toFixed(0));
+    const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0);
 
     if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh);
-
     app.display.speed.innerText = speedKmh;
     
-    const newLatLng = [lat, lng]; // Leaflet braucht Array oder Object
+    const newLatLng = [lat, lng];
     marker.setLatLng(newLatLng);
     map.setView(newLatLng, 18);
 
     if (path.length > 0) {
-        const lastPoint = path[path.length - 1];
-        // Leaflet distance uses LatLng objects internally if passed arrays
-        const dist = map.distance(lastPoint, newLatLng);
-        currentDistance += dist;
+        currentDistance += map.distance(path[path.length - 1], newLatLng);
         app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km";
     }
     path.push(newLatLng);
-    
-    L.polyline(path, {color: '#4a90e2', weight: 5, opacity: 0.8}).addTo(map);
+    L.polyline(path, {color: '#4a90e2', weight: 5}).addTo(map);
 }
 
 function updateTimer() {
     const diff = new Date() - startTime;
-    const date = new Date(diff);
-    app.display.time.innerText = date.toISOString().substr(11, 8);
+    app.display.time.innerText = new Date(diff).toISOString().substr(11, 8);
 }
 
 function stopTracking() {
@@ -218,17 +190,11 @@ function stopTracking() {
     clearInterval(intervalId);
     navigator.geolocation.clearWatch(watchId);
 
-    // Berechnungen für Summary
-    const diff = new Date() - startTime; // ms
-    const durationHours = diff / (1000 * 60 * 60);
+    const diff = new Date() - startTime;
     const distKm = currentDistance / 1000;
-    
-    let avgSpeed = 0;
-    if(durationHours > 0 && distKm > 0) {
-        avgSpeed = (distKm / durationHours).toFixed(1);
-    }
+    const durationHours = diff / (1000 * 60 * 60);
+    const avgSpeed = (durationHours > 0 && distKm > 0) ? (distKm / durationHours).toFixed(1) : 0;
 
-    // UI füllen
     app.display.sumDist.innerText = distKm.toFixed(2);
     app.display.sumSpeed.innerText = currentMaxSpeed;
     app.display.sumAvg.innerText = avgSpeed;
@@ -236,8 +202,6 @@ function stopTracking() {
 }
 
 function handleError(err) { console.warn(err); }
-
-// --- DATA & STORAGE ---
 
 function saveDriveToStorage() {
     const diff = new Date() - startTime;
@@ -252,7 +216,7 @@ function saveDriveToStorage() {
         maxSpeed: currentMaxSpeed,
         avgSpeed: avgSpeed,
         duration: new Date(diff).toISOString().substr(11, 8),
-        pathData: path // Array von [lat, lng]
+        pathData: path 
     };
 
     let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || [];
@@ -264,30 +228,16 @@ function saveDriveToStorage() {
 function renderGarage() {
     let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || [];
     let totalKm = 0;
-    
     const list = document.getElementById('drives-list');
     list.innerHTML = '';
 
     drives.forEach(drive => {
         totalKm += drive.distance;
-        
-        const dateObj = new Date(drive.date);
-        const dateStr = dateObj.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+        const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
         
         const item = document.createElement('div');
         item.className = 'drive-item';
-        item.innerHTML = `
-            <div>
-                <h4>${dateStr} • ${drive.duration}</h4>
-                <span>Avg ${drive.avgSpeed} km/h</span>
-            </div>
-            <div class="right-side">
-                <span class="dist">${drive.distance.toFixed(1)} km</span>
-                <span>Max ${drive.maxSpeed}</span>
-            </div>
-        `;
-        
-        // Klick Event für Detail View
+        item.innerHTML = `<div><h4>${dateStr} • ${drive.duration}</h4><span>Avg ${drive.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${drive.distance.toFixed(1)} km</span><span>Max ${drive.maxSpeed}</span></div>`;
         item.addEventListener('click', () => openDetailView(drive));
         list.appendChild(item);
     });
@@ -296,30 +246,18 @@ function renderGarage() {
     document.getElementById('total-drives').innerText = drives.length;
 }
 
-// --- DETAIL MAP VIEW ---
-
 function openDetailView(drive) {
     app.screens.detail.style.display = 'block';
-    
-    // Werte setzen
     document.getElementById('detail-dist').innerText = drive.distance.toFixed(1);
     document.getElementById('detail-max').innerText = drive.maxSpeed;
     document.getElementById('detail-avg').innerText = drive.avgSpeed;
 
-    // Karte Timeout (weil Container erst sichtbar sein muss)
     setTimeout(() => {
         if(!detailMap) {
             detailMap = L.map('detail-map', { zoomControl: false });
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(detailMap);
         }
-        
-        // Alte Layer entfernen
-        detailMap.eachLayer((layer) => {
-            if (!!layer.toGeoJSON) { detailMap.removeLayer(layer); }
-        });
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(detailMap);
-
-        // Pfad zeichnen
+        detailMap.eachLayer((layer) => { if (!!layer.toGeoJSON) { detailMap.removeLayer(layer); } });
         if(drive.pathData && drive.pathData.length > 0) {
             const polyline = L.polyline(drive.pathData, {color: '#4a90e2', weight: 5}).addTo(detailMap);
             detailMap.fitBounds(polyline.getBounds(), {padding: [50, 50]});
