@@ -4,14 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>DriverHub Perf</title>
+    <title>DriverHub 1.6 Music</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
-    
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
     <link rel="apple-touch-icon" href="logo.png">
-    
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#000000">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -23,6 +20,7 @@
             --bg-color: #000000;
             --accent-blue: #4a90e2;
             --accent-red: #ff3b30;
+            --accent-purple: #bf5af2; /* Neu für Musik */
             --text-white: #ffffff;
             --text-grey: #8e8e93;
             --glass-bg: rgba(20, 20, 20, 0.85);
@@ -34,7 +32,6 @@
         body {
             background-color: var(--bg-color); color: var(--text-white); font-family: var(--font-stack);
             overflow: hidden; height: 100vh; width: 100vw;
-            /* Verhindert "Bouncen" der ganzen Seite in Safari */
             overscroll-behavior: none;
         }
 
@@ -111,7 +108,7 @@
         .detail-stats-overlay { position: absolute; bottom: 40px; left: 20px; right: 20px; background: var(--glass-bg); backdrop-filter: blur(20px); border-radius: 20px; padding: 20px; z-index: 2500; border: 1px solid rgba(255,255,255,0.1); } 
         .mini { margin-bottom: 0; text-align: center; } .mini > div { flex: 1; } .mini .val { font-size: 1.4rem; font-weight: 700; display: block; }
 
-        /* --- PERFORMANCE MODE CSS --- */
+        /* --- PERFORMANCE MODE --- */
         .perf-display { text-align: center; margin-bottom: 40px; }
         .perf-speed { font-size: 5rem; font-weight: 900; color: white; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 0 40px rgba(255, 59, 48, 0.4); }
         .perf-unit { font-size: 1.2rem; color: var(--text-grey); font-weight: 600; }
@@ -126,10 +123,73 @@
         .btn-arm.armed { background: transparent; border: 2px solid var(--accent-red); animation: none; color: var(--accent-red); }
         @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(255,59,48,0.5); } 100% { transform: scale(1); } }
 
+        /* --- MUSIC MODE CSS (NEU) --- */
+        .music-player-container { width: 100%; max-width: 320px; display: flex; flex-direction: column; align-items: center; }
+        
+        .album-art-wrapper {
+            width: 200px; height: 200px;
+            margin: 20px 0 30px 0;
+            position: relative;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .album-art {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1c1c1e, #000);
+            box-shadow: 0 0 30px rgba(191, 90, 242, 0.1);
+            position: relative; z-index: 2;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid rgba(255,255,255,0.05);
+        }
+        .music-icon-big { font-size: 3rem; color: var(--accent-purple); opacity: 0.8; }
+        
+        /* Visualizer Aura */
+        .music-aura {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(191,90,242,0.4) 0%, transparent 70%);
+            z-index: 1; opacity: 0;
+            transition: opacity 0.5s;
+        }
+        .music-aura.playing { animation: pulse-music 1.5s infinite ease-in-out; opacity: 1; }
+        @keyframes pulse-music { 0% { transform: scale(0.9); opacity: 0.3; } 50% { transform: scale(1.2); opacity: 0.6; } 100% { transform: scale(0.9); opacity: 0.3; } }
+
+        .song-info { text-align: center; margin-bottom: 30px; }
+        .song-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 5px; color: white; display: block; }
+        .song-artist { font-size: 0.9rem; color: var(--accent-purple); text-transform: uppercase; letter-spacing: 1px; }
+
+        .controls { display: flex; align-items: center; gap: 30px; margin-bottom: 40px; }
+        .btn-ctrl { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; transition: transform 0.1s; }
+        .btn-ctrl:active { transform: scale(0.9); }
+        .btn-play {
+            width: 70px; height: 70px;
+            border-radius: 50%;
+            background: var(--accent-purple);
+            box-shadow: 0 0 20px rgba(191, 90, 242, 0.4);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem;
+        }
+
+        .volume-container { width: 100%; display: flex; align-items: center; gap: 15px; margin-bottom: 30px; padding: 0 10px; }
+        .vol-slider {
+            flex: 1; -webkit-appearance: none; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; outline: none;
+        }
+        .vol-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: white; cursor: pointer; }
+
+        .playlist { width: 100%; text-align: left; }
+        .track-row { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+        .track-row.active { color: var(--accent-purple); }
+        .track-row h5 { font-size: 1rem; margin-bottom: 2px; }
+        .track-row p { font-size: 0.8rem; opacity: 0.6; }
+
         /* NAV */
-        .bottom-nav { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 350px; height: 70px; background: rgba(30, 30, 30, 0.8); backdrop-filter: blur(20px); border-radius: 35px; display: flex; justify-content: space-around; align-items: center; border: 1px solid rgba(255,255,255,0.1); z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+        .bottom-nav { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 380px; height: 70px; background: rgba(30, 30, 30, 0.8); backdrop-filter: blur(20px); border-radius: 35px; display: flex; justify-content: space-around; align-items: center; border: 1px solid rgba(255,255,255,0.1); z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { background: none; border: none; color: #666; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 5px; width: auto; padding: 0; }
         .nav-item.active { color: var(--accent-blue); }
+        /* Spezifische Farben für aktive Tabs */
+        .nav-item.active[data-target="perf-screen"] { color: var(--accent-red); }
+        .nav-item.active[data-target="music-screen"] { color: var(--accent-purple); }
+
     </style>
 </head>
 <body>
@@ -174,30 +234,55 @@
                     <span id="perf-live-speed" class="perf-speed">0</span>
                     <span class="perf-unit">KM/H</span>
                 </div>
-
                 <div class="perf-grid">
-                    <div class="perf-box" id="box-0-50">
-                        <span class="perf-lbl">0 - 50</span>
-                        <span class="perf-val" id="val-0-50">--.- s</span>
-                    </div>
-                    <div class="perf-box" id="box-0-100">
-                        <span class="perf-lbl">0 - 100</span>
-                        <span class="perf-val" id="val-0-100">--.- s</span>
-                    </div>
+                    <div class="perf-box" id="box-0-50"><span class="perf-lbl">0 - 50</span><span class="perf-val" id="val-0-50">--.- s</span></div>
+                    <div class="perf-box" id="box-0-100"><span class="perf-lbl">0 - 100</span><span class="perf-val" id="val-0-100">--.- s</span></div>
                 </div>
-
-                <div class="g-force-container">
-                    <span class="perf-lbl">MAX G-FORCE</span>
-                    <span class="g-val" id="max-g-val">0.00 G</span>
-                </div>
-
+                <div class="g-force-container"><span class="perf-lbl">MAX G-FORCE</span><span class="g-val" id="max-g-val">0.00 G</span></div>
                 <div style="text-align: center; margin-bottom: 30px;">
                     <button id="btn-arm-perf" class="btn-arm">ARM</button>
                     <p style="margin-top:15px; color:#666; font-size:0.8rem;" id="perf-status-text">Tap to arm, then launch.</p>
                 </div>
-
                 <h3>History</h3>
                 <div id="perf-history-list" class="drives-list"></div>
+                <div style="height: 100px;"></div>
+            </div>
+        </section>
+
+        <section id="music-screen" class="screen">
+            <div class="header-bar">
+                <h2>Music</h2>
+            </div>
+            <div class="content-scroll">
+                <div class="music-player-container">
+                    
+                    <div class="album-art-wrapper">
+                        <div class="music-aura" id="music-aura"></div>
+                        <div class="album-art">
+                            <i class="fa-solid fa-music music-icon-big"></i>
+                        </div>
+                    </div>
+
+                    <div class="song-info">
+                        <span class="song-title" id="track-title">Select a Track</span>
+                        <span class="song-artist" id="track-artist">DriverHub Radio</span>
+                    </div>
+
+                    <div class="controls">
+                        <button class="btn-ctrl" id="btn-prev"><i class="fa-solid fa-backward-step"></i></button>
+                        <button class="btn-ctrl btn-play" id="btn-play-pause"><i class="fa-solid fa-play"></i></button>
+                        <button class="btn-ctrl" id="btn-next"><i class="fa-solid fa-forward-step"></i></button>
+                    </div>
+
+                    <div class="volume-container">
+                        <i class="fa-solid fa-volume-low" style="color:#888; font-size:0.8rem;"></i>
+                        <input type="range" min="0" max="1" step="0.1" value="0.8" class="vol-slider" id="vol-slider">
+                        <i class="fa-solid fa-volume-high" style="color:#888; font-size:0.8rem;"></i>
+                    </div>
+
+                    <div class="playlist" id="playlist-container">
+                        </div>
+                </div>
                 <div style="height: 100px;"></div>
             </div>
         </section>
@@ -266,6 +351,9 @@
             <button class="nav-item" data-target="perf-screen">
                 <i class="fa-solid fa-gauge-high"></i><span>Perf</span>
             </button>
+            <button class="nav-item" data-target="music-screen">
+                <i class="fa-solid fa-music"></i><span>Music</span>
+            </button>
             <button class="nav-item" data-target="garage-screen">
                 <i class="fa-solid fa-layer-group"></i><span>Garage</span>
             </button>
@@ -287,11 +375,22 @@
 
         // --- PERF VARIABLES ---
         let perfWatchId = null;
-        let perfState = 'idle'; // idle, armed, running, finished
+        let perfState = 'idle';
         let perfStartTime = 0;
         let result50 = null;
         let result100 = null;
         let maxG = 0;
+
+        // --- MUSIC VARIABLES (NEU) ---
+        // Nutzung von Mixkit Preview URLs (Legal für Demo)
+        const playlist = [
+            { title: "Night Drive Vibes", artist: "Deep Tech", src: "https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3" },
+            { title: "Driving Ambition", artist: "Phonk Style", src: "https://assets.mixkit.co/music/preview/mixkit-driving-ambition-32.mp3" },
+            { title: "Deep Urban", artist: "Bass Flow", src: "https://assets.mixkit.co/music/preview/mixkit-hip-hop-02-738.mp3" }
+        ];
+        let currentTrackIdx = 0;
+        const audioPlayer = new Audio();
+        let isPlaying = false;
 
         // --- DOM ELEMENTS ---
         const app = {
@@ -306,6 +405,7 @@
                 home: document.getElementById('home-screen'),
                 garage: document.getElementById('garage-screen'),
                 perf: document.getElementById('perf-screen'),
+                music: document.getElementById('music-screen'),
                 drive: document.getElementById('drive-screen'),
                 summary: document.getElementById('summary-screen'),
                 detail: document.getElementById('detail-screen')
@@ -329,12 +429,21 @@
                 btn: document.getElementById('btn-arm-perf'),
                 status: document.getElementById('perf-status-text'),
                 list: document.getElementById('perf-history-list')
+            },
+            music: {
+                title: document.getElementById('track-title'),
+                artist: document.getElementById('track-artist'),
+                playBtn: document.getElementById('btn-play-pause'),
+                prevBtn: document.getElementById('btn-prev'),
+                nextBtn: document.getElementById('btn-next'),
+                volSlider: document.getElementById('vol-slider'),
+                list: document.getElementById('playlist-container'),
+                aura: document.getElementById('music-aura')
             }
         };
 
         // --- INIT ---
         window.addEventListener('load', () => {
-            // Splash
             setTimeout(() => {
                 app.splash.style.opacity = '0';
                 setTimeout(() => app.splash.style.display = 'none', 800);
@@ -342,6 +451,7 @@
 
             renderGarage();
             renderPerfHistory();
+            initMusicPlayer(); // NEU
             updateTimeGreeting();
 
             if(navigator.geolocation) {
@@ -385,18 +495,97 @@
                 document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 
-                // Switch Logic
-                app.screens.home.classList.remove('active');
-                app.screens.garage.classList.remove('active');
-                app.screens.perf.classList.remove('active');
+                // Hide all screens
+                Object.values(app.screens).forEach(s => {
+                    if(s && !s.classList.contains('screen-overlay')) s.classList.remove('active');
+                });
                 
-                if(targetId === 'home-screen') app.screens.home.classList.add('active');
-                if(targetId === 'garage-screen') app.screens.garage.classList.add('active');
-                if(targetId === 'perf-screen') {
-                    app.screens.perf.classList.add('active');
+                // Show target
+                if(app.screens[targetId.split('-')[0]]) {
+                    app.screens[targetId.split('-')[0]].classList.add('active');
                 }
             });
         });
+
+        // --- MUSIC LOGIC (NEU) ---
+        function initMusicPlayer() {
+            // Setup Playlist UI
+            app.music.list.innerHTML = "";
+            playlist.forEach((track, index) => {
+                const div = document.createElement('div');
+                div.className = 'track-row';
+                if(index === currentTrackIdx) div.classList.add('active');
+                div.innerHTML = `<div><h5>${track.title}</h5><p>${track.artist}</p></div><i class="fa-solid fa-play" style="font-size:0.8rem"></i>`;
+                div.addEventListener('click', () => loadTrack(index));
+                app.music.list.appendChild(div);
+            });
+
+            // Load first track (but don't play yet)
+            loadTrack(0, false);
+
+            // Controls
+            app.music.playBtn.addEventListener('click', togglePlay);
+            app.music.nextBtn.addEventListener('click', nextTrack);
+            app.music.prevBtn.addEventListener('click', prevTrack);
+            app.music.volSlider.addEventListener('input', (e) => {
+                audioPlayer.volume = e.target.value;
+            });
+
+            // Auto Next
+            audioPlayer.addEventListener('ended', nextTrack);
+        }
+
+        function loadTrack(index, autoPlay = true) {
+            currentTrackIdx = index;
+            const track = playlist[index];
+            audioPlayer.src = track.src;
+            app.music.title.innerText = track.title;
+            app.music.artist.innerText = track.artist;
+
+            // Highlight in list
+            const rows = document.querySelectorAll('.track-row');
+            rows.forEach(r => r.classList.remove('active'));
+            if(rows[index]) rows[index].classList.add('active');
+
+            if(autoPlay) {
+                audioPlayer.play();
+                isPlaying = true;
+                updatePlayBtn();
+            }
+        }
+
+        function togglePlay() {
+            if(isPlaying) {
+                audioPlayer.pause();
+                isPlaying = false;
+            } else {
+                audioPlayer.play();
+                isPlaying = true;
+            }
+            updatePlayBtn();
+        }
+
+        function updatePlayBtn() {
+            if(isPlaying) {
+                app.music.playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                app.music.aura.classList.add('playing');
+            } else {
+                app.music.playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                app.music.aura.classList.remove('playing');
+            }
+        }
+
+        function nextTrack() {
+            let next = currentTrackIdx + 1;
+            if(next >= playlist.length) next = 0;
+            loadTrack(next);
+        }
+
+        function prevTrack() {
+            let prev = currentTrackIdx - 1;
+            if(prev < 0) prev = playlist.length - 1;
+            loadTrack(prev);
+        }
 
         // --- MAIN DRIVE LOGIC ---
         document.getElementById('btn-start').addEventListener('click', () => {
@@ -414,19 +603,16 @@
             app.screens.summary.style.display = 'none';
             app.nav.style.display = 'flex';
             // Go to garage
-            document.querySelectorAll('.nav-item')[2].click(); 
+            document.querySelectorAll('.nav-item')[3].click(); 
         });
 
         // --- PERFORMANCE LOGIC ---
         app.perf.btn.addEventListener('click', () => {
             if(perfState === 'idle' || perfState === 'finished') {
-                // ARMING
                 perfState = 'armed';
                 app.perf.btn.innerText = "READY";
                 app.perf.btn.classList.add('armed');
                 app.perf.status.innerText = "Launch when ready! Timer starts > 1 km/h";
-                
-                // Reset UI
                 app.perf.val50.innerText = "--.- s";
                 app.perf.val100.innerText = "--.- s";
                 app.perf.box50.classList.remove('active');
@@ -436,7 +622,6 @@
                 result50 = null;
                 result100 = null;
 
-                // Permissions for G-Sensor (iOS requires interaction)
                 if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
                     DeviceMotionEvent.requestPermission()
                         .then(permissionState => { if (permissionState === 'granted') startPerfSensors(); })
@@ -450,7 +635,6 @@
                 }
 
             } else {
-                // CANCEL / RESET
                 resetPerfMode();
             }
         });
@@ -478,7 +662,7 @@
             app.perf.speed.innerText = speedKmh.toFixed(0);
 
             if(perfState === 'armed') {
-                if(speedKmh > 2.0) { // Trigger start
+                if(speedKmh > 2.0) {
                     perfState = 'running';
                     perfStartTime = Date.now();
                     app.perf.btn.innerText = "GO!";
@@ -487,20 +671,16 @@
             } else if(perfState === 'running') {
                 const duration = (Date.now() - perfStartTime) / 1000;
                 
-                // CHECK 0-50
                 if(!result50 && speedKmh >= 50) {
                     result50 = duration.toFixed(2);
                     app.perf.val50.innerText = result50 + " s";
                     app.perf.box50.classList.add('active');
                 }
 
-                // CHECK 0-100
                 if(!result100 && speedKmh >= 100) {
                     result100 = duration.toFixed(2);
                     app.perf.val100.innerText = result100 + " s";
                     app.perf.box100.classList.add('active');
-                    
-                    // FINISH
                     perfState = 'finished';
                     app.perf.btn.innerText = "RESET";
                     app.perf.btn.classList.remove('armed');
@@ -553,7 +733,7 @@
             });
         }
 
-        // --- MAP & TRACKING (Original Logic) ---
+        // --- MAP & TRACKING ---
         function startTracking() {
             isDriving = true;
             startTime = new Date();
