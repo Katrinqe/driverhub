@@ -21,7 +21,7 @@ let result50 = null, result100 = null, maxG = 0;
 const playlist = []; let currentTrackIdx = 0; const audioPlayer = new Audio(); let isPlaying = false;
 let recognition = null; let isListening = false; let synth = window.speechSynthesis;
 let currentUser = null; 
-let currentUserName = ""; // NEU: Speichert Namen für Begrüßung
+let currentUserName = ""; // NEU
 
 // Social Vars
 let viewingUserUid = null; 
@@ -472,6 +472,3 @@ function handleVoiceCommand(cmd) { let reply = "Kommando nicht erkannt."; if (cm
 function speak(text) { if (!synth) return; const utter = new SpeechSynthesisUtterance(text); synth.speak(utter); }
 
 document.querySelectorAll('.nav-item').forEach(btn => { btn.addEventListener('click', (e) => { const targetId = btn.getAttribute('data-target'); document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active')); btn.classList.add('active'); Object.values(app.screens).forEach(s => { if(s && !s.classList.contains('screen-overlay')) s.classList.remove('active'); }); if(app.screens[targetId.split('-')[0]]) { app.screens[targetId.split('-')[0]].classList.add('active'); } }); });
-    </script>
-</body>
-</html>
