@@ -218,13 +218,61 @@ function init3DGarage() {
     scene3D.add(gridHelper);
 
     // --- MODELL LADEN ---
+   // --- MODELL LADEN (NEU: MIT AUTO-SCALER) ---
     const loader = new THREE.GLTFLoader();
     
-    // DEIN URL HIER FEST EINGEBAUT
+    // Deine URL (Fest eingebaut)
     const modelUrl = 'https://firebasestorage.googleapis.com/v0/b/driverhub-5a567.firebasestorage.app/o/models%2Fhatchback-sports.glb?alt=media&token=f2e4fb7f-6e1b-43d1-8cc3-6b8a7d57be3e';
 
     loader.load(modelUrl, function (gltf) {
         carMesh = gltf.scene;
+        
+        // 1. Box berechnen (Wie groß ist das Auto wirklich?)
+        const box = new THREE.Box3().setFromObject(carMesh);
+        const size = box.getSize(new THREE.Vector3());
+        
+        // 2. Skalierungs-Faktor berechnen
+        // Wir wollen, dass das Auto maximal 3.5 Einheiten groß ist
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scaleFactor = 3.5 / maxDim;
+        
+        carMesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
+        
+        // 3. Zentrieren und auf den Boden setzen
+        box.setFromObject(carMesh); // Box neu berechnen nach Skalierung
+        const center = box.getCenter(new THREE.Vector3());
+        
+        carMesh.position.x = carMesh.position.x - center.x;
+        carMesh.position.z = carMesh.position.z - center.z;
+        carMesh.position.y = -box.min.y; // Reifen exakt auf den Boden
+
+        // 4. Schatten & Farbe aktivieren
+        carMesh.traverse((node) => {
+            if (node.isMesh) {
+                node.castShadow = true;
+                node.receiveShadow = true;
+                // Alles färben, außer es heißt "Glass" oder "Window"
+                if(!node.name.toLowerCase().includes('glass') && !node.name.toLowerCase().includes('window')) {
+                     node.name = "Body";
+                }
+            }
+        });
+
+        scene3D.add(carMesh);
+        console.log("Auto erfolgreich geladen und skaliert!");
+
+        // 5. Gespeicherte Farbe laden (falls vorhanden)
+        if(currentUser) {
+            db_fire.collection('users').doc(currentUser.uid).get().then(doc => {
+                if(doc.exists && doc.data().carColor) {
+                    updateCarColor(doc.data().carColor);
+                }
+            });
+        }
+
+    }, undefined, function (error) {
+        console.error('Fehler beim Laden:', error);
+    });
         
         // Auto skalieren & positionieren
         carMesh.scale.set(1, 1, 1); 
@@ -778,3 +826,4 @@ document.querySelectorAll('.nav-item').forEach(btn => {
         if(app.screens[targetId.split('-')[0]]) { app.screens[targetId.split('-')[0]].classList.add('active'); }
     });
 });
+
