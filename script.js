@@ -21,11 +21,15 @@ let result50 = null, result100 = null, maxG = 0;
 const playlist = []; let currentTrackIdx = 0; const audioPlayer = new Audio(); let isPlaying = false;
 let recognition = null; let isListening = false; let synth = window.speechSynthesis;
 let currentUser = null; 
+let currentUserName = ""; // NEU: Speichert Namen für Begrüßung
 
 // Social Vars
 let viewingUserUid = null; 
 let activeChatId = null;
 let feedUnsubscribe = null;
+
+// 3D Garage Vars
+let scene3D, camera3D, renderer3D, carMesh, garageAnimId;
 
 // --- 3. DOM ELEMENTS ---
 const app = {
@@ -108,6 +112,7 @@ window.addEventListener('load', () => {
             app.authScreen.classList.add('hidden');
             initUserProfile(); 
             loadFriendsFeed(); 
+            init3DGarage(); 
         } else {
             app.authScreen.classList.remove('hidden');
         }
@@ -120,12 +125,7 @@ window.addEventListener('load', () => {
 // --- 5. SOCIAL LOGIC ---
 function escapeHtml(text) {
     if (!text) return "";
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
 window.refreshSocial = function() {
@@ -170,11 +170,19 @@ function initUserProfile() {
                 followers: 0,
                 following: 0,
                 searchKey: currentUser.email.split('@')[0].toLowerCase(), 
-                joined: new Date()
+                joined: new Date(),
+                carColor: "#ff0000"
             };
             db_fire.collection('users').doc(currentUser.uid).set(baseData, {merge:true});
         } else {
             const data = doc.data();
+            
+            // NEU: Name speichern und Begrüßung updaten
+            if(data.username) {
+                currentUserName = data.username;
+                updateTimeGreeting();
+            }
+
             if(data.photoURL) {
                 app.comm.profileIcon.style.backgroundImage = `url('${data.photoURL}')`;
                 app.comm.profileIcon.style.backgroundSize = 'cover';
@@ -184,6 +192,122 @@ function initUserProfile() {
         }
     });
 }
+
+// --- 3D GARAGE LOGIC (MIT ECHTEM MODELL) ---
+function init3DGarage() {
+    const container = document.getElementById('garage-canvas-container');
+    if (!container) return;
+
+    scene3D = new THREE.Scene();
+    scene3D.background = new THREE.Color(0x111111);
+    
+    camera3D = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
+    camera3D.position.set(4, 2, 4);
+    camera3D.lookAt(0, 0.5, 0);
+
+    renderer3D = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer3D.setSize(container.clientWidth, container.clientHeight);
+    renderer3D.outputEncoding = THREE.sRGBEncoding;
+    container.appendChild(renderer3D.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+    scene3D.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+    dirLight.position.set(5, 10, 7);
+    scene3D.add(dirLight);
+
+    const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
+    scene3D.add(gridHelper);
+
+    // --- MODELL LADEN ---
+    const loader = new THREE.GLTFLoader();
+    const modelUrl = 'https://firebasestorage.googleapis.com/v0/b/driverhub-5a567.firebasestorage.app/o/models%2Fhatchback-sports.glb?alt=media&token=f2e4fb7f-6e1b-43d1-8cc3-6b8a7d57be3e';
+
+    loader.load(modelUrl, function (gltf) {
+        carMesh = gltf.scene;
+        
+        // Auto-Scaler
+        const box = new THREE.Box3().setFromObject(carMesh);
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scaleFactor = 3.5 / maxDim;
+        carMesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
+        
+        box.setFromObject(carMesh); 
+        const center = box.getCenter(new THREE.Vector3());
+        carMesh.position.x = carMesh.position.x - center.x;
+        carMesh.position.z = carMesh.position.z - center.z;
+        carMesh.position.y = -box.min.y;
+
+        carMesh.traverse((node) => {
+            if (node.isMesh) {
+                node.castShadow = true;
+                node.receiveShadow = true;
+                if(!node.name.toLowerCase().includes('glass') && !node.name.toLowerCase().includes('window')) {
+                    node.name = "Body";
+                }
+            }
+        });
+
+        scene3D.add(carMesh);
+        
+        if(currentUser) {
+            db_fire.collection('users').doc(currentUser.uid).get().then(doc => {
+                if(doc.exists && doc.data().carColor) {
+                    updateCarColor(doc.data().carColor);
+                }
+            });
+        }
+
+    }, undefined, function (error) {
+        console.error('Fehler beim Laden des Autos:', error);
+    });
+
+    const animate = function () {
+        requestAnimationFrame(animate);
+        if(carMesh) carMesh.rotation.y += 0.002;
+        renderer3D.render(scene3D, camera3D);
+    };
+    animate();
+
+    window.addEventListener('resize', () => {
+        if(container && camera3D && renderer3D) {
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            renderer3D.setSize(width, height);
+            camera3D.aspect = width / height;
+            camera3D.updateProjectionMatrix();
+        }
+    });
+
+    document.getElementById('btn-save-car').addEventListener('click', () => {
+        const color = document.getElementById('car-color-picker').value;
+        if(currentUser) {
+            db_fire.collection('users').doc(currentUser.uid).update({ carColor: color })
+            .then(() => alert("Lackierung gespeichert!"));
+        }
+    });
+
+    document.getElementById('car-color-picker').addEventListener('input', (e) => {
+        updateCarColor(e.target.value);
+    });
+}
+
+function updateCarColor(hex) {
+    if(!carMesh) return;
+    carMesh.traverse((child) => {
+        if (child.isMesh) {
+            if(child.name === "Body" || child.name.includes("Paint") || child.name.includes("Body")) {
+                child.material.color.set(hex);
+            } else {
+                child.material = child.material.clone();
+                child.material.color.set(hex);
+            }
+        }
+    });
+}
+
+// --- END 3D LOGIC ---
 
 function loadChatInbox() {
     const list = document.getElementById('chats-list-container');
@@ -354,6 +478,8 @@ function openProfile(uid) {
     const btnFollow = document.getElementById('btn-follow-action');
     const btnMsg = document.getElementById('btn-msg-action');
     const postList = document.getElementById('profile-posts-list');
+    
+    const garageControls = document.getElementById('garage-controls');
 
     pName.innerText = "Lade..."; pBio.innerText = "..."; pImg.style.backgroundImage = "none"; postList.innerHTML = "";
     
@@ -365,6 +491,12 @@ function openProfile(uid) {
         if(data.photoURL) pImg.style.backgroundImage = `url('${data.photoURL}')`;
         document.getElementById('p-followers').innerText = data.followers || 0;
         document.getElementById('p-following').innerText = data.following || 0;
+
+        // 3D Car Update
+        if(data.carColor) {
+            updateCarColor(data.carColor);
+            if(isMe) document.getElementById('car-color-picker').value = data.carColor;
+        }
     });
 
     db_fire.collection('posts').where('uid', '==', uid).orderBy('timestamp', 'desc').limit(10).get().then(snap => {
@@ -375,10 +507,12 @@ function openProfile(uid) {
         btnEditImg.style.display = 'flex'; btnEditBio.style.display = 'inline-block';
         btnFollow.style.display = 'none'; btnMsg.style.display = 'none';
         document.getElementById('profile-post-section').style.display = 'block';
+        garageControls.style.display = 'flex'; // Show controls only for me
     } else {
         btnEditImg.style.display = 'none'; btnEditBio.style.display = 'none';
         btnFollow.style.display = 'inline-block'; btnMsg.style.display = 'inline-block';
         document.getElementById('profile-post-section').style.display = 'none';
+        garageControls.style.display = 'none'; // Hide controls for others
         checkIfFollowing(uid);
     }
 }
@@ -528,7 +662,11 @@ document.getElementById('btn-save-drive').addEventListener('click', () => { save
 
 function startTracking() { 
     isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0; 
-    if (!map) { map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map); marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map); } 
+    if (!map) { 
+        map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); 
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map); 
+        marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map); 
+    } 
     setTimeout(() => { map.invalidateSize(); }, 200); 
     intervalId = setInterval(updateTimer, 1000); 
     if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
@@ -559,7 +697,22 @@ function stopTracking() {
 function handleError(err) { console.warn(err); }
 function saveDriveToStorage() { const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; const newDrive = { id: Date.now(), date: startTime.toISOString(), distance: parseFloat(distKm.toFixed(2)), maxSpeed: currentMaxSpeed, avgSpeed: avgSpeed, duration: new Date(diff).toISOString().substr(11, 8), pathData: path }; let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; drives.unshift(newDrive); localStorage.setItem('dh_drives_v2', JSON.stringify(drives)); renderGarage(); }
 function renderGarage() { let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; let totalKm = 0; const list = document.getElementById('drives-list'); list.innerHTML = ''; drives.forEach(drive => { totalKm += drive.distance; const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h4>${dateStr} • ${drive.duration}</h4><span>Avg ${drive.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${drive.distance.toFixed(1)} km</span><span>Max ${drive.maxSpeed}</span></div>`; item.addEventListener('click', () => openDetailView(drive)); list.appendChild(item); }); document.getElementById('total-km').innerText = totalKm.toFixed(1); document.getElementById('total-drives').innerText = drives.length; }
-function openDetailView(drive) { app.screens.detail.style.display = 'block'; document.getElementById('detail-dist').innerText = drive.distance.toFixed(1); document.getElementById('detail-max').innerText = drive.maxSpeed; document.getElementById('detail-avg').innerText = drive.avgSpeed; setTimeout(() => { if(!detailMap) { detailMap = L.map('detail-map', { zoomControl: false }); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(detailMap); } detailMap.eachLayer((layer) => { if (!!layer.toGeoJSON) { detailMap.removeLayer(layer); } }); if(drive.pathData && drive.pathData.length > 0) { const polyline = L.polyline(drive.pathData, {color: '#4a90e2', weight: 5}).addTo(detailMap); detailMap.fitBounds(polyline.getBounds(), {padding: [50, 50]}); } }, 100); }
+
+function openDetailView(drive) { 
+    app.screens.detail.style.display = 'block'; 
+    document.getElementById('detail-dist').innerText = drive.distance.toFixed(1); 
+    document.getElementById('detail-max').innerText = drive.maxSpeed; 
+    document.getElementById('detail-avg').innerText = drive.avgSpeed; 
+    setTimeout(() => { 
+        if(!detailMap) { 
+            detailMap = L.map('detail-map', { zoomControl: false }); 
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(detailMap); 
+        } 
+        detailMap.eachLayer((layer) => { if (!!layer.toGeoJSON) { detailMap.removeLayer(layer); } }); 
+        if(drive.pathData && drive.pathData.length > 0) { const polyline = L.polyline(drive.pathData, {color: '#4a90e2', weight: 5}).addTo(detailMap); detailMap.fitBounds(polyline.getBounds(), {padding: [50, 50]}); } 
+    }, 100); 
+}
+
 document.getElementById('btn-close-detail').addEventListener('click', () => { app.screens.detail.style.display = 'none'; if(detailMap) { detailMap.remove(); detailMap = null; } });
 document.getElementById('btn-reset-data').addEventListener('click', () => { if(confirm("Alles löschen?")) { localStorage.removeItem('dh_drives_v2'); renderGarage(); } });
 
@@ -569,83 +722,47 @@ function handleMotion(event) { if(perfState !== 'running') return; const x = eve
 function updatePerfLogic(position) { const speedKmh = (position.coords.speed || 0) * 3.6; app.perf.speed.innerText = speedKmh.toFixed(0); if(perfState === 'armed') { if(speedKmh > 2.0) { perfState = 'running'; perfStartTime = Date.now(); app.perf.btn.innerText = "GO!"; app.perf.status.innerText = "Recording..."; } } else if(perfState === 'running') { const duration = (Date.now() - perfStartTime) / 1000; if(!result50 && speedKmh >= 50) { result50 = duration.toFixed(2); app.perf.val50.innerText = result50 + " s"; app.perf.box50.classList.add('active'); } if(!result100 && speedKmh >= 100) { result100 = duration.toFixed(2); app.perf.val100.innerText = result100 + " s"; app.perf.box100.classList.add('active'); perfState = 'finished'; app.perf.btn.innerText = "RESET"; app.perf.btn.classList.remove('armed'); app.perf.status.innerText = "Run Complete!"; speak("Hundert erreicht in " + result100.replace('.', ',') + " Sekunden."); savePerfRun(); } } }
 function resetPerfMode() { perfState = 'idle'; app.perf.btn.innerText = "ARM"; app.perf.btn.classList.remove('armed'); app.perf.status.innerText = "Tap to arm, then launch."; if(perfWatchId) navigator.geolocation.clearWatch(perfWatchId); window.removeEventListener('devicemotion', handleMotion); app.perf.speed.innerText = "0"; }
 function savePerfRun() { const run = { id: Date.now(), date: new Date().toISOString(), res50: result50, res100: result100, maxG: maxG.toFixed(2) }; let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; runs.unshift(run); localStorage.setItem('dh_perf_v1', JSON.stringify(runs)); renderPerfHistory(); }
-function renderPerfHistory() { let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; const list = app.perf.list; list.innerHTML = ''; runs.forEach(run => { const dateStr = new Date(run.date).toLocaleDateString('de-DE'); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h4>${dateStr}</h4><span>Max ${run.maxG} G</span></div><div class="right-side"><span style="color:#ff3b30; font-weight:bold;">0-100: ${run.res100}s</span><br><span style="font-size:0.75rem">0-50: ${run.res50}s</span></div>`; list.appendChild(item); }); }
+function renderPerfHistory() { let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; const list = app.perf.list; list.innerHTML = ''; runs.forEach(run => { const dateStr = new Date(run.date).toLocaleDateString('de-DE'); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h5>${dateStr}</h5><span>Max ${run.maxG} G</span></div><div class="right-side"><span style="color:#ff3b30; font-weight:bold;">0-100: ${run.res100}s</span><br><span style="font-size:0.75rem">0-50: ${run.res50}s</span></div>`; list.appendChild(item); }); }
 
 function manualRefreshWeather() { 
-    app.locText.innerText = "Locating...";
-    app.tempText.innerText = "--°"; 
-    if(navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(initWeatherLoc, err => { console.log("GPS Fehler", err); app.locText.innerText = "No GPS"; }, {enableHighAccuracy:false, timeout:10000}); 
-    } else { app.locText.innerText = "Not Supported"; }
+    app.locText.innerText = "Locating..."; app.tempText.innerText = "--°"; 
+    if(navigator.geolocation) { navigator.geolocation.getCurrentPosition(initWeatherLoc, err => { console.log("GPS Fehler", err); app.locText.innerText = "No GPS"; }, {enableHighAccuracy:false, timeout:10000}); } else { app.locText.innerText = "Not Supported"; } 
 }
-function updateTimeGreeting() { const h = new Date().getHours(); let txt = "WELCOME"; if (h >= 5 && h < 12) txt = "GOOD MORNING"; else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON"; else if (h >= 18 && h < 22) txt = "GOOD EVENING"; else txt = "NIGHT CRUISE"; app.greet.innerText = txt; }
+// NEU: Begrüßung mit Name
+function updateTimeGreeting() { 
+    const h = new Date().getHours(); 
+    let txt = "WELCOME"; 
+    if (h >= 5 && h < 12) txt = "GOOD MORNING"; 
+    else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON"; 
+    else if (h >= 18 && h < 22) txt = "GOOD EVENING"; 
+    else txt = "NIGHT CRUISE"; 
+    
+    if (currentUserName) {
+        app.greet.innerHTML = `${txt}<br><span style="font-size:0.5em; opacity:0.7; font-weight:300;">${escapeHtml(currentUserName).toUpperCase()}</span>`;
+    } else {
+        app.greet.innerText = txt; 
+    }
+}
 function initWeatherLoc(pos) { const lat = pos.coords.latitude; const lng = pos.coords.longitude; fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`).then(r => r.json()).then(d => { app.locText.innerText = d.address.city || d.address.town || "Location Found"; }); fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`).then(r => r.json()).then(d => { const t = Math.round(d.current_weather.temperature); const c = d.current_weather.weathercode; app.tempText.innerText = t + "°"; if(c <= 1) app.weatherIcon.className = "fa-solid fa-sun"; else if(c <= 3) app.weatherIcon.className = "fa-solid fa-cloud-sun"; else app.weatherIcon.className = "fa-solid fa-cloud"; }); }
 
 let db; const request = indexedDB.open("DriverHubDB", 1);
 request.onupgradeneeded = function(event) { db = event.target.result; db.createObjectStore("music", { keyPath: "id" }); };
 request.onsuccess = function(event) { db = event.target.result; loadMusicFromDB(); };
 function saveTrackToDB(track) { const transaction = db.transaction(["music"], "readwrite"); transaction.objectStore("music").add(track); }
-function loadMusicFromDB() {
-    const transaction = db.transaction(["music"], "readonly");
-    const req = transaction.objectStore("music").getAll();
-    req.onsuccess = function() {
-        if(req.result && req.result.length > 0) {
-            req.result.forEach(t => playlist.push(t)); playlist.sort((a,b) => b.id - a.id); renderPlaylist(); if(playlist.length > 0) loadTrack(0, false);
-        }
-    };
-}
-function initMusicPlayer() {
-    app.music.playBtn.addEventListener('click', togglePlay); app.music.nextBtn.addEventListener('click', nextTrack); app.music.prevBtn.addEventListener('click', prevTrack); app.music.volSlider.addEventListener('input', (e) => { audioPlayer.volume = e.target.value; });
-    app.music.fileInput.addEventListener('change', function(e) {
-        const file = e.target.files[0]; if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const audioData = e.target.result; const newTrack = { id: Date.now(), title: file.name.replace(/\.[^/.]+$/, ""), artist: "Local File", src: audioData };
-            saveTrackToDB(newTrack); playlist.unshift(newTrack); renderPlaylist(); loadTrack(0, true);
-        };
-        reader.readAsDataURL(file);
-    });
-    audioPlayer.addEventListener('error', (e) => { console.error("Audio Error", e); isPlaying = false; updatePlayBtn(); });
-}
+function loadMusicFromDB() { const transaction = db.transaction(["music"], "readonly"); const req = transaction.objectStore("music").getAll(); req.onsuccess = function() { if(req.result && req.result.length > 0) { req.result.forEach(t => playlist.push(t)); playlist.sort((a,b) => b.id - a.id); renderPlaylist(); if(playlist.length > 0) loadTrack(0, false); } }; }
+function initMusicPlayer() { app.music.playBtn.addEventListener('click', togglePlay); app.music.nextBtn.addEventListener('click', nextTrack); app.music.prevBtn.addEventListener('click', prevTrack); app.music.volSlider.addEventListener('input', (e) => { audioPlayer.volume = e.target.value; }); app.music.fileInput.addEventListener('change', function(e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { const audioData = e.target.result; const newTrack = { id: Date.now(), title: file.name.replace(/\.[^/.]+$/, ""), artist: "Local File", src: audioData }; saveTrackToDB(newTrack); playlist.unshift(newTrack); renderPlaylist(); loadTrack(0, true); }; reader.readAsDataURL(file); }); audioPlayer.addEventListener('error', (e) => { console.error("Audio Error", e); isPlaying = false; updatePlayBtn(); }); }
 function renderPlaylist() { app.music.list.innerHTML = ""; playlist.forEach((track, index) => { const div = document.createElement('div'); div.className = 'track-row'; if(index === currentTrackIdx) div.classList.add('active'); div.innerHTML = `<div><h5>${track.title}</h5><p>${track.artist}</p></div><i class="fa-solid fa-play" style="font-size:0.8rem"></i>`; div.addEventListener('click', () => loadTrack(index)); app.music.list.appendChild(div); }); }
-function loadTrack(index, autoPlay = true) {
-    if(index < 0 || index >= playlist.length) return;
-    currentTrackIdx = index; const track = playlist[index]; audioPlayer.src = track.src; app.music.title.innerText = track.title; app.music.artist.innerText = track.artist; renderPlaylist(); if(autoPlay) { audioPlayer.play().then(() => { isPlaying = true; updatePlayBtn(); }).catch(e => { isPlaying = false; updatePlayBtn(); }); }
-}
+function loadTrack(index, autoPlay = true) { if(index < 0 || index >= playlist.length) return; currentTrackIdx = index; const track = playlist[index]; audioPlayer.src = track.src; app.music.title.innerText = track.title; app.music.artist.innerText = track.artist; renderPlaylist(); if(autoPlay) { audioPlayer.play().then(() => { isPlaying = true; updatePlayBtn(); }).catch(e => { isPlaying = false; updatePlayBtn(); }); } }
 function togglePlay() { if(playlist.length === 0) { alert("Bitte erst Musik laden!"); return; } if(isPlaying) { audioPlayer.pause(); isPlaying = false; } else { audioPlayer.play(); isPlaying = true; } updatePlayBtn(); }
 function updatePlayBtn() { if(isPlaying) { app.music.playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>'; app.music.aura.classList.add('playing'); } else { app.music.playBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; app.music.aura.classList.remove('playing'); } }
 function nextTrack() { let next = currentTrackIdx + 1; if(next >= playlist.length) next = 0; loadTrack(next); }
 function prevTrack() { let prev = currentTrackIdx - 1; if(prev < 0) prev = playlist.length - 1; loadTrack(prev); }
 
-function initCoPilot() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-    recognition = new SpeechRecognition(); recognition.lang = 'de-DE'; recognition.continuous = false; recognition.interimResults = false;
-    recognition.onstart = () => { isListening = true; app.copilotTrigger.classList.add('listening'); app.slogan.innerText = "Ich höre zu..."; };
-    recognition.onend = () => { isListening = false; app.copilotTrigger.classList.remove('listening'); app.slogan.innerText = "Tap Logo for Co-Pilot"; };
-    recognition.onresult = (event) => { handleVoiceCommand(event.results[0][0].transcript.toLowerCase()); };
-    app.copilotTrigger.addEventListener('click', () => {
-        if (isListening) { recognition.stop(); } else { speak("Hey da. DriverHub CoPilot hier, wie kann ich helfen?"); setTimeout(() => recognition.start(), 2200); }
-    });
-}
-function handleVoiceCommand(cmd) {
-    let reply = "Kommando nicht erkannt.";
-    if (cmd.includes("fahrt") || cmd.includes("start") || cmd.includes("drive")) { reply = "Starte Fahrt."; app.screens.drive.style.display = 'flex'; app.nav.style.display = 'none'; startTracking(); }
-    else if (cmd.includes("musik") || cmd.includes("play")) { reply = "Musik wird gestartet."; togglePlay(); }
-    else if (cmd.includes("pause")) { reply = "Pausiert."; if(isPlaying) togglePlay(); }
-    else if (cmd.includes("wetter")) { reply = "Es sind aktuell " + app.tempText.innerText + " in " + app.locText.innerText; }
-    else if (cmd.includes("garage")) { reply = "Öffne Garage."; document.querySelectorAll('.nav-item')[4].click(); }
-    else if (cmd.includes("performance")) { reply = "Performance Modus aktiv."; document.querySelectorAll('.nav-item')[1].click(); }
-    speak(reply);
-}
+function initCoPilot() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return; recognition = new SpeechRecognition(); recognition.lang = 'de-DE'; recognition.continuous = false; recognition.interimResults = false; recognition.onstart = () => { isListening = true; app.copilotTrigger.classList.add('listening'); app.slogan.innerText = "Ich höre zu..."; }; recognition.onend = () => { isListening = false; app.copilotTrigger.classList.remove('listening'); app.slogan.innerText = "Tap Logo for Co-Pilot"; }; recognition.onresult = (event) => { handleVoiceCommand(event.results[0][0].transcript.toLowerCase()); }; app.copilotTrigger.addEventListener('click', () => { if (isListening) { recognition.stop(); } else { speak("Hey da. DriverHub CoPilot hier, wie kann ich helfen?"); setTimeout(() => recognition.start(), 2200); } }); }
+function handleVoiceCommand(cmd) { let reply = "Kommando nicht erkannt."; if (cmd.includes("fahrt") || cmd.includes("start") || cmd.includes("drive")) { reply = "Starte Fahrt."; app.screens.drive.style.display = 'flex'; app.nav.style.display = 'none'; startTracking(); } else if (cmd.includes("musik") || cmd.includes("play")) { reply = "Musik wird gestartet."; togglePlay(); } else if (cmd.includes("pause")) { reply = "Pausiert."; if(isPlaying) togglePlay(); } else if (cmd.includes("wetter")) { reply = "Es sind aktuell " + app.tempText.innerText + " in " + app.locText.innerText; } else if (cmd.includes("garage")) { reply = "Öffne Garage."; document.querySelectorAll('.nav-item')[4].click(); } else if (cmd.includes("performance")) { reply = "Performance Modus aktiv."; document.querySelectorAll('.nav-item')[1].click(); } speak(reply); }
 function speak(text) { if (!synth) return; const utter = new SpeechSynthesisUtterance(text); synth.speak(utter); }
 
-document.querySelectorAll('.nav-item').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        const targetId = btn.getAttribute('data-target'); document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active')); btn.classList.add('active');
-        Object.values(app.screens).forEach(s => { if(s && !s.classList.contains('screen-overlay')) s.classList.remove('active'); });
-        if(app.screens[targetId.split('-')[0]]) { app.screens[targetId.split('-')[0]].classList.add('active'); }
-    });
-});
-
-
+document.querySelectorAll('.nav-item').forEach(btn => { btn.addEventListener('click', (e) => { const targetId = btn.getAttribute('data-target'); document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active')); btn.classList.add('active'); Object.values(app.screens).forEach(s => { if(s && !s.classList.contains('screen-overlay')) s.classList.remove('active'); }); if(app.screens[targetId.split('-')[0]]) { app.screens[targetId.split('-')[0]].classList.add('active'); } }); });
+    </script>
+</body>
+</html>
