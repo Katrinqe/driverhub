@@ -3,8 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub Perf</title>
     
+    <title>DriverHub Perf</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <link rel="apple-touch-icon" href="logo.png">
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#000000">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -13,7 +22,7 @@
         :root {
             --bg-color: #000000;
             --accent-blue: #4a90e2;
-            --accent-red: #ff3b30; /* Neu für Performance */
+            --accent-red: #ff3b30;
             --text-white: #ffffff;
             --text-grey: #8e8e93;
             --glass-bg: rgba(20, 20, 20, 0.85);
@@ -25,6 +34,8 @@
         body {
             background-color: var(--bg-color); color: var(--text-white); font-family: var(--font-stack);
             overflow: hidden; height: 100vh; width: 100vw;
+            /* Verhindert "Bouncen" der ganzen Seite in Safari */
+            overscroll-behavior: none;
         }
 
         /* --- INTRO SPLASH SCREEN --- */
@@ -100,66 +111,23 @@
         .detail-stats-overlay { position: absolute; bottom: 40px; left: 20px; right: 20px; background: var(--glass-bg); backdrop-filter: blur(20px); border-radius: 20px; padding: 20px; z-index: 2500; border: 1px solid rgba(255,255,255,0.1); } 
         .mini { margin-bottom: 0; text-align: center; } .mini > div { flex: 1; } .mini .val { font-size: 1.4rem; font-weight: 700; display: block; }
 
-        /* --- NEU: PERFORMANCE MODE CSS --- */
-        .perf-display {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        .perf-speed {
-            font-size: 5rem;
-            font-weight: 900;
-            color: white;
-            line-height: 1;
-            font-variant-numeric: tabular-nums;
-            text-shadow: 0 0 40px rgba(255, 59, 48, 0.4);
-        }
-        .perf-unit {
-            font-size: 1.2rem;
-            color: var(--text-grey);
-            font-weight: 600;
-        }
-        .perf-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            width: 100%;
-            max-width: 320px;
-            margin-bottom: 30px;
-        }
-        .perf-box {
-            background: #1c1c1e;
-            padding: 15px;
-            border-radius: 16px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
+        /* --- PERFORMANCE MODE CSS --- */
+        .perf-display { text-align: center; margin-bottom: 40px; }
+        .perf-speed { font-size: 5rem; font-weight: 900; color: white; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 0 40px rgba(255, 59, 48, 0.4); }
+        .perf-unit { font-size: 1.2rem; color: var(--text-grey); font-weight: 600; }
+        .perf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 320px; margin-bottom: 30px; }
+        .perf-box { background: #1c1c1e; padding: 15px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
         .perf-box.active { border-color: var(--accent-red); box-shadow: 0 0 15px rgba(255,59,48,0.2); }
         .perf-val { display: block; font-size: 1.5rem; font-weight: 700; color: white; margin-top: 5px; }
         .perf-lbl { font-size: 0.75rem; color: var(--text-grey); font-weight: 700; letter-spacing: 1px; }
-        
-        .g-force-container {
-            width: 100%; max-width: 320px; margin-bottom: 40px;
-            background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px;
-            display: flex; align-items: center; justify-content: space-between;
-        }
+        .g-force-container { width: 100%; max-width: 320px; margin-bottom: 40px; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px; display: flex; align-items: center; justify-content: space-between; }
         .g-val { font-weight: bold; font-size: 1.2rem; color: var(--accent-blue); }
-
-        .btn-arm {
-            background: var(--accent-red);
-            color: white;
-            border: none;
-            width: 80px; height: 80px;
-            border-radius: 50%;
-            font-weight: 700; font-size: 1rem;
-            box-shadow: 0 0 30px rgba(255,59,48,0.3);
-            text-transform: uppercase;
-            animation: pulse-red 2s infinite;
-        }
+        .btn-arm { background: var(--accent-red); color: white; border: none; width: 80px; height: 80px; border-radius: 50%; font-weight: 700; font-size: 1rem; box-shadow: 0 0 30px rgba(255,59,48,0.3); text-transform: uppercase; animation: pulse-red 2s infinite; }
         .btn-arm.armed { background: transparent; border: 2px solid var(--accent-red); animation: none; color: var(--accent-red); }
         @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(255,59,48,0.5); } 100% { transform: scale(1); } }
 
         /* NAV */
-        .bottom-nav { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 350px; height: 70px; background: rgba(30, 30, 30, 0.8); backdrop-filter: blur(20px); border-radius: 35px; display: flex; justify-content: space-around; align-items: center; border: 1px solid rgba(255,255,255,0.1); z-index: 100; }
+        .bottom-nav { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 350px; height: 70px; background: rgba(30, 30, 30, 0.8); backdrop-filter: blur(20px); border-radius: 35px; display: flex; justify-content: space-around; align-items: center; border: 1px solid rgba(255,255,255,0.1); z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { background: none; border: none; color: #666; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 5px; width: auto; padding: 0; }
         .nav-item.active { color: var(--accent-blue); }
     </style>
@@ -426,12 +394,11 @@
                 if(targetId === 'garage-screen') app.screens.garage.classList.add('active');
                 if(targetId === 'perf-screen') {
                     app.screens.perf.classList.add('active');
-                    // Stop regular GPS if running? No, separate logic.
                 }
             });
         });
 
-        // --- MAIN DRIVE LOGIC (Original) ---
+        // --- MAIN DRIVE LOGIC ---
         document.getElementById('btn-start').addEventListener('click', () => {
             app.screens.drive.style.display = 'flex';
             app.nav.style.display = 'none';
@@ -450,7 +417,7 @@
             document.querySelectorAll('.nav-item')[2].click(); 
         });
 
-        // --- PERFORMANCE LOGIC (NEW) ---
+        // --- PERFORMANCE LOGIC ---
         app.perf.btn.addEventListener('click', () => {
             if(perfState === 'idle' || perfState === 'finished') {
                 // ARMING
@@ -470,7 +437,7 @@
                 result100 = null;
 
                 // Permissions for G-Sensor (iOS requires interaction)
-                if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
                     DeviceMotionEvent.requestPermission()
                         .then(permissionState => { if (permissionState === 'granted') startPerfSensors(); })
                         .catch(console.error);
@@ -478,7 +445,6 @@
                     startPerfSensors();
                 }
 
-                // Start High Freq GPS for Perf
                 if (navigator.geolocation) {
                     perfWatchId = navigator.geolocation.watchPosition(updatePerfLogic, handleError, {enableHighAccuracy: true});
                 }
@@ -495,7 +461,6 @@
 
         function handleMotion(event) {
             if(perfState !== 'running') return;
-            // Calculate total G
             const x = event.acceleration.x || 0;
             const y = event.acceleration.y || 0;
             const z = event.acceleration.z || 0;
@@ -577,7 +542,6 @@
                 const dateStr = new Date(run.date).toLocaleDateString('de-DE');
                 const item = document.createElement('div');
                 item.className = 'drive-item';
-                // HTML for Perf Item
                 item.innerHTML = `
                     <div><h4>${dateStr}</h4><span>Max ${run.maxG} G</span></div>
                     <div class="right-side">
