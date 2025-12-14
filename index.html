@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 2.0.1 Weather Fix</title>
+    <title>DriverHub 2.2 Stable</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -394,17 +394,13 @@
 
             renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
             
-            // WEATHER FIX (High Accuracy & Timeout)
+            // WEATHER: RESTORED TO SIMPLE 1.8 VERSION
             if(navigator.geolocation) { 
-                navigator.geolocation.getCurrentPosition(
-                    initWeatherLoc, 
-                    err => { console.warn("GPS Error", err); app.locText.innerText = "GPS n/a"; }, 
-                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                );
+                navigator.geolocation.getCurrentPosition(initWeatherLoc, err => console.log(err)); 
             }
         });
 
-        // --- AUTHENTICATION LOGIC ---
+        // --- AUTHENTICATION ---
         let isSignup = false;
         document.getElementById('auth-switch-btn').addEventListener('click', () => {
             isSignup = !isSignup;
@@ -444,7 +440,7 @@
             auth.signInWithPopup(provider).catch(err => alert("Google Login Error: " + err.message + " (Try Email on iOS Home Screen)"));
         });
 
-        // --- COMMUNITY LOGIC ---
+        // --- COMMUNITY ---
         app.comm.postBtn.addEventListener('click', () => {
             const txt = app.comm.postInput.value;
             if(!txt || !currentUser) return;
@@ -502,32 +498,92 @@
             };
         }
 
-        // --- CO-PILOT ---
+        // --- CO-PILOT (RESTORED TO 1.8) ---
         function initCoPilot() {
+            // Check support
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) return;
-            recognition = new SpeechRecognition(); recognition.lang = 'de-DE'; recognition.continuous = false; recognition.interimResults = false;
-            recognition.onstart = () => { isListening = true; app.copilotTrigger.classList.add('listening'); app.slogan.innerText = "Ich höre zu..."; };
-            recognition.onend = () => { isListening = false; app.copilotTrigger.classList.remove('listening'); app.slogan.innerText = "Tap Logo for Co-Pilot"; };
-            recognition.onresult = (event) => { handleVoiceCommand(event.results[0][0].transcript.toLowerCase()); };
+            if (!SpeechRecognition) {
+                app.slogan.innerText = "Co-Pilot not supported";
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'de-DE';
+            recognition.continuous = false; // Stop after one command
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                isListening = true;
+                app.copilotTrigger.classList.add('listening');
+                app.slogan.innerText = "Ich höre zu...";
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                app.copilotTrigger.classList.remove('listening');
+                app.slogan.innerText = "Tap Logo for Co-Pilot";
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript.toLowerCase();
+                console.log("Co-Pilot heard:", transcript);
+                handleVoiceCommand(transcript);
+            };
+
+            // Trigger Event
             app.copilotTrigger.addEventListener('click', () => {
-                if (isListening) { recognition.stop(); } else {
+                if (isListening) {
+                    recognition.stop();
+                } else {
                     speak("Hey da. DriverHub CoPilot hier, wie kann ich helfen?");
-                    setTimeout(() => recognition.start(), 2200);
+                    // Delay listening slightly to not record the voice itself
+                    setTimeout(() => recognition.start(), 2500);
                 }
             });
         }
+
         function handleVoiceCommand(cmd) {
-            let reply = "Kommando nicht erkannt.";
-            if (cmd.includes("fahrt") || cmd.includes("start") || cmd.includes("drive")) { reply = "Starte Fahrt."; app.screens.drive.style.display = 'flex'; app.nav.style.display = 'none'; startTracking(); }
-            else if (cmd.includes("musik") || cmd.includes("play")) { reply = "Musik wird gestartet."; togglePlay(); }
-            else if (cmd.includes("pause")) { reply = "Pausiert."; if(isPlaying) togglePlay(); }
-            else if (cmd.includes("wetter")) { reply = "Es sind aktuell " + app.tempText.innerText + " in " + app.locText.innerText; }
-            else if (cmd.includes("garage")) { reply = "Öffne Garage."; document.querySelectorAll('.nav-item')[4].click(); }
-            else if (cmd.includes("performance")) { reply = "Performance Modus aktiv."; document.querySelectorAll('.nav-item')[1].click(); }
+            let reply = "";
+            
+            // LOGIC
+            if (cmd.includes("fahrt") || cmd.includes("start") || cmd.includes("drive")) {
+                reply = "Starte Fahrt.";
+                app.screens.drive.style.display = 'flex';
+                app.nav.style.display = 'none';
+                startTracking();
+            }
+            else if (cmd.includes("musik") || cmd.includes("play") || cmd.includes("abspielen")) {
+                reply = "Musik wird gestartet.";
+                togglePlay(); 
+            }
+            else if (cmd.includes("pause") || cmd.includes("stopp")) {
+                reply = "Pausiert.";
+                if(isPlaying) togglePlay();
+            }
+            else if (cmd.includes("wetter") || cmd.includes("temperatur")) {
+                reply = "Es sind aktuell " + app.tempText.innerText + " in " + app.locText.innerText;
+            }
+            else if (cmd.includes("garage")) {
+                reply = "Öffne Garage.";
+                document.querySelectorAll('.nav-item')[4].click();
+            }
+            else if (cmd.includes("performance") || cmd.includes("leistung")) {
+                reply = "Performance Modus aktiv.";
+                document.querySelectorAll('.nav-item')[1].click();
+            }
+            else {
+                reply = "Kommando nicht erkannt.";
+            }
+
             speak(reply);
         }
-        function speak(text) { if (!synth) return; const utter = new SpeechSynthesisUtterance(text); synth.speak(utter); }
+
+        function speak(text) {
+            if (!synth) return;
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'de-DE';
+            synth.speak(utter);
+        }
 
         // --- NAVIGATION ---
         document.querySelectorAll('.nav-item').forEach(btn => {
@@ -592,7 +648,7 @@
         document.getElementById('btn-close-detail').addEventListener('click', () => { app.screens.detail.style.display = 'none'; if(detailMap) { detailMap.remove(); detailMap = null; } });
         document.getElementById('btn-reset-data').addEventListener('click', () => { if(confirm("Alles löschen?")) { localStorage.removeItem('dh_drives_v2'); renderGarage(); } });
 
-        // --- UTIL ---
+        // --- UTIL (WEATHER RESTORED TO 1.8) ---
         function updateTimeGreeting() { const h = new Date().getHours(); let txt = "WELCOME"; if (h >= 5 && h < 12) txt = "GOOD MORNING"; else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON"; else if (h >= 18 && h < 22) txt = "GOOD EVENING"; else txt = "NIGHT CRUISE"; app.greet.innerText = txt; }
         function initWeatherLoc(pos) { const lat = pos.coords.latitude; const lng = pos.coords.longitude; fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`).then(r => r.json()).then(d => { app.locText.innerText = d.address.city || d.address.town || "Location Found"; }); fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`).then(r => r.json()).then(d => { const t = Math.round(d.current_weather.temperature); const c = d.current_weather.weathercode; app.tempText.innerText = t + "°"; if(c <= 1) app.weatherIcon.className = "fa-solid fa-sun"; else if(c <= 3) app.weatherIcon.className = "fa-solid fa-cloud-sun"; else app.weatherIcon.className = "fa-solid fa-cloud"; }); }
     </script>
