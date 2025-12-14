@@ -120,14 +120,27 @@ window.addEventListener('load', () => {
     renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
     setInterval(manualRefreshWeather, 60000); 
     
-    // RECENTER BUTTON LOGIC
-    document.getElementById('btn-recenter').addEventListener('click', () => {
-        isMapFollowing = true;
-        document.getElementById('btn-recenter').style.display = 'none'; 
-        if(marker) {
-            map.setView(marker.getLatLng(), 18);
-        }
-    });
+    // RECENTER BUTTON LOGIC (FIXED)
+    const recenterBtn = document.getElementById('btn-recenter');
+    if(recenterBtn) {
+        // Wir nutzen 'click', aber verhindern, dass die Map darunter reagiert
+        recenterBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // WICHTIG: Klick nicht an Map weitergeben
+            e.preventDefault();
+            
+            isMapFollowing = true;
+            recenterBtn.style.display = 'none'; 
+            
+            if(map && marker) {
+                map.setView(marker.getLatLng(), 18);
+            }
+        });
+        
+        // Damit beim Antippen nicht schon "dragstart" von der Map kommt
+        recenterBtn.addEventListener('touchstart', (e) => {
+             e.stopPropagation();
+        });
+    }
 });
 
 // --- 5. SOCIAL LOGIC ---
