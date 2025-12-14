@@ -447,8 +447,10 @@ function updatePosition(position) {
         map.setView(newLatLng, 18); 
     }
 
+    // --- HIER WURDE DIE ZEILE ENTFERNT ---
     if (path.length > 0) { currentDistance += map.distance(path[path.length - 1], newLatLng); app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; } 
-    path.push(newLatLng); L.polyline(path, {color: '#4a90e2', weight: 5}).addTo(map); 
+    path.push(newLatLng); 
+    // KEIN L.polyline MEHR HIER!
 }
 
 function updateTimer() { const diff = new Date() - startTime; app.display.time.innerText = new Date(diff).toISOString().substr(11, 8); }
