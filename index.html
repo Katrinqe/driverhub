@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 2.2 Stable</title>
+    <title>DriverHub 3.0 Clean</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -19,13 +19,13 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
     <style>
-        /* --- CSS (STYLE) --- */
+        /* --- CSS (BASIS 1.8) --- */
         :root {
             --bg-color: #000000;
             --accent-blue: #4a90e2;
             --accent-red: #ff3b30;
             --accent-purple: #bf5af2;
-            --accent-green: #30d158;
+            --accent-green: #30d158; /* NEU für Community */
             --text-white: #ffffff;
             --text-grey: #8e8e93;
             --glass-bg: rgba(20, 20, 20, 0.85);
@@ -39,6 +39,21 @@
             overflow: hidden; height: 100vh; width: 100vw;
             overscroll-behavior: none;
         }
+
+        /* LOGIN SCREEN (NEU) */
+        #auth-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000000; z-index: 5000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 30px; transition: transform 0.3s ease;
+        }
+        #auth-screen.hidden { transform: translateY(100%); pointer-events: none; }
+        .auth-box { width: 100%; max-width: 320px; text-align: center; }
+        .auth-input { width: 100%; padding: 15px; margin-bottom: 15px; background: #1c1c1e; border: 1px solid #333; border-radius: 12px; color: white; font-size: 1rem; outline: none; }
+        .btn-auth { width: 100%; padding: 15px; border-radius: 12px; border: none; font-size: 1rem; font-weight: 700; margin-bottom: 15px; cursor: pointer; }
+        .btn-login { background: var(--accent-blue); color: white; }
+        .btn-google { background: white; color: black; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .auth-switch { color: var(--accent-blue); font-size: 0.9rem; margin-top: 20px; cursor: pointer; }
 
         /* INTRO */
         #splash-screen {
@@ -54,23 +69,6 @@
             100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 0px var(--accent-blue)); }
         }
 
-        /* LOGIN OVERLAY */
-        #auth-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #000000; z-index: 5000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 30px;
-            transition: transform 0.4s ease;
-        }
-        #auth-screen.hidden { transform: translateY(100%); }
-        
-        .auth-box { width: 100%; max-width: 320px; text-align: center; }
-        .auth-input { width: 100%; padding: 15px; margin-bottom: 15px; background: #1c1c1e; border: 1px solid #333; border-radius: 12px; color: white; font-size: 1rem; outline: none; }
-        .btn-auth { width: 100%; padding: 15px; border-radius: 12px; border: none; font-size: 1rem; font-weight: 700; margin-bottom: 15px; cursor: pointer; }
-        .btn-login { background: var(--accent-blue); color: white; }
-        .btn-google { background: white; color: black; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .auth-switch { color: var(--accent-blue); font-size: 0.9rem; margin-top: 20px; cursor: pointer; }
-
         /* BG */
         .aurora-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; overflow: hidden; }
         .blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.25; animation: float 15s infinite ease-in-out; }
@@ -78,11 +76,10 @@
         .b2 { bottom: -10%; right: -10%; width: 80vw; height: 80vw; background: #2c5f9e; animation-delay: -5s; }
         @keyframes float { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(20px, -20px); } }
 
-        /* UI GENERICS */
+        /* UI */
         .status-pill { background: rgba(30,30,30,0.6); backdrop-filter: blur(15px); padding: 8px 18px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); align-items: center; gap: 12px; font-size: 0.9rem; font-weight: 600; margin-bottom: 30px; }
         .loc-icon, #weather-icon { color: var(--accent-blue); }
         .divider { opacity: 0.3; }
-        
         .logo-container { margin-bottom: 25px; position: relative; display: inline-block; transition: transform 0.2s; }
         .logo-container:active { transform: scale(0.95); }
         .dh-logo { width: 225px; height: auto; filter: drop-shadow(0 0 20px rgba(74,144,226,0.15)); transition: filter 0.3s ease; }
@@ -95,12 +92,13 @@
         .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; opacity: 0; transition: opacity 0.3s ease; }
         .screen.active { display: flex; opacity: 1; z-index: 10; }
         .screen-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; z-index: 2000; background: #000; animation: slideUp 0.4s ease forwards; }
-        
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
         .content-home-layout { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 80px 20px 20px 20px; text-align: center; }
         .content-scroll { flex: 1; overflow-y: auto; padding: 80px 20px 100px 20px; }
         .content-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
         .spacer-flex { flex: 1; }
-        .header-bar { position: absolute; top: 0; left: 0; width: 100%; padding: 50px 20px 10px 20px; background: linear-gradient(to bottom, black, transparent); z-index: 20; display:flex; justify-content: space-between; align-items: center; }
+        .header-bar { position: absolute; top: 0; left: 0; width: 100%; padding: 50px 20px 10px 20px; background: linear-gradient(to bottom, black, transparent); z-index: 20; display:flex; justify-content:space-between; align-items:center; }
 
         button { font-family: var(--font-stack); cursor: pointer; }
         .btn-primary { border: none; padding: 18px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; background: linear-gradient(135deg, var(--accent-blue), #2c5f9e); color: white; box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3); margin-bottom: 120px; }
@@ -108,7 +106,7 @@
         .icon-btn-floating { position: absolute; top: 40px; left: 20px; width: 45px; height: 45px; background: var(--glass-bg); border-radius: 50%; border: none; color: white; z-index: 3000; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
         .btn-text { background: transparent; color: #555; font-size: 0.9rem; margin-top: 40px; width: 100%; border: none; }
 
-        /* COMMUNITY STYLES */
+        /* COMMUNITY STYLES (NEU) */
         .feed-container { width: 100%; max-width: 360px; margin: 0 auto; }
         .post-card { background: #1c1c1e; border-radius: 16px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
         .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
@@ -124,16 +122,19 @@
         .btn-send-post { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-green); border: none; color: white; font-size: 1rem; cursor: pointer; }
         .user-search-bar { width: 100%; padding: 12px; border-radius: 12px; background: #111; border: 1px solid #333; color: white; margin-bottom: 20px; outline: none; }
 
-        /* MODULE CSS */
-        .stat-box { background: var(--glass-bg); backdrop-filter: blur(15px); padding: 15px 20px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.1); min-width: 100px; } .stat-box .value { font-size: 1.8rem; font-weight: 700; } .stat-box .label { font-size: 0.7rem; color: var(--text-grey); font-weight: 700; } .stat-box .unit { font-size: 0.8rem; color: var(--accent-blue); }
+        /* ALL MODULES (1.8 BASIS) */
+        #map, #detail-map { height: 100%; width: 100%; z-index: 1; filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
         .drive-overlay-top { position: absolute; top: 50px; left: 20px; right: 20px; z-index: 999; display: flex; justify-content: space-between; }
         .drive-overlay-bottom { position: absolute; bottom: 40px; left: 0; right: 0; z-index: 999; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px;}
+        .stat-box { background: var(--glass-bg); backdrop-filter: blur(15px); padding: 15px 20px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.1); min-width: 100px; }
+        .stat-box .value { font-size: 1.8rem; font-weight: 700; font-variant-numeric: tabular-nums; } .stat-box .label { font-size: 0.7rem; color: var(--text-grey); font-weight: 700; } .stat-box .unit { font-size: 0.8rem; color: var(--accent-blue); }
         .drive-overlay-bottom .stat-row { background: var(--glass-bg); backdrop-filter: blur(15px); border-radius: 12px; padding: 10px 20px; display: inline-block; border: 1px solid rgba(255,255,255,0.1); font-weight: 600; }
         .stats-card { background: #1c1c1e; border-radius: 20px; padding: 30px; width: 100%; max-width: 320px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .stat-row-final { display: flex; justify-content: space-between; margin-bottom: 20px; text-align: left; } .stat-row-final .final-value { font-size: 1.8rem; font-weight: 700; color: white; display: block; }
-        .drives-list { width: 100%; max-width: 340px; margin: 0 auto; } .drive-item { background: #111; border: 1px solid #222; padding: 20px; border-radius: 16px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; } .drive-item:active { background: #222; } .drive-item h4 { font-size: 1rem; color: white; margin-bottom: 5px; } .drive-item span { color: var(--text-grey); font-size: 0.85rem; } .drive-item .right-side { text-align: right; } .drive-item .dist { font-size: 1.2rem; color: var(--accent-blue); font-weight: 700; }
+        .drives-list { width: 100%; max-width: 340px; margin: 0 auto; }
+        .drive-item { background: #111; border: 1px solid #222; padding: 20px; border-radius: 16px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; }
+        .drive-item:active { background: #222; } .drive-item h4 { font-size: 1rem; color: white; margin-bottom: 5px; } .drive-item span { color: var(--text-grey); font-size: 0.85rem; } .drive-item .right-side { text-align: right; } .drive-item .dist { font-size: 1.2rem; color: var(--accent-blue); font-weight: 700; }
         .detail-stats-overlay { position: absolute; bottom: 40px; left: 20px; right: 20px; background: var(--glass-bg); backdrop-filter: blur(20px); border-radius: 20px; padding: 20px; z-index: 2500; border: 1px solid rgba(255,255,255,0.1); } .mini { margin-bottom: 0; text-align: center; } .mini > div { flex: 1; } .mini .val { font-size: 1.4rem; font-weight: 700; display: block; }
-        #map, #detail-map { height: 100%; width: 100%; z-index: 1; filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
         .perf-display { text-align: center; margin-bottom: 40px; } .perf-speed { font-size: 5rem; font-weight: 900; color: white; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 0 40px rgba(255, 59, 48, 0.4); } .perf-unit { font-size: 1.2rem; color: var(--text-grey); font-weight: 600; }
         .perf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 320px; margin-bottom: 30px; } .perf-box { background: #1c1c1e; padding: 15px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.05); } .perf-box.active { border-color: var(--accent-red); box-shadow: 0 0 15px rgba(255,59,48,0.2); } .perf-val { display: block; font-size: 1.5rem; font-weight: 700; color: white; margin-top: 5px; } .perf-lbl { font-size: 0.75rem; color: var(--text-grey); font-weight: 700; letter-spacing: 1px; }
         .g-force-container { width: 100%; max-width: 320px; margin-bottom: 40px; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px; display: flex; align-items: center; justify-content: space-between; } .g-val { font-weight: bold; font-size: 1.2rem; color: var(--accent-blue); }
@@ -199,9 +200,7 @@
                     <input type="text" id="post-input" class="create-input" placeholder="What's your drive today?">
                     <button class="btn-send-post" id="btn-post"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
-                <div id="feed-container" class="feed-container">
-                    <div style="text-align:center; padding:20px; color:#666;">Loading Feed...</div>
-                </div>
+                <div id="feed-container" class="feed-container"><div style="text-align:center; padding:20px; color:#666;">Loading Feed...</div></div>
                 <div style="height: 100px;"></div>
             </div>
         </section>
@@ -295,7 +294,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // --- FIREBASE CONFIG ---
+        // --- FIREBASE CONFIG (DEINE DATEN) ---
         const firebaseConfig = {
             apiKey: "AIzaSyD5pKzbwiM4NRGGyFV1uWIS6dZG30u8ueg",
             authDomain: "driverhub-5a567.firebaseapp.com",
@@ -309,7 +308,7 @@
         const auth = firebase.auth();
         const db_fire = firebase.firestore();
 
-        // --- GLOBAL VARIABLES ---
+        // --- GLOBAL VARIABLES (1.8 BASIS) ---
         let map, marker, watchId, intervalId, detailMap;
         let startTime, path = [], currentDistance = 0, currentMaxSpeed = 0, isDriving = false;
         let perfWatchId = null, perfState = 'idle', perfStartTime = 0;
@@ -329,158 +328,63 @@
             copilotTrigger: document.getElementById('copilot-trigger'),
             slogan: document.getElementById('slogan-text'),
             authScreen: document.getElementById('auth-screen'),
-            
-            screens: {
-                home: document.getElementById('home-screen'),
-                garage: document.getElementById('garage-screen'),
-                perf: document.getElementById('perf-screen'),
-                music: document.getElementById('music-screen'),
-                community: document.getElementById('community-screen'),
-                drive: document.getElementById('drive-screen'),
-                summary: document.getElementById('summary-screen'),
-                detail: document.getElementById('detail-screen')
-            },
-            display: {
-                speed: document.getElementById('live-speed'),
-                time: document.getElementById('live-time'),
-                dist: document.getElementById('live-dist'),
-                sumDist: document.getElementById('sum-dist'),
-                sumSpeed: document.getElementById('sum-speed'),
-                sumAvg: document.getElementById('sum-avg'),
-                sumTime: document.getElementById('sum-time')
-            },
-            perf: {
-                speed: document.getElementById('perf-live-speed'),
-                val50: document.getElementById('val-0-50'),
-                val100: document.getElementById('val-0-100'),
-                box50: document.getElementById('box-0-50'),
-                box100: document.getElementById('box-0-100'),
-                gVal: document.getElementById('max-g-val'),
-                btn: document.getElementById('btn-arm-perf'),
-                status: document.getElementById('perf-status-text'),
-                list: document.getElementById('perf-history-list')
-            },
-            music: {
-                title: document.getElementById('track-title'),
-                artist: document.getElementById('track-artist'),
-                playBtn: document.getElementById('btn-play-pause'),
-                prevBtn: document.getElementById('btn-prev'),
-                nextBtn: document.getElementById('btn-next'),
-                volSlider: document.getElementById('vol-slider'),
-                list: document.getElementById('playlist-container'),
-                aura: document.getElementById('music-aura'),
-                fileInput: document.getElementById('file-input')
-            },
-            comm: {
-                feed: document.getElementById('feed-container'),
-                postInput: document.getElementById('post-input'),
-                postBtn: document.getElementById('btn-post')
-            }
+            screens: { home: document.getElementById('home-screen'), garage: document.getElementById('garage-screen'), perf: document.getElementById('perf-screen'), music: document.getElementById('music-screen'), community: document.getElementById('community-screen'), drive: document.getElementById('drive-screen'), summary: document.getElementById('summary-screen'), detail: document.getElementById('detail-screen') },
+            display: { speed: document.getElementById('live-speed'), time: document.getElementById('live-time'), dist: document.getElementById('live-dist'), sumDist: document.getElementById('sum-dist'), sumSpeed: document.getElementById('sum-speed'), sumAvg: document.getElementById('sum-avg'), sumTime: document.getElementById('sum-time') },
+            perf: { speed: document.getElementById('perf-live-speed'), val50: document.getElementById('val-0-50'), val100: document.getElementById('val-0-100'), box50: document.getElementById('box-0-50'), box100: document.getElementById('box-0-100'), gVal: document.getElementById('max-g-val'), btn: document.getElementById('btn-arm-perf'), status: document.getElementById('perf-status-text'), list: document.getElementById('perf-history-list') },
+            music: { title: document.getElementById('track-title'), artist: document.getElementById('track-artist'), playBtn: document.getElementById('btn-play-pause'), prevBtn: document.getElementById('btn-prev'), nextBtn: document.getElementById('btn-next'), volSlider: document.getElementById('vol-slider'), list: document.getElementById('playlist-container'), aura: document.getElementById('music-aura'), fileInput: document.getElementById('file-input') },
+            comm: { feed: document.getElementById('feed-container'), postInput: document.getElementById('post-input'), postBtn: document.getElementById('btn-post') }
         };
 
         // --- INIT ---
         window.addEventListener('load', () => {
             setTimeout(() => { app.splash.style.opacity = '0'; setTimeout(() => app.splash.style.display = 'none', 800); }, 2200);
             
+            // Auth Check
             auth.onAuthStateChanged(user => {
-                if (user) {
-                    currentUser = user;
-                    app.authScreen.classList.add('hidden');
-                    loadFeed();
-                } else {
-                    app.authScreen.classList.remove('hidden');
-                }
+                if (user) { currentUser = user; app.authScreen.classList.add('hidden'); loadFeed(); } 
+                else { app.authScreen.classList.remove('hidden'); }
             });
 
             renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
-            
-            // WEATHER: RESTORED TO SIMPLE 1.8 VERSION
-            if(navigator.geolocation) { 
-                navigator.geolocation.getCurrentPosition(initWeatherLoc, err => console.log(err)); 
-            }
+            if(navigator.geolocation) { navigator.geolocation.getCurrentPosition(initWeatherLoc, err => console.log(err)); }
         });
 
-        // --- AUTHENTICATION ---
+        // --- AUTH ---
         let isSignup = false;
         document.getElementById('auth-switch-btn').addEventListener('click', () => {
             isSignup = !isSignup;
-            const btnLogin = document.getElementById('btn-login-email');
-            const btnSignup = document.getElementById('btn-signup-email');
+            const btnLogin = document.getElementById('btn-login-email'); const btnSignup = document.getElementById('btn-signup-email');
             const switchTxt = document.getElementById('auth-switch-btn');
-            
-            if(isSignup) {
-                btnLogin.style.display = 'none'; btnSignup.style.display = 'block';
-                switchTxt.innerText = "Have an account? Log In";
-            } else {
-                btnLogin.style.display = 'block'; btnSignup.style.display = 'none';
-                switchTxt.innerText = "No account? Sign Up";
-            }
+            if(isSignup) { btnLogin.style.display = 'none'; btnSignup.style.display = 'block'; switchTxt.innerText = "Have an account? Log In"; } 
+            else { btnLogin.style.display = 'block'; btnSignup.style.display = 'none'; switchTxt.innerText = "No account? Sign Up"; }
         });
-
-        document.getElementById('btn-login-email').addEventListener('click', () => {
-            const e = document.getElementById('auth-email').value;
-            const p = document.getElementById('auth-pass').value;
-            auth.signInWithEmailAndPassword(e, p).catch(err => alert(err.message));
-        });
-
+        document.getElementById('btn-login-email').addEventListener('click', () => { auth.signInWithEmailAndPassword(document.getElementById('auth-email').value, document.getElementById('auth-pass').value).catch(err => alert(err.message)); });
         document.getElementById('btn-signup-email').addEventListener('click', () => {
-            const e = document.getElementById('auth-email').value;
-            const p = document.getElementById('auth-pass').value;
-            auth.createUserWithEmailAndPassword(e, p).then(cred => {
-                db_fire.collection('users').doc(cred.user.uid).set({
-                    email: e,
-                    username: e.split('@')[0],
-                    joined: new Date()
-                });
-            }).catch(err => alert(err.message));
+            const e = document.getElementById('auth-email').value; const p = document.getElementById('auth-pass').value;
+            auth.createUserWithEmailAndPassword(e, p).then(cred => { db_fire.collection('users').doc(cred.user.uid).set({ email: e, username: e.split('@')[0], joined: new Date() }); }).catch(err => alert(err.message));
         });
-
-        document.getElementById('btn-login-google').addEventListener('click', () => {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).catch(err => alert("Google Login Error: " + err.message + " (Try Email on iOS Home Screen)"));
-        });
+        document.getElementById('btn-login-google').addEventListener('click', () => { const provider = new firebase.auth.GoogleAuthProvider(); auth.signInWithPopup(provider).catch(err => alert("Google Login Blocked by Apple PWA Policy. Please use Email/Password.")); });
 
         // --- COMMUNITY ---
         app.comm.postBtn.addEventListener('click', () => {
-            const txt = app.comm.postInput.value;
-            if(!txt || !currentUser) return;
-            
-            db_fire.collection('posts').add({
-                text: txt,
-                uid: currentUser.uid,
-                author: currentUser.displayName || currentUser.email.split('@')[0],
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            const txt = app.comm.postInput.value; if(!txt || !currentUser) return;
+            db_fire.collection('posts').add({ text: txt, uid: currentUser.uid, author: currentUser.email.split('@')[0], timestamp: firebase.firestore.FieldValue.serverTimestamp() });
             app.comm.postInput.value = "";
         });
-
         function loadFeed() {
             db_fire.collection('posts').orderBy('timestamp', 'desc').limit(20).onSnapshot(snap => {
                 app.comm.feed.innerHTML = "";
                 snap.forEach(doc => {
                     const post = doc.data();
                     const date = post.timestamp ? new Date(post.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "Just now";
-                    
-                    const div = document.createElement('div');
-                    div.className = 'post-card';
-                    div.innerHTML = `
-                        <div class="post-header">
-                            <div class="post-avatar">${post.author.charAt(0).toUpperCase()}</div>
-                            <span class="post-user">${post.author}</span>
-                            <span class="post-date">${date}</span>
-                        </div>
-                        <div class="post-content">${post.text}</div>
-                        <div class="post-actions">
-                            <span class="action-btn"><i class="fa-regular fa-heart"></i> Like</span>
-                            <span class="action-btn"><i class="fa-regular fa-comment"></i> Reply</span>
-                        </div>
-                    `;
+                    const div = document.createElement('div'); div.className = 'post-card';
+                    div.innerHTML = `<div class="post-header"><div class="post-avatar">${post.author.charAt(0).toUpperCase()}</div><span class="post-user">${post.author}</span><span class="post-date">${date}</span></div><div class="post-content">${post.text}</div><div class="post-actions"><span class="action-btn"><i class="fa-regular fa-heart"></i> Like</span><span class="action-btn"><i class="fa-regular fa-comment"></i> Reply</span></div>`;
                     app.comm.feed.appendChild(div);
                 });
             });
         }
 
-        // --- DB LOCAL MUSIC ---
+        // --- DB LOCAL MUSIC (1.8 LOGIC) ---
         let db; const request = indexedDB.open("DriverHubDB", 1);
         request.onupgradeneeded = function(event) { db = event.target.result; db.createObjectStore("music", { keyPath: "id" }); };
         request.onsuccess = function(event) { db = event.target.result; loadMusicFromDB(); };
@@ -490,123 +394,46 @@
             const req = transaction.objectStore("music").getAll();
             req.onsuccess = function() {
                 if(req.result && req.result.length > 0) {
-                    req.result.forEach(t => playlist.push(t));
-                    playlist.sort((a,b) => b.id - a.id);
-                    renderPlaylist();
-                    if(playlist.length > 0) loadTrack(0, false);
+                    req.result.forEach(t => playlist.push(t)); playlist.sort((a,b) => b.id - a.id); renderPlaylist(); if(playlist.length > 0) loadTrack(0, false);
                 }
             };
         }
 
-        // --- CO-PILOT (RESTORED TO 1.8) ---
+        // --- CO-PILOT (1.8 LOGIC - RESTORED) ---
         function initCoPilot() {
-            // Check support
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                app.slogan.innerText = "Co-Pilot not supported";
-                return;
-            }
-
-            recognition = new SpeechRecognition();
-            recognition.lang = 'de-DE';
-            recognition.continuous = false; // Stop after one command
-            recognition.interimResults = false;
-
-            recognition.onstart = () => {
-                isListening = true;
-                app.copilotTrigger.classList.add('listening');
-                app.slogan.innerText = "Ich höre zu...";
-            };
-
-            recognition.onend = () => {
-                isListening = false;
-                app.copilotTrigger.classList.remove('listening');
-                app.slogan.innerText = "Tap Logo for Co-Pilot";
-            };
-
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript.toLowerCase();
-                console.log("Co-Pilot heard:", transcript);
-                handleVoiceCommand(transcript);
-            };
-
-            // Trigger Event
+            if (!SpeechRecognition) return;
+            recognition = new SpeechRecognition(); recognition.lang = 'de-DE'; recognition.continuous = false; recognition.interimResults = false;
+            recognition.onstart = () => { isListening = true; app.copilotTrigger.classList.add('listening'); app.slogan.innerText = "Ich höre zu..."; };
+            recognition.onend = () => { isListening = false; app.copilotTrigger.classList.remove('listening'); app.slogan.innerText = "Tap Logo for Co-Pilot"; };
+            recognition.onresult = (event) => { handleVoiceCommand(event.results[0][0].transcript.toLowerCase()); };
             app.copilotTrigger.addEventListener('click', () => {
-                if (isListening) {
-                    recognition.stop();
-                } else {
+                if (isListening) { recognition.stop(); } else {
                     speak("Hey da. DriverHub CoPilot hier, wie kann ich helfen?");
-                    // Delay listening slightly to not record the voice itself
-                    setTimeout(() => recognition.start(), 2500);
+                    setTimeout(() => recognition.start(), 2000);
                 }
             });
         }
-
         function handleVoiceCommand(cmd) {
-            let reply = "";
-            
-            // LOGIC
-            if (cmd.includes("fahrt") || cmd.includes("start") || cmd.includes("drive")) {
-                reply = "Starte Fahrt.";
-                app.screens.drive.style.display = 'flex';
-                app.nav.style.display = 'none';
-                startTracking();
-            }
-            else if (cmd.includes("musik") || cmd.includes("play") || cmd.includes("abspielen")) {
-                reply = "Musik wird gestartet.";
-                togglePlay(); 
-            }
-            else if (cmd.includes("pause") || cmd.includes("stopp")) {
-                reply = "Pausiert.";
-                if(isPlaying) togglePlay();
-            }
-            else if (cmd.includes("wetter") || cmd.includes("temperatur")) {
-                reply = "Es sind aktuell " + app.tempText.innerText + " in " + app.locText.innerText;
-            }
-            else if (cmd.includes("garage")) {
-                reply = "Öffne Garage.";
-                document.querySelectorAll('.nav-item')[4].click();
-            }
-            else if (cmd.includes("performance") || cmd.includes("leistung")) {
-                reply = "Performance Modus aktiv.";
-                document.querySelectorAll('.nav-item')[1].click();
-            }
-            else {
-                reply = "Kommando nicht erkannt.";
-            }
-
+            let reply = "Kommando nicht erkannt.";
+            if (cmd.includes("fahrt") || cmd.includes("start") || cmd.includes("drive")) { reply = "Starte Fahrt."; app.screens.drive.style.display = 'flex'; app.nav.style.display = 'none'; startTracking(); }
+            else if (cmd.includes("musik") || cmd.includes("play")) { reply = "Musik wird gestartet."; togglePlay(); }
+            else if (cmd.includes("pause")) { reply = "Pausiert."; if(isPlaying) togglePlay(); }
+            else if (cmd.includes("wetter")) { reply = "Es sind aktuell " + app.tempText.innerText + " in " + app.locText.innerText; }
+            else if (cmd.includes("garage")) { reply = "Öffne Garage."; document.querySelectorAll('.nav-item')[4].click(); }
+            else if (cmd.includes("performance")) { reply = "Performance Modus aktiv."; document.querySelectorAll('.nav-item')[1].click(); }
             speak(reply);
         }
+        function speak(text) { if (!synth) return; const utter = new SpeechSynthesisUtterance(text); synth.speak(utter); }
 
-        function speak(text) {
-            if (!synth) return;
-            const utter = new SpeechSynthesisUtterance(text);
-            utter.lang = 'de-DE';
-            synth.speak(utter);
-        }
-
-        // --- NAVIGATION ---
-        document.querySelectorAll('.nav-item').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const targetId = btn.getAttribute('data-target');
-                document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active')); btn.classList.add('active');
-                Object.values(app.screens).forEach(s => { if(s && !s.classList.contains('screen-overlay')) s.classList.remove('active'); });
-                if(app.screens[targetId.split('-')[0]]) { app.screens[targetId.split('-')[0]].classList.add('active'); }
-            });
-        });
-
-        // --- MUSIC ---
+        // --- MUSIC PLAYER (1.8 LOGIC) ---
         function initMusicPlayer() {
-            app.music.playBtn.addEventListener('click', togglePlay);
-            app.music.nextBtn.addEventListener('click', nextTrack);
-            app.music.prevBtn.addEventListener('click', prevTrack);
-            app.music.volSlider.addEventListener('input', (e) => { audioPlayer.volume = e.target.value; });
+            app.music.playBtn.addEventListener('click', togglePlay); app.music.nextBtn.addEventListener('click', nextTrack); app.music.prevBtn.addEventListener('click', prevTrack); app.music.volSlider.addEventListener('input', (e) => { audioPlayer.volume = e.target.value; });
             app.music.fileInput.addEventListener('change', function(e) {
                 const file = e.target.files[0]; if (!file) return;
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const audioData = e.target.result;
-                    const newTrack = { id: Date.now(), title: file.name.replace(/\.[^/.]+$/, ""), artist: "Local File", src: audioData };
+                    const audioData = e.target.result; const newTrack = { id: Date.now(), title: file.name.replace(/\.[^/.]+$/, ""), artist: "Local File", src: audioData };
                     saveTrackToDB(newTrack); playlist.unshift(newTrack); renderPlaylist(); loadTrack(0, true);
                 };
                 reader.readAsDataURL(file);
@@ -614,26 +441,28 @@
             audioPlayer.addEventListener('error', (e) => { console.error("Audio Error", e); isPlaying = false; updatePlayBtn(); });
         }
         function renderPlaylist() {
-            app.music.list.innerHTML = "";
-            playlist.forEach((track, index) => {
-                const div = document.createElement('div'); div.className = 'track-row'; if(index === currentTrackIdx) div.classList.add('active');
-                div.innerHTML = `<div><h5>${track.title}</h5><p>${track.artist}</p></div><i class="fa-solid fa-play" style="font-size:0.8rem"></i>`;
-                div.addEventListener('click', () => loadTrack(index)); app.music.list.appendChild(div);
-            });
+            app.music.list.innerHTML = ""; playlist.forEach((track, index) => { const div = document.createElement('div'); div.className = 'track-row'; if(index === currentTrackIdx) div.classList.add('active'); div.innerHTML = `<div><h5>${track.title}</h5><p>${track.artist}</p></div><i class="fa-solid fa-play" style="font-size:0.8rem"></i>`; div.addEventListener('click', () => loadTrack(index)); app.music.list.appendChild(div); });
         }
-        function loadTrack(index, autoPlay = true) {
-            if(index < 0 || index >= playlist.length) return;
-            currentTrackIdx = index; const track = playlist[index];
-            audioPlayer.src = track.src; app.music.title.innerText = track.title; app.music.artist.innerText = track.artist;
-            renderPlaylist();
-            if(autoPlay) { audioPlayer.play().then(() => { isPlaying = true; updatePlayBtn(); }).catch(e => { isPlaying = false; updatePlayBtn(); }); }
-        }
+        function loadTrack(index, autoPlay = true) { if(index < 0 || index >= playlist.length) return; currentTrackIdx = index; const track = playlist[index]; audioPlayer.src = track.src; app.music.title.innerText = track.title; app.music.artist.innerText = track.artist; renderPlaylist(); if(autoPlay) { audioPlayer.play().then(() => { isPlaying = true; updatePlayBtn(); }).catch(e => { isPlaying = false; updatePlayBtn(); }); } }
         function togglePlay() { if(playlist.length === 0) { alert("Bitte erst Musik laden!"); return; } if(isPlaying) { audioPlayer.pause(); isPlaying = false; } else { audioPlayer.play(); isPlaying = true; } updatePlayBtn(); }
         function updatePlayBtn() { if(isPlaying) { app.music.playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>'; app.music.aura.classList.add('playing'); } else { app.music.playBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; app.music.aura.classList.remove('playing'); } }
         function nextTrack() { let next = currentTrackIdx + 1; if(next >= playlist.length) next = 0; loadTrack(next); }
         function prevTrack() { let prev = currentTrackIdx - 1; if(prev < 0) prev = playlist.length - 1; loadTrack(prev); }
 
-        // --- MAP & DRIVE ---
+        // --- NAVIGATION ---
+        document.querySelectorAll('.nav-item').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetId = btn.getAttribute('data-target'); document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active')); btn.classList.add('active');
+                Object.values(app.screens).forEach(s => { if(s && !s.classList.contains('screen-overlay')) s.classList.remove('active'); });
+                if(app.screens[targetId.split('-')[0]]) { app.screens[targetId.split('-')[0]].classList.add('active'); }
+            });
+        });
+
+        // --- CORE FUNCTIONS (1.8) ---
+        function updateTimeGreeting() { const h = new Date().getHours(); let txt = "WELCOME"; if (h >= 5 && h < 12) txt = "GOOD MORNING"; else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON"; else if (h >= 18 && h < 22) txt = "GOOD EVENING"; else txt = "NIGHT CRUISE"; app.greet.innerText = txt; }
+        function initWeatherLoc(pos) { const lat = pos.coords.latitude; const lng = pos.coords.longitude; fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`).then(r => r.json()).then(d => { app.locText.innerText = d.address.city || d.address.town || "Location Found"; }); fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`).then(r => r.json()).then(d => { const t = Math.round(d.current_weather.temperature); const c = d.current_weather.weathercode; app.tempText.innerText = t + "°"; if(c <= 1) app.weatherIcon.className = "fa-solid fa-sun"; else if(c <= 3) app.weatherIcon.className = "fa-solid fa-cloud-sun"; else app.weatherIcon.className = "fa-solid fa-cloud"; }); }
+        
+        // --- MAP & DRIVING ---
         document.getElementById('btn-start').addEventListener('click', () => { app.screens.drive.style.display = 'flex'; app.nav.style.display = 'none'; startTracking(); });
         document.getElementById('btn-stop').addEventListener('click', () => { stopTracking(); app.screens.drive.style.display = 'none'; app.screens.summary.style.display = 'flex'; });
         document.getElementById('btn-save-drive').addEventListener('click', () => { saveDriveToStorage(); app.screens.summary.style.display = 'none'; app.nav.style.display = 'flex'; document.querySelectorAll('.nav-item')[4].click(); });
@@ -647,10 +476,14 @@
         function openDetailView(drive) { app.screens.detail.style.display = 'block'; document.getElementById('detail-dist').innerText = drive.distance.toFixed(1); document.getElementById('detail-max').innerText = drive.maxSpeed; document.getElementById('detail-avg').innerText = drive.avgSpeed; setTimeout(() => { if(!detailMap) { detailMap = L.map('detail-map', { zoomControl: false }); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(detailMap); } detailMap.eachLayer((layer) => { if (!!layer.toGeoJSON) { detailMap.removeLayer(layer); } }); if(drive.pathData && drive.pathData.length > 0) { const polyline = L.polyline(drive.pathData, {color: '#4a90e2', weight: 5}).addTo(detailMap); detailMap.fitBounds(polyline.getBounds(), {padding: [50, 50]}); } }, 100); }
         document.getElementById('btn-close-detail').addEventListener('click', () => { app.screens.detail.style.display = 'none'; if(detailMap) { detailMap.remove(); detailMap = null; } });
         document.getElementById('btn-reset-data').addEventListener('click', () => { if(confirm("Alles löschen?")) { localStorage.removeItem('dh_drives_v2'); renderGarage(); } });
-
-        // --- UTIL (WEATHER RESTORED TO 1.8) ---
-        function updateTimeGreeting() { const h = new Date().getHours(); let txt = "WELCOME"; if (h >= 5 && h < 12) txt = "GOOD MORNING"; else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON"; else if (h >= 18 && h < 22) txt = "GOOD EVENING"; else txt = "NIGHT CRUISE"; app.greet.innerText = txt; }
-        function initWeatherLoc(pos) { const lat = pos.coords.latitude; const lng = pos.coords.longitude; fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`).then(r => r.json()).then(d => { app.locText.innerText = d.address.city || d.address.town || "Location Found"; }); fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`).then(r => r.json()).then(d => { const t = Math.round(d.current_weather.temperature); const c = d.current_weather.weathercode; app.tempText.innerText = t + "°"; if(c <= 1) app.weatherIcon.className = "fa-solid fa-sun"; else if(c <= 3) app.weatherIcon.className = "fa-solid fa-cloud-sun"; else app.weatherIcon.className = "fa-solid fa-cloud"; }); }
+        // --- PERF ---
+        app.perf.btn.addEventListener('click', () => { if(perfState === 'idle' || perfState === 'finished') { perfState = 'armed'; app.perf.btn.innerText = "READY"; app.perf.btn.classList.add('armed'); app.perf.status.innerText = "Launch when ready!"; app.perf.val50.innerText = "--.- s"; app.perf.val100.innerText = "--.- s"; app.perf.box50.classList.remove('active'); app.perf.box100.classList.remove('active'); maxG = 0; result50 = null; result100 = null; if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') { DeviceMotionEvent.requestPermission().then(s => { if (s === 'granted') startPerfSensors(); }).catch(console.error); } else { startPerfSensors(); } if (navigator.geolocation) { perfWatchId = navigator.geolocation.watchPosition(updatePerfLogic, handleError, {enableHighAccuracy: true}); } } else { resetPerfMode(); } });
+        function startPerfSensors() { window.addEventListener('devicemotion', handleMotion); }
+        function handleMotion(event) { if(perfState !== 'running') return; const x = event.acceleration.x || 0; const y = event.acceleration.y || 0; const z = event.acceleration.z || 0; const totalAccel = Math.sqrt(x*x + y*y + z*z); const currentG = totalAccel / 9.81; if(currentG > maxG) { maxG = currentG; app.perf.gVal.innerText = maxG.toFixed(2) + " G"; } }
+        function updatePerfLogic(position) { const speedKmh = (position.coords.speed || 0) * 3.6; app.perf.speed.innerText = speedKmh.toFixed(0); if(perfState === 'armed') { if(speedKmh > 2.0) { perfState = 'running'; perfStartTime = Date.now(); app.perf.btn.innerText = "GO!"; app.perf.status.innerText = "Recording..."; } } else if(perfState === 'running') { const duration = (Date.now() - perfStartTime) / 1000; if(!result50 && speedKmh >= 50) { result50 = duration.toFixed(2); app.perf.val50.innerText = result50 + " s"; app.perf.box50.classList.add('active'); } if(!result100 && speedKmh >= 100) { result100 = duration.toFixed(2); app.perf.val100.innerText = result100 + " s"; app.perf.box100.classList.add('active'); perfState = 'finished'; app.perf.btn.innerText = "RESET"; app.perf.btn.classList.remove('armed'); app.perf.status.innerText = "Run Complete!"; speak("Hundert erreicht in " + result100.replace('.', ',') + " Sekunden."); savePerfRun(); } } }
+        function resetPerfMode() { perfState = 'idle'; app.perf.btn.innerText = "ARM"; app.perf.btn.classList.remove('armed'); app.perf.status.innerText = "Tap to arm, then launch."; if(perfWatchId) navigator.geolocation.clearWatch(perfWatchId); window.removeEventListener('devicemotion', handleMotion); app.perf.speed.innerText = "0"; }
+        function savePerfRun() { const run = { id: Date.now(), date: new Date().toISOString(), res50: result50, res100: result100, maxG: maxG.toFixed(2) }; let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; runs.unshift(run); localStorage.setItem('dh_perf_v1', JSON.stringify(runs)); renderPerfHistory(); }
+        function renderPerfHistory() { let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; const list = app.perf.list; list.innerHTML = ''; runs.forEach(run => { const dateStr = new Date(run.date).toLocaleDateString('de-DE'); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h4>${dateStr}</h4><span>Max ${run.maxG} G</span></div><div class="right-side"><span style="color:#ff3b30; font-weight:bold;">0-100: ${run.res100}s</span><br><span style="font-size:0.75rem">0-50: ${run.res50}s</span></div>`; list.appendChild(item); }); }
     </script>
 </body>
 </html>
