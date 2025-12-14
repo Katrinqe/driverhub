@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 3.8.0 Stable</title>
+    <title>DriverHub 3.9.0 Stable</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -203,7 +203,7 @@
 </head>
 <body>
 
-    <div class="version-tag">v3.8.0</div>
+    <div class="version-tag">v3.9.0 Stable</div>
 
     <div id="auth-screen">
         <div class="auth-box">
@@ -243,7 +243,7 @@
         <section id="community-screen" class="screen">
             <div class="header-bar">
                 <h2 id="comm-title">Community</h2>
-                <i class="fa-solid fa-user-circle" id="user-profile-icon" style="font-size:1.5rem; cursor:pointer;" onclick="if(currentUser) openProfile(currentUser.uid)"></i>
+                <i class="fa-solid fa-rotate-right" onclick="refreshSocial()" style="font-size:1.2rem; cursor:pointer; color:#888;"></i>
             </div>
             
             <div class="content-scroll">
@@ -258,6 +258,7 @@
                         <div class="social-tab active" onclick="switchSocialTab('feed')">Feed</div>
                         <div class="social-tab" onclick="switchSocialTab('friends')">Freunde</div>
                         <div class="social-tab" onclick="switchSocialTab('chats')">Chats</div>
+                        <div class="social-tab" onclick="switchSocialTab('profile')">Profil</div>
                     </div>
 
                     <div id="tab-feed" class="tab-content-box">
@@ -442,6 +443,7 @@
         // Social Vars
         let viewingUserUid = null; 
         let activeChatId = null;
+        let feedUnsubscribe = null; // To manage listeners for refresh
 
         // --- 3. DOM ELEMENTS ---
         const app = {
@@ -535,7 +537,7 @@
             setInterval(manualRefreshWeather, 60000); 
         });
 
-        // --- 5. SOCIAL LOGIC (3.8.0 REDESIGN & FIXES) ---
+        // --- 5. SOCIAL LOGIC (3.9.0 UPDATES) ---
 
         // SECURITY: Simple XSS Protection
         function escapeHtml(text) {
@@ -547,6 +549,19 @@
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
         }
+
+        // FIX: Manual Refresh Button
+        window.refreshSocial = function() {
+            if(!currentUser) return;
+            const btn = document.querySelector('.fa-rotate-right');
+            btn.style.transition = "transform 0.5s";
+            btn.style.transform = "rotate(360deg)";
+            setTimeout(() => btn.style.transform = "rotate(0deg)", 500);
+            
+            // Re-trigger load functions
+            loadFriendsFeed();
+            loadChatInbox();
+        };
 
         // A. Tab Logic
         window.switchSocialTab = function(tabName) {
@@ -565,6 +580,9 @@
             } else if(tabName === 'chats') {
                 document.getElementById('tab-chats').style.display = 'block';
                 loadChatInbox(); 
+            } else if(tabName === 'profile') {
+                // FIX: Eigener Tab für Profil Zugriff
+                if(currentUser) openProfile(currentUser.uid);
             }
         };
 
@@ -666,7 +684,6 @@
         // E. Post Logic
         app.comm.postBtn.addEventListener('click', () => {
             const txt = app.comm.postInput.value; if(!txt) return;
-            // Basic Input Validation
             if(txt.length > 300) { alert("Text zu lang!"); return; }
 
             db_fire.collection('users').doc(currentUser.uid).get().then(doc => {
@@ -676,38 +693,51 @@
                     uid: currentUser.uid, 
                     author: uData.username || "User",
                     authorPic: uData.photoURL || "",
-                    likes: [], // NEU: Leeres Array für Likes
+                    likes: [], 
                     timestamp: firebase.firestore.FieldValue.serverTimestamp() 
                 });
                 app.comm.postInput.value = "";
             });
         });
 
-        // F. Friends Feed Logic (With Likes)
+        // F. Friends Feed Logic (Scroll Fixed)
         function loadFriendsFeed() {
-            db_fire.collection('follows').where('followerId', '==', currentUser.uid).onSnapshot(snap => {
+            if(feedUnsubscribe) feedUnsubscribe(); // Clean up old listener
+
+            // First get who I follow
+            db_fire.collection('follows').where('followerId', '==', currentUser.uid).get().then(snap => {
                 const followingIds = [];
                 snap.forEach(doc => followingIds.push(doc.data().followingId));
-                followingIds.push(currentUser.uid);
+                followingIds.push(currentUser.uid); // Always see own posts
 
-                db_fire.collection('posts').orderBy('timestamp', 'desc').limit(50).onSnapshot(postSnap => {
+                // Then listen to posts
+                feedUnsubscribe = db_fire.collection('posts').orderBy('timestamp', 'desc').limit(50).onSnapshot(postSnap => {
                     const container = app.comm.feed;
                     const msg = document.getElementById('no-friends-msg');
+                    
+                    // FIX: Save scroll position
+                    const currentScroll = container.parentElement.scrollTop;
+
                     container.innerHTML = "";
                     
-                    if(snap.empty && postSnap.empty) {
+                    let hasPosts = false;
+                    postSnap.forEach(doc => {
+                        const post = doc.data();
+                        if(followingIds.includes(post.uid)) {
+                             renderPost(post, container, doc.id);
+                             hasPosts = true;
+                        }
+                    });
+
+                    if(!hasPosts) {
                         container.appendChild(msg);
                         msg.style.display = 'block';
                     } else {
                         msg.style.display = 'none';
                     }
 
-                    postSnap.forEach(doc => {
-                        const post = doc.data();
-                        if(followingIds.includes(post.uid)) {
-                             renderPost(post, container, doc.id); 
-                        }
-                    });
+                    // FIX: Restore scroll position
+                    container.parentElement.scrollTop = currentScroll;
                 });
             });
         }
@@ -730,7 +760,6 @@
                 deleteBtn = `<button class="btn-delete-post" onclick="deletePost('${postId}')"><i class="fa-solid fa-trash"></i></button>`;
             }
 
-            // SAFETY: escapeHtml used here
             div.innerHTML = `
                 <div class="post-header" onclick="openProfile('${post.uid}')">
                     <div class="post-avatar" style="${avaStyle}">${avaContent}</div>
@@ -740,41 +769,28 @@
                 ${deleteBtn}
                 <div class="post-content">${escapeHtml(post.text)}</div>
                 <div class="post-actions">
-                    <span class="action-btn ${likeColorClass}" onclick="toggleLike('${postId}')">
+                    <span class="action-btn ${likeColorClass}" onclick="toggleLike('${postId}', ${isLiked})">
                         <i class="${likeIconClass}"></i> ${likes.length} Like${likes.length !== 1 ? 's' : ''}
                     </span>
                 </div>`;
             container.appendChild(div);
         }
 
-        // Like Funktion
-        window.toggleLike = function(postId) {
+        // FIX: Improved Like Function (No Disappearing)
+        window.toggleLike = function(postId, currentlyLiked) {
             const postRef = db_fire.collection('posts').doc(postId);
             
-            // Transaction um Race-Conditions zu vermeiden
-            db_fire.runTransaction((transaction) => {
-                return transaction.get(postRef).then((postDoc) => {
-                    if (!postDoc.exists) { throw "Post does not exist!"; }
-
-                    const postData = postDoc.data();
-                    const likes = postData.likes || [];
-                    let newLikes;
-
-                    if (likes.includes(currentUser.uid)) {
-                        // Unlike: User ID entfernen
-                        newLikes = likes.filter(uid => uid !== currentUser.uid);
-                    } else {
-                        // Like: User ID hinzufügen
-                        newLikes = [...likes, currentUser.uid];
-                    }
-
-                    transaction.update(postRef, { likes: newLikes });
-                });
-            }).then(() => {
-                console.log("Like updated");
-            }).catch((err) => {
-                console.error("Like failed: ", err);
-            });
+            if (currentlyLiked) {
+                // Remove Like safely
+                postRef.update({
+                    likes: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+                }).catch(err => console.error(err));
+            } else {
+                // Add Like safely
+                postRef.update({
+                    likes: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+                }).catch(err => console.error(err));
+            }
         };
 
         window.deletePost = function(postId) {
@@ -789,6 +805,13 @@
             app.comm.mainView.style.display = 'block'; 
             app.comm.chatView.style.display = 'none';
             document.getElementById('comm-title').innerText = "Community";
+            
+            // Zurück zum Feed Tab wenn man 'Back' drückt
+            document.querySelectorAll('.social-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.social-tab:first-child').classList.add('active');
+            document.getElementById('tab-feed').style.display = 'block';
+            document.getElementById('tab-friends').style.display = 'none';
+            document.getElementById('tab-chats').style.display = 'none';
         });
 
         function openProfile(uid) {
@@ -840,7 +863,6 @@
         document.getElementById('btn-edit-bio').addEventListener('click', () => {
              const newBio = prompt("Neue Bio:", document.getElementById('p-bio').innerText);
              if(newBio !== null) {
-                 // Basic sanitize
                  if(newBio.length > 100) { alert("Zu lang!"); return; }
                  db_fire.collection('users').doc(currentUser.uid).set({ bio: newBio }, { merge: true });
              }
@@ -901,7 +923,6 @@
             const resBox = app.comm.results;
             if(term.length < 2) { resBox.style.display = 'none'; return; }
             
-            // SECURITY: Limit 20
             db_fire.collection('users').limit(20).get().then(snap => {
                 resBox.innerHTML = "";
                 let count = 0;
@@ -956,7 +977,7 @@
                     const m = doc.data();
                     const bubble = document.createElement('div');
                     bubble.className = `chat-bubble ${m.senderId === currentUser.uid ? 'me' : 'them'}`;
-                    bubble.innerText = m.text; // Text content is auto-safe, but explicit escapeHtml is better
+                    bubble.innerText = m.text; 
                     msgBox.appendChild(bubble);
                 });
                 msgBox.scrollTop = msgBox.scrollHeight;
@@ -1001,7 +1022,6 @@
         // Map & Drive Logic
         document.getElementById('btn-start').addEventListener('click', () => { app.screens.drive.style.display = 'flex'; app.nav.style.display = 'none'; startTracking(); });
         
-        // FIX: Stop Drive Cleaner
         document.getElementById('btn-stop').addEventListener('click', () => { 
             stopTracking(); 
             app.screens.drive.style.display = 'none'; 
@@ -1030,7 +1050,6 @@
         
         function updateTimer() { const diff = new Date() - startTime; app.display.time.innerText = new Date(diff).toISOString().substr(11, 8); }
         
-        // FIX: Stop Tracking Clean-up
         function stopTracking() { 
             isDriving = false; 
             clearInterval(intervalId); 
