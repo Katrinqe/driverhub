@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 1.6.3 Stable Audio</title>
+    <title>DriverHub 1.7 Local Audio</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -121,7 +121,7 @@
         .btn-arm.armed { background: transparent; border: 2px solid var(--accent-red); animation: none; color: var(--accent-red); }
         @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(255,59,48,0.5); } 100% { transform: scale(1); } }
 
-        /* MUSIC */
+        /* MUSIC UI */
         .music-player-container { width: 100%; max-width: 320px; display: flex; flex-direction: column; align-items: center; }
         .album-art-wrapper { width: 200px; height: 200px; margin: 20px 0 30px 0; position: relative; display: flex; align-items: center; justify-content: center; }
         .album-art { width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(135deg, #1c1c1e, #000); box-shadow: 0 0 30px rgba(191, 90, 242, 0.1); position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,0.05); }
@@ -129,16 +129,24 @@
         .music-aura { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle, rgba(191,90,242,0.4) 0%, transparent 70%); z-index: 1; opacity: 0; transition: opacity 0.5s; }
         .music-aura.playing { animation: pulse-music 1.5s infinite ease-in-out; opacity: 1; }
         @keyframes pulse-music { 0% { transform: scale(0.9); opacity: 0.3; } 50% { transform: scale(1.2); opacity: 0.6; } 100% { transform: scale(0.9); opacity: 0.3; } }
-        .song-info { text-align: center; margin-bottom: 30px; }
+        .song-info { text-align: center; margin-bottom: 20px; }
         .song-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 5px; color: white; display: block; }
         .song-artist { font-size: 0.9rem; color: var(--accent-purple); text-transform: uppercase; letter-spacing: 1px; }
-        .controls { display: flex; align-items: center; gap: 30px; margin-bottom: 40px; }
+        
+        .controls { display: flex; align-items: center; gap: 30px; margin-bottom: 30px; }
         .btn-ctrl { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; transition: transform 0.1s; }
         .btn-ctrl:active { transform: scale(0.9); }
         .btn-play { width: 70px; height: 70px; border-radius: 50%; background: var(--accent-purple); box-shadow: 0 0 20px rgba(191, 90, 242, 0.4); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
-        .volume-container { width: 100%; display: flex; align-items: center; gap: 15px; margin-bottom: 30px; padding: 0 10px; }
+        .volume-container { width: 100%; display: flex; align-items: center; gap: 15px; margin-bottom: 20px; padding: 0 10px; }
         .vol-slider { flex: 1; -webkit-appearance: none; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; outline: none; }
         .vol-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: white; cursor: pointer; }
+        
+        /* FILE LOAD BUTTON STYLING */
+        .btn-load-file {
+            background: rgba(255,255,255,0.1); color: var(--accent-purple); border: 1px solid var(--accent-purple);
+            padding: 10px 20px; border-radius: 20px; font-size: 0.9rem; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+        }
+
         .playlist { width: 100%; text-align: left; }
         .track-row { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
         .track-row.active { color: var(--accent-purple); }
@@ -199,24 +207,34 @@
             <div class="header-bar"><h2>Music</h2></div>
             <div class="content-scroll">
                 <div class="music-player-container">
+                    
                     <div class="album-art-wrapper">
                         <div class="music-aura" id="music-aura"></div>
                         <div class="album-art"><i class="fa-solid fa-music music-icon-big"></i></div>
                     </div>
+                    
                     <div class="song-info">
-                        <span class="song-title" id="track-title">Select a Track</span>
-                        <span class="song-artist" id="track-artist">Archive Library</span>
+                        <span class="song-title" id="track-title">Select Music</span>
+                        <span class="song-artist" id="track-artist">Local or Stream</span>
                     </div>
+
+                    <input type="file" id="file-input" accept="audio/*" style="display:none">
+                    <button class="btn-load-file" onclick="document.getElementById('file-input').click()">
+                        <i class="fa-solid fa-folder-open"></i> Eigene Musik laden
+                    </button>
+
                     <div class="controls">
                         <button class="btn-ctrl" id="btn-prev"><i class="fa-solid fa-backward-step"></i></button>
                         <button class="btn-ctrl btn-play" id="btn-play-pause"><i class="fa-solid fa-play"></i></button>
                         <button class="btn-ctrl" id="btn-next"><i class="fa-solid fa-forward-step"></i></button>
                     </div>
+                    
                     <div class="volume-container">
                         <i class="fa-solid fa-volume-low" style="color:#888; font-size:0.8rem;"></i>
                         <input type="range" min="0" max="1" step="0.1" value="0.8" class="vol-slider" id="vol-slider">
                         <i class="fa-solid fa-volume-high" style="color:#888; font-size:0.8rem;"></i>
                     </div>
+                    
                     <div class="playlist" id="playlist-container"></div>
                 </div>
                 <div style="height: 100px;"></div>
@@ -297,16 +315,13 @@
         let perfWatchId = null, perfState = 'idle', perfStartTime = 0;
         let result50 = null, result100 = null, maxG = 0;
 
-        // --- MUSIC VARS (ARCHIVE.ORG - STABLE + NO CORS CHECK) ---
-        // Archive.org links are generally very stable. Using Synthwave/Chip style.
+        // --- MUSIC SETUP (LOCAL + FALLBACK) ---
+        // Backup Track hosted on GitHub Raw (often works on iOS)
         const playlist = [
-            { title: "Sunrise Over LA", artist: "TeknoAXE", src: "https://archive.org/download/tekno-ax-synthwave-collection/TeknoAXE%20-%20Synthwave%20D/Sunrise%20Over%20Los%20Angeles%20%28Synthwave%29.mp3" },
-            { title: "The White Kitty", artist: "Rolemusic", src: "https://archive.org/download/Rolemusic_projects_2013-09-06/Rolemusic_-_02_-_The_White_Kitty.mp3" },
-            { title: "Dune", artist: "Creo", src: "https://archive.org/download/Creo_Dune/Creo%20-%20Dune.mp3" }
+            { title: "Night Drive (Demo)", artist: "GitHub Raw", src: "https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Sample-files/master/sample.mp3" }
         ];
         let currentTrackIdx = 0;
         const audioPlayer = new Audio();
-        // audioPlayer.crossOrigin = "anonymous";  <-- ENTFERNT! Das fixt das Safari Problem oft.
         let isPlaying = false;
 
         // --- DOM ---
@@ -354,7 +369,8 @@
                 nextBtn: document.getElementById('btn-next'),
                 volSlider: document.getElementById('vol-slider'),
                 list: document.getElementById('playlist-container'),
-                aura: document.getElementById('music-aura')
+                aura: document.getElementById('music-aura'),
+                fileInput: document.getElementById('file-input')
             }
         };
 
@@ -390,8 +406,45 @@
             });
         });
 
-        // --- MUSIC LOGIC (ARCHIVE.ORG) ---
+        // --- MUSIC LOGIC (LOCAL FILE HANDLING) ---
         function initMusicPlayer() {
+            // Render Playlist (Default)
+            renderPlaylist();
+
+            // Setup Controls
+            app.music.playBtn.addEventListener('click', togglePlay);
+            app.music.nextBtn.addEventListener('click', nextTrack);
+            app.music.prevBtn.addEventListener('click', prevTrack);
+            app.music.volSlider.addEventListener('input', (e) => { audioPlayer.volume = e.target.value; });
+            
+            // LOCAL FILE HANDLER
+            app.music.fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Create a secure URL for the file
+                const fileUrl = URL.createObjectURL(file);
+                
+                // Add to playlist top
+                playlist.unshift({
+                    title: file.name.replace(/\.[^/.]+$/, ""), // remove extension
+                    artist: "Local File",
+                    src: fileUrl
+                });
+
+                renderPlaylist();
+                loadTrack(0, true); // Play immediately
+            });
+
+            // Error Handling
+            audioPlayer.addEventListener('error', (e) => {
+                console.error("Audio Error", e);
+                alert("Musik konnte nicht laden.\nBitte benutze den 'Eigene Musik laden' Button!");
+                isPlaying = false; updatePlayBtn();
+            });
+        }
+
+        function renderPlaylist() {
             app.music.list.innerHTML = "";
             playlist.forEach((track, index) => {
                 const div = document.createElement('div');
@@ -401,25 +454,6 @@
                 div.addEventListener('click', () => loadTrack(index));
                 app.music.list.appendChild(div);
             });
-
-            // Do NOT preload heavily, wait for user interaction
-            loadTrack(0, false);
-
-            app.music.playBtn.addEventListener('click', togglePlay);
-            app.music.nextBtn.addEventListener('click', nextTrack);
-            app.music.prevBtn.addEventListener('click', prevTrack);
-            app.music.volSlider.addEventListener('input', (e) => { audioPlayer.volume = e.target.value; });
-            audioPlayer.addEventListener('ended', nextTrack);
-            
-            // ERROR HANDLING (With Alert)
-            audioPlayer.addEventListener('error', (e) => {
-                console.error("Audio Error Code:", audioPlayer.error.code);
-                let msg = "Unknown";
-                if(audioPlayer.error.code === 4) msg = "Format/Source not supported (iOS blockt evtl.)";
-                if(audioPlayer.error.code === 2) msg = "Network Error";
-                alert("Playback Error: " + msg + "\nTry another track or check internet.");
-                isPlaying = false; updatePlayBtn();
-            });
         }
 
         function loadTrack(index, autoPlay = true) {
@@ -428,23 +462,15 @@
             audioPlayer.src = track.src;
             app.music.title.innerText = track.title;
             app.music.artist.innerText = track.artist;
-            const rows = document.querySelectorAll('.track-row');
-            rows.forEach(r => r.classList.remove('active'));
-            if(rows[index]) rows[index].classList.add('active');
+            renderPlaylist(); // Update active class
 
             if(autoPlay) {
-                // Promise handling for play()
-                const playPromise = audioPlayer.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(_ => {
-                        isPlaying = true; updatePlayBtn();
-                    })
-                    .catch(error => {
-                        console.log("Auto-play blocked:", error);
-                        // No alert here, just update UI
-                        isPlaying = false; updatePlayBtn();
-                    });
-                }
+                audioPlayer.play().then(() => {
+                    isPlaying = true; updatePlayBtn();
+                }).catch(e => {
+                    console.log("Play block:", e);
+                    isPlaying = false; updatePlayBtn();
+                });
             }
         }
 
@@ -452,11 +478,8 @@
             if(isPlaying) {
                 audioPlayer.pause(); isPlaying = false;
             } else {
-                const playPromise = audioPlayer.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(_ => { isPlaying = true; })
-                    .catch(error => { alert("Play Blocked: " + error.message); isPlaying = false; });
-                }
+                audioPlayer.play().catch(e => alert("Please load a local file first!"));
+                isPlaying = true;
             }
             updatePlayBtn();
         }
@@ -473,6 +496,7 @@
 
         function nextTrack() { let next = currentTrackIdx + 1; if(next >= playlist.length) next = 0; loadTrack(next); }
         function prevTrack() { let prev = currentTrackIdx - 1; if(prev < 0) prev = playlist.length - 1; loadTrack(prev); }
+
 
         // --- DRIVE, PERF, GARAGE (UNCHANGED) ---
         document.getElementById('btn-start').addEventListener('click', () => { app.screens.drive.style.display = 'flex'; app.nav.style.display = 'none'; startTracking(); });
