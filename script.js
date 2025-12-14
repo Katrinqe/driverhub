@@ -28,9 +28,6 @@ let viewingUserUid = null;
 let activeChatId = null;
 let feedUnsubscribe = null;
 
-// 3D Garage Vars
-let scene3D, camera3D, renderer3D, carMesh, garageAnimId;
-
 // --- 3. DOM ELEMENTS ---
 const app = {
     splash: document.getElementById('splash-screen'),
@@ -112,7 +109,6 @@ window.addEventListener('load', () => {
             app.authScreen.classList.add('hidden');
             initUserProfile(); 
             loadFriendsFeed(); 
-            init3DGarage(); 
         } else {
             app.authScreen.classList.remove('hidden');
         }
@@ -170,14 +166,13 @@ function initUserProfile() {
                 followers: 0,
                 following: 0,
                 searchKey: currentUser.email.split('@')[0].toLowerCase(), 
-                joined: new Date(),
-                carColor: "#ff0000"
+                joined: new Date()
             };
             db_fire.collection('users').doc(currentUser.uid).set(baseData, {merge:true});
         } else {
             const data = doc.data();
             
-            // NEU: Name speichern und Begrüßung updaten
+            // NEU: Name laden
             if(data.username) {
                 currentUserName = data.username;
                 updateTimeGreeting();
@@ -192,122 +187,6 @@ function initUserProfile() {
         }
     });
 }
-
-// --- 3D GARAGE LOGIC (MIT ECHTEM MODELL) ---
-function init3DGarage() {
-    const container = document.getElementById('garage-canvas-container');
-    if (!container) return;
-
-    scene3D = new THREE.Scene();
-    scene3D.background = new THREE.Color(0x111111);
-    
-    camera3D = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
-    camera3D.position.set(4, 2, 4);
-    camera3D.lookAt(0, 0.5, 0);
-
-    renderer3D = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer3D.setSize(container.clientWidth, container.clientHeight);
-    renderer3D.outputEncoding = THREE.sRGBEncoding;
-    container.appendChild(renderer3D.domElement);
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1);
-    scene3D.add(ambientLight);
-    const dirLight = new THREE.DirectionalLight(0xffffff, 2);
-    dirLight.position.set(5, 10, 7);
-    scene3D.add(dirLight);
-
-    const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
-    scene3D.add(gridHelper);
-
-    // --- MODELL LADEN ---
-    const loader = new THREE.GLTFLoader();
-    const modelUrl = 'https://firebasestorage.googleapis.com/v0/b/driverhub-5a567.firebasestorage.app/o/models%2Fhatchback-sports.glb?alt=media&token=f2e4fb7f-6e1b-43d1-8cc3-6b8a7d57be3e';
-
-    loader.load(modelUrl, function (gltf) {
-        carMesh = gltf.scene;
-        
-        // Auto-Scaler
-        const box = new THREE.Box3().setFromObject(carMesh);
-        const size = box.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-        const scaleFactor = 3.5 / maxDim;
-        carMesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
-        
-        box.setFromObject(carMesh); 
-        const center = box.getCenter(new THREE.Vector3());
-        carMesh.position.x = carMesh.position.x - center.x;
-        carMesh.position.z = carMesh.position.z - center.z;
-        carMesh.position.y = -box.min.y;
-
-        carMesh.traverse((node) => {
-            if (node.isMesh) {
-                node.castShadow = true;
-                node.receiveShadow = true;
-                if(!node.name.toLowerCase().includes('glass') && !node.name.toLowerCase().includes('window')) {
-                    node.name = "Body";
-                }
-            }
-        });
-
-        scene3D.add(carMesh);
-        
-        if(currentUser) {
-            db_fire.collection('users').doc(currentUser.uid).get().then(doc => {
-                if(doc.exists && doc.data().carColor) {
-                    updateCarColor(doc.data().carColor);
-                }
-            });
-        }
-
-    }, undefined, function (error) {
-        console.error('Fehler beim Laden des Autos:', error);
-    });
-
-    const animate = function () {
-        requestAnimationFrame(animate);
-        if(carMesh) carMesh.rotation.y += 0.002;
-        renderer3D.render(scene3D, camera3D);
-    };
-    animate();
-
-    window.addEventListener('resize', () => {
-        if(container && camera3D && renderer3D) {
-            const width = container.clientWidth;
-            const height = container.clientHeight;
-            renderer3D.setSize(width, height);
-            camera3D.aspect = width / height;
-            camera3D.updateProjectionMatrix();
-        }
-    });
-
-    document.getElementById('btn-save-car').addEventListener('click', () => {
-        const color = document.getElementById('car-color-picker').value;
-        if(currentUser) {
-            db_fire.collection('users').doc(currentUser.uid).update({ carColor: color })
-            .then(() => alert("Lackierung gespeichert!"));
-        }
-    });
-
-    document.getElementById('car-color-picker').addEventListener('input', (e) => {
-        updateCarColor(e.target.value);
-    });
-}
-
-function updateCarColor(hex) {
-    if(!carMesh) return;
-    carMesh.traverse((child) => {
-        if (child.isMesh) {
-            if(child.name === "Body" || child.name.includes("Paint") || child.name.includes("Body")) {
-                child.material.color.set(hex);
-            } else {
-                child.material = child.material.clone();
-                child.material.color.set(hex);
-            }
-        }
-    });
-}
-
-// --- END 3D LOGIC ---
 
 function loadChatInbox() {
     const list = document.getElementById('chats-list-container');
@@ -325,13 +204,7 @@ function loadChatInbox() {
                 const uData = uDoc.data() || {username: "Unknown"};
                 const d = document.createElement('div');
                 d.className = 'list-item-row';
-                d.innerHTML = `
-                    <div class="s-avatar" style="${uData.photoURL ? `background-image:url('${uData.photoURL}')` : `background:var(--accent-blue)`}"></div>
-                    <div class="list-info">
-                        <span class="list-name">${escapeHtml(uData.username)}</span>
-                        <span class="list-sub">Chat öffnen</span>
-                    </div>
-                `;
+                d.innerHTML = `<div class="s-avatar" style="${uData.photoURL ? `background-image:url('${uData.photoURL}')` : `background:var(--accent-blue)`}"></div><div class="list-info"><span class="list-name">${escapeHtml(uData.username)}</span><span class="list-sub">Chat öffnen</span></div>`;
                 d.onclick = () => { viewingUserUid = partnerUid; startChat(partnerUid, uData.username); };
                 list.appendChild(d);
             });
@@ -354,13 +227,7 @@ function loadFriendsList() {
                 const uData = uDoc.data();
                 const d = document.createElement('div');
                 d.className = 'list-item-row';
-                d.innerHTML = `
-                    <div class="s-avatar" style="${uData.photoURL ? `background-image:url('${uData.photoURL}')` : `background:var(--accent-blue)`}"></div>
-                    <div class="list-info">
-                        <span class="list-name">${escapeHtml(uData.username)}</span>
-                        <span class="list-sub">${escapeHtml(uData.bio || "")}</span>
-                    </div>
-                `;
+                d.innerHTML = `<div class="s-avatar" style="${uData.photoURL ? `background-image:url('${uData.photoURL}')` : `background:var(--accent-blue)`}"></div><div class="list-info"><span class="list-name">${escapeHtml(uData.username)}</span><span class="list-sub">${escapeHtml(uData.bio || "")}</span></div>`;
                 d.onclick = () => openProfile(uDoc.id);
                 list.appendChild(d);
             });
@@ -373,9 +240,7 @@ app.comm.postBtn.addEventListener('click', () => {
     if(txt.length > 300) { alert("Text zu lang!"); return; }
     db_fire.collection('users').doc(currentUser.uid).get().then(doc => {
         const uData = doc.data() || {};
-        db_fire.collection('posts').add({ 
-            text: txt, uid: currentUser.uid, author: uData.username || "User", authorPic: uData.photoURL || "", likes: [], timestamp: firebase.firestore.FieldValue.serverTimestamp() 
-        });
+        db_fire.collection('posts').add({ text: txt, uid: currentUser.uid, author: uData.username || "User", authorPic: uData.photoURL || "", likes: [], timestamp: firebase.firestore.FieldValue.serverTimestamp() });
         app.comm.postInput.value = "";
     });
 });
@@ -386,7 +251,6 @@ function loadFriendsFeed() {
         const followingIds = [];
         snap.forEach(doc => followingIds.push(doc.data().followingId));
         followingIds.push(currentUser.uid); 
-
         feedUnsubscribe = db_fire.collection('posts').orderBy('timestamp', 'desc').limit(50).onSnapshot(postSnap => {
             const container = app.comm.feed;
             const msg = document.getElementById('no-friends-msg');
@@ -408,139 +272,60 @@ function renderPost(post, container, postId) {
     let avaStyle = `background: var(--accent-blue);`;
     let avaContent = post.author.charAt(0).toUpperCase();
     if(post.authorPic) { avaStyle = `background-image: url('${post.authorPic}');`; avaContent = ""; }
-
     const likes = post.likes || [];
     const isLiked = likes.includes(currentUser.uid);
     const likeIconClass = isLiked ? "fa-solid fa-heart" : "fa-regular fa-heart";
     const likeColorClass = isLiked ? "liked" : "";
-
     const div = document.createElement('div'); div.className = 'post-card';
     let deleteBtn = "";
-    if(post.uid === currentUser.uid) {
-        deleteBtn = `<button class="btn-delete-post" onclick="deletePost('${postId}')"><i class="fa-solid fa-trash"></i></button>`;
-    }
-
-    div.innerHTML = `
-        <div class="post-header" onclick="openProfile('${post.uid}')">
-            <div class="post-avatar" style="${avaStyle}">${avaContent}</div>
-            <span class="post-user">${escapeHtml(post.author)}</span>
-            <span class="post-date">${date}</span>
-        </div>
-        ${deleteBtn}
-        <div class="post-content">${escapeHtml(post.text)}</div>
-        <div class="post-actions">
-            <span class="action-btn ${likeColorClass}" onclick="toggleLike('${postId}', ${isLiked})">
-                <i class="${likeIconClass}"></i> ${likes.length} Like${likes.length !== 1 ? 's' : ''}
-            </span>
-        </div>`;
+    if(post.uid === currentUser.uid) { deleteBtn = `<button class="btn-delete-post" onclick="deletePost('${postId}')"><i class="fa-solid fa-trash"></i></button>`; }
+    div.innerHTML = `<div class="post-header" onclick="openProfile('${post.uid}')"><div class="post-avatar" style="${avaStyle}">${avaContent}</div><span class="post-user">${escapeHtml(post.author)}</span><span class="post-date">${date}</span></div>${deleteBtn}<div class="post-content">${escapeHtml(post.text)}</div><div class="post-actions"><span class="action-btn ${likeColorClass}" onclick="toggleLike('${postId}', ${isLiked})"><i class="${likeIconClass}"></i> ${likes.length} Like${likes.length !== 1 ? 's' : ''}</span></div>`;
     container.appendChild(div);
 }
 
 window.toggleLike = function(postId, currentlyLiked) {
     const postRef = db_fire.collection('posts').doc(postId);
-    if (currentlyLiked) {
-        postRef.update({ likes: firebase.firestore.FieldValue.arrayRemove(currentUser.uid) }).catch(err => console.error(err));
-    } else {
-        postRef.update({ likes: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) }).catch(err => console.error(err));
-    }
+    if (currentlyLiked) { postRef.update({ likes: firebase.firestore.FieldValue.arrayRemove(currentUser.uid) }).catch(err => console.error(err)); } 
+    else { postRef.update({ likes: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) }).catch(err => console.error(err)); }
 };
 
-window.deletePost = function(postId) {
-    if(confirm("Post löschen?")) { db_fire.collection('posts').doc(postId).delete(); }
-};
+window.deletePost = function(postId) { if(confirm("Post löschen?")) { db_fire.collection('posts').doc(postId).delete(); } };
 
 document.getElementById('btn-back-feed').addEventListener('click', () => {
-    app.comm.profileView.style.display = 'none';
-    app.comm.mainView.style.display = 'block'; 
-    app.comm.chatView.style.display = 'none';
+    app.comm.profileView.style.display = 'none'; app.comm.mainView.style.display = 'block'; app.comm.chatView.style.display = 'none';
     document.getElementById('comm-title').innerText = "Community";
     document.querySelectorAll('.social-tab').forEach(t => t.classList.remove('active'));
     document.querySelector('.social-tab:first-child').classList.add('active');
-    document.getElementById('tab-feed').style.display = 'block';
-    document.getElementById('tab-friends').style.display = 'none';
-    document.getElementById('tab-chats').style.display = 'none';
+    document.getElementById('tab-feed').style.display = 'block'; document.getElementById('tab-friends').style.display = 'none'; document.getElementById('tab-chats').style.display = 'none';
 });
 
 function openProfile(uid) {
     viewingUserUid = uid;
     const isMe = (currentUser.uid === uid);
-    
-    app.comm.mainView.style.display = 'none';
-    app.comm.profileView.style.display = 'block';
-    app.comm.chatView.style.display = 'none';
+    app.comm.mainView.style.display = 'none'; app.comm.profileView.style.display = 'block'; app.comm.chatView.style.display = 'none';
     document.getElementById('comm-title').innerText = isMe ? "Mein Profil" : "Profil";
-
-    const pName = document.getElementById('p-name');
-    const pBio = document.getElementById('p-bio');
-    const pImg = document.getElementById('p-header-img');
-    const btnEditImg = document.getElementById('btn-edit-img');
-    const btnEditBio = document.getElementById('btn-edit-bio');
-    const btnFollow = document.getElementById('btn-follow-action');
-    const btnMsg = document.getElementById('btn-msg-action');
-    const postList = document.getElementById('profile-posts-list');
-    
-    const garageControls = document.getElementById('garage-controls');
-
+    const pName = document.getElementById('p-name'); const pBio = document.getElementById('p-bio'); const pImg = document.getElementById('p-header-img');
+    const btnEditImg = document.getElementById('btn-edit-img'); const btnEditBio = document.getElementById('btn-edit-bio'); const btnFollow = document.getElementById('btn-follow-action'); const btnMsg = document.getElementById('btn-msg-action'); const postList = document.getElementById('profile-posts-list');
     pName.innerText = "Lade..."; pBio.innerText = "..."; pImg.style.backgroundImage = "none"; postList.innerHTML = "";
-    
     db_fire.collection('users').doc(uid).onSnapshot(doc => {
         if(!doc.exists) return;
         const data = doc.data();
-        pName.innerText = data.username;
-        pBio.innerText = data.bio || "Keine Bio.";
+        pName.innerText = data.username; pBio.innerText = data.bio || "Keine Bio.";
         if(data.photoURL) pImg.style.backgroundImage = `url('${data.photoURL}')`;
-        document.getElementById('p-followers').innerText = data.followers || 0;
-        document.getElementById('p-following').innerText = data.following || 0;
-
-        // 3D Car Update
-        if(data.carColor) {
-            updateCarColor(data.carColor);
-            if(isMe) document.getElementById('car-color-picker').value = data.carColor;
-        }
+        document.getElementById('p-followers').innerText = data.followers || 0; document.getElementById('p-following').innerText = data.following || 0;
     });
-
-    db_fire.collection('posts').where('uid', '==', uid).orderBy('timestamp', 'desc').limit(10).get().then(snap => {
-        snap.forEach(doc => renderPost(doc.data(), postList, doc.id));
-    });
-
-    if(isMe) {
-        btnEditImg.style.display = 'flex'; btnEditBio.style.display = 'inline-block';
-        btnFollow.style.display = 'none'; btnMsg.style.display = 'none';
-        document.getElementById('profile-post-section').style.display = 'block';
-        garageControls.style.display = 'flex'; // Show controls only for me
-    } else {
-        btnEditImg.style.display = 'none'; btnEditBio.style.display = 'none';
-        btnFollow.style.display = 'inline-block'; btnMsg.style.display = 'inline-block';
-        document.getElementById('profile-post-section').style.display = 'none';
-        garageControls.style.display = 'none'; // Hide controls for others
-        checkIfFollowing(uid);
-    }
+    db_fire.collection('posts').where('uid', '==', uid).orderBy('timestamp', 'desc').limit(10).get().then(snap => { snap.forEach(doc => renderPost(doc.data(), postList, doc.id)); });
+    if(isMe) { btnEditImg.style.display = 'flex'; btnEditBio.style.display = 'inline-block'; btnFollow.style.display = 'none'; btnMsg.style.display = 'none'; document.getElementById('profile-post-section').style.display = 'block'; } 
+    else { btnEditImg.style.display = 'none'; btnEditBio.style.display = 'none'; btnFollow.style.display = 'inline-block'; btnMsg.style.display = 'inline-block'; document.getElementById('profile-post-section').style.display = 'none'; checkIfFollowing(uid); }
 }
 
-document.getElementById('btn-edit-bio').addEventListener('click', () => {
-     const newBio = prompt("Neue Bio:", document.getElementById('p-bio').innerText);
-     if(newBio !== null) {
-         if(newBio.length > 100) { alert("Zu lang!"); return; }
-         db_fire.collection('users').doc(currentUser.uid).set({ bio: newBio }, { merge: true });
-     }
-});
-
+document.getElementById('btn-edit-bio').addEventListener('click', () => { const newBio = prompt("Neue Bio:", document.getElementById('p-bio').innerText); if(newBio !== null) { if(newBio.length > 100) { alert("Zu lang!"); return; } db_fire.collection('users').doc(currentUser.uid).set({ bio: newBio }, { merge: true }); } });
 document.getElementById('btn-edit-img').addEventListener('click', () => document.getElementById('profile-img-input').click());
 document.getElementById('profile-img-input').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if(!file) return;
+    const file = e.target.files[0]; if(!file) return;
     const storageRef = storage.ref(`profiles/${currentUser.uid}`);
     const uploadTask = storageRef.put(file);
-    
-    uploadTask.on('state_changed', 
-        (snap) => { console.log("Upload läuft..."); },
-        (err) => { alert("Fehler: " + err.message); },
-        () => {
-            uploadTask.snapshot.ref.getDownloadURL().then((url) => {
-                db_fire.collection('users').doc(currentUser.uid).set({ photoURL: url }, { merge: true });
-            });
-        }
-    );
+    uploadTask.on('state_changed', (snap) => { console.log("Upload läuft..."); }, (err) => { alert("Fehler: " + err.message); }, () => { uploadTask.snapshot.ref.getDownloadURL().then((url) => { db_fire.collection('users').doc(currentUser.uid).set({ photoURL: url }, { merge: true }); }); });
 });
 
 document.getElementById('btn-follow-action').addEventListener('click', () => {
@@ -561,99 +346,43 @@ document.getElementById('btn-follow-action').addEventListener('click', () => {
     });
 });
 
-function checkIfFollowing(uid) {
-     db_fire.collection('follows').where('followerId', '==', currentUser.uid).where('followingId', '==', uid)
-     .onSnapshot(snap => updateFollowBtn(!snap.empty));
-}
-
-function updateFollowBtn(isFollowing) {
-    const btn = document.getElementById('btn-follow-action');
-    if(isFollowing) { btn.innerText = "Folge ich"; btn.classList.add('following'); } 
-    else { btn.innerText = "Folgen"; btn.classList.remove('following'); }
-}
+function checkIfFollowing(uid) { db_fire.collection('follows').where('followerId', '==', currentUser.uid).where('followingId', '==', uid).onSnapshot(snap => updateFollowBtn(!snap.empty)); }
+function updateFollowBtn(isFollowing) { const btn = document.getElementById('btn-follow-action'); if(isFollowing) { btn.innerText = "Folge ich"; btn.classList.add('following'); } else { btn.innerText = "Folgen"; btn.classList.remove('following'); } }
 
 app.comm.search.addEventListener('input', (e) => {
-    const term = e.target.value.toLowerCase();
-    const resBox = app.comm.results;
-    if(term.length < 2) { resBox.style.display = 'none'; return; }
+    const term = e.target.value.toLowerCase(); const resBox = app.comm.results; if(term.length < 2) { resBox.style.display = 'none'; return; }
     db_fire.collection('users').limit(20).get().then(snap => {
-        resBox.innerHTML = "";
-        let count = 0;
-        snap.forEach(doc => {
-             const u = doc.data();
-             if(u.username && u.username.toLowerCase().includes(term) && doc.id !== currentUser.uid) {
-                 count++;
-                 const d = document.createElement('div');
-                 d.className = 'search-item';
-                 const img = u.photoURL ? `background-image:url('${u.photoURL}')` : `background:var(--accent-blue)`;
-                 d.innerHTML = `<div class="s-avatar" style="${img}"></div><span>${escapeHtml(u.username)}</span>`;
-                 d.onclick = () => { resBox.style.display = 'none'; app.comm.search.value = ""; openProfile(doc.id); };
-                 resBox.appendChild(d);
-             }
-        });
+        resBox.innerHTML = ""; let count = 0;
+        snap.forEach(doc => { const u = doc.data(); if(u.username && u.username.toLowerCase().includes(term) && doc.id !== currentUser.uid) { count++; const d = document.createElement('div'); d.className = 'search-item'; const img = u.photoURL ? `background-image:url('${u.photoURL}')` : `background:var(--accent-blue)`; d.innerHTML = `<div class="s-avatar" style="${img}"></div><span>${escapeHtml(u.username)}</span>`; d.onclick = () => { resBox.style.display = 'none'; app.comm.search.value = ""; openProfile(doc.id); }; resBox.appendChild(d); } });
         if(count > 0) resBox.style.display = 'block'; else resBox.style.display = 'none';
     });
 });
 
 document.getElementById('btn-msg-action').addEventListener('click', () => startChat(viewingUserUid, document.getElementById('p-name').innerText));
-document.getElementById('btn-close-chat').addEventListener('click', () => {
-    app.comm.chatView.style.display = 'none';
-    app.comm.mainView.style.display = 'block';
-    activeChatId = null;
-});
+document.getElementById('btn-close-chat').addEventListener('click', () => { app.comm.chatView.style.display = 'none'; app.comm.mainView.style.display = 'block'; activeChatId = null; });
 document.getElementById('chat-send').addEventListener('click', sendChatMessage);
 
 function startChat(partnerUid, partnerName) {
-    const ids = [currentUser.uid, partnerUid].sort();
-    activeChatId = ids.join("_");
+    const ids = [currentUser.uid, partnerUid].sort(); activeChatId = ids.join("_");
     db_fire.collection('chats').doc(activeChatId).set({ participants: ids }, {merge:true});
-    app.comm.profileView.style.display = 'none';
-    app.comm.mainView.style.display = 'none';
-    app.comm.chatView.style.display = 'block';
-    document.getElementById('chat-partner-name').innerText = partnerName;
-    loadMessages();
+    app.comm.profileView.style.display = 'none'; app.comm.mainView.style.display = 'none'; app.comm.chatView.style.display = 'block';
+    document.getElementById('chat-partner-name').innerText = partnerName; loadMessages();
 }
-
 function loadMessages() {
-    const msgBox = document.getElementById('chat-messages');
-    msgBox.innerHTML = "";
+    const msgBox = document.getElementById('chat-messages'); msgBox.innerHTML = "";
     db_fire.collection('chats').doc(activeChatId).collection('messages').orderBy('timestamp').onSnapshot(snap => {
-        msgBox.innerHTML = "";
-        snap.forEach(doc => {
-            const m = doc.data();
-            const bubble = document.createElement('div');
-            bubble.className = `chat-bubble ${m.senderId === currentUser.uid ? 'me' : 'them'}`;
-            bubble.innerText = m.text; 
-            msgBox.appendChild(bubble);
-        });
-        msgBox.scrollTop = msgBox.scrollHeight;
+        msgBox.innerHTML = ""; snap.forEach(doc => { const m = doc.data(); const bubble = document.createElement('div'); bubble.className = `chat-bubble ${m.senderId === currentUser.uid ? 'me' : 'them'}`; bubble.innerText = m.text; msgBox.appendChild(bubble); }); msgBox.scrollTop = msgBox.scrollHeight;
     });
 }
-
 function sendChatMessage() {
-    const input = document.getElementById('chat-input');
-    const txt = input.value;
-    if(!txt || !activeChatId) return;
-    if(txt.length > 500) { alert("Zu lang."); return; }
-    db_fire.collection('chats').doc(activeChatId).collection('messages').add({
-        text: txt, senderId: currentUser.uid, timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    input.value = "";
+    const input = document.getElementById('chat-input'); const txt = input.value; if(!txt || !activeChatId) return; if(txt.length > 500) { alert("Zu lang."); return; }
+    db_fire.collection('chats').doc(activeChatId).collection('messages').add({ text: txt, senderId: currentUser.uid, timestamp: firebase.firestore.FieldValue.serverTimestamp() }); input.value = "";
 }
 
-// --- 6. ORIGINAL MODULE LOGIC ---
-document.getElementById('auth-switch-btn').addEventListener('click', () => {
-    isSignup = !isSignup;
-    if(isSignup) { document.getElementById('btn-login-email').style.display='none'; document.getElementById('btn-signup-email').style.display='block'; } 
-    else { document.getElementById('btn-login-email').style.display='block'; document.getElementById('btn-signup-email').style.display='none'; }
-});
+// --- ORIGINAL MODULES (SHORTENED FOR SPACE, SAME LOGIC) ---
+document.getElementById('auth-switch-btn').addEventListener('click', () => { isSignup = !isSignup; if(isSignup) { document.getElementById('btn-login-email').style.display='none'; document.getElementById('btn-signup-email').style.display='block'; } else { document.getElementById('btn-login-email').style.display='block'; document.getElementById('btn-signup-email').style.display='none'; } });
 document.getElementById('btn-login-email').addEventListener('click', () => auth.signInWithEmailAndPassword(document.getElementById('auth-email').value, document.getElementById('auth-pass').value).catch(err => alert(err.message)));
-document.getElementById('btn-signup-email').addEventListener('click', () => {
-    const e = document.getElementById('auth-email').value; const p = document.getElementById('auth-pass').value;
-    auth.createUserWithEmailAndPassword(e, p).then(cred => { 
-        db_fire.collection('users').doc(cred.user.uid).set({ email: e, username: e.split('@')[0], searchKey: e.split('@')[0].toLowerCase(), joined: new Date() });
-    }).catch(err => alert(err.message));
-});
+document.getElementById('btn-signup-email').addEventListener('click', () => { const e = document.getElementById('auth-email').value; const p = document.getElementById('auth-pass').value; auth.createUserWithEmailAndPassword(e, p).then(cred => { db_fire.collection('users').doc(cred.user.uid).set({ email: e, username: e.split('@')[0], searchKey: e.split('@')[0].toLowerCase(), joined: new Date() }); }).catch(err => alert(err.message)); });
 document.getElementById('btn-login-google').addEventListener('click', () => { const provider = new firebase.auth.GoogleAuthProvider(); auth.signInWithPopup(provider).catch(err => alert("Google Login Error: " + err.message)); });
 
 document.getElementById('btn-start').addEventListener('click', () => { app.screens.drive.style.display = 'flex'; app.nav.style.display = 'none'; startTracking(); });
@@ -672,28 +401,9 @@ function startTracking() {
     if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
 }
 
-function updatePosition(position) { 
-    const lat = position.coords.latitude; const lng = position.coords.longitude; 
-    const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0); 
-    if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh); 
-    app.display.speed.innerText = speedKmh; 
-    const newLatLng = [lat, lng]; marker.setLatLng(newLatLng); map.setView(newLatLng, 18); 
-    if (path.length > 0) { currentDistance += map.distance(path[path.length - 1], newLatLng); app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; } 
-    path.push(newLatLng); L.polyline(path, {color: '#4a90e2', weight: 5}).addTo(map); 
-}
-
+function updatePosition(position) { const lat = position.coords.latitude; const lng = position.coords.longitude; const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0); if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh); app.display.speed.innerText = speedKmh; const newLatLng = [lat, lng]; marker.setLatLng(newLatLng); map.setView(newLatLng, 18); if (path.length > 0) { currentDistance += map.distance(path[path.length - 1], newLatLng); app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; } path.push(newLatLng); L.polyline(path, {color: '#4a90e2', weight: 5}).addTo(map); }
 function updateTimer() { const diff = new Date() - startTime; app.display.time.innerText = new Date(diff).toISOString().substr(11, 8); }
-
-function stopTracking() { 
-    isDriving = false; clearInterval(intervalId); 
-    if(watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-    const diff = new Date() - startTime; 
-    const distKm = currentDistance / 1000; 
-    const durationHours = diff / (1000 * 60 * 60); 
-    const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; 
-    app.display.sumDist.innerText = distKm.toFixed(2); app.display.sumSpeed.innerText = currentMaxSpeed; app.display.sumAvg.innerText = avgSpeed; app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); 
-}
-
+function stopTracking() { isDriving = false; clearInterval(intervalId); if(watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; } const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; app.display.sumDist.innerText = distKm.toFixed(2); app.display.sumSpeed.innerText = currentMaxSpeed; app.display.sumAvg.innerText = avgSpeed; app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); }
 function handleError(err) { console.warn(err); }
 function saveDriveToStorage() { const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; const newDrive = { id: Date.now(), date: startTime.toISOString(), distance: parseFloat(distKm.toFixed(2)), maxSpeed: currentMaxSpeed, avgSpeed: avgSpeed, duration: new Date(diff).toISOString().substr(11, 8), pathData: path }; let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; drives.unshift(newDrive); localStorage.setItem('dh_drives_v2', JSON.stringify(drives)); renderGarage(); }
 function renderGarage() { let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; let totalKm = 0; const list = document.getElementById('drives-list'); list.innerHTML = ''; drives.forEach(drive => { totalKm += drive.distance; const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h4>${dateStr} • ${drive.duration}</h4><span>Avg ${drive.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${drive.distance.toFixed(1)} km</span><span>Max ${drive.maxSpeed}</span></div>`; item.addEventListener('click', () => openDetailView(drive)); list.appendChild(item); }); document.getElementById('total-km').innerText = totalKm.toFixed(1); document.getElementById('total-drives').innerText = drives.length; }
@@ -724,10 +434,8 @@ function resetPerfMode() { perfState = 'idle'; app.perf.btn.innerText = "ARM"; a
 function savePerfRun() { const run = { id: Date.now(), date: new Date().toISOString(), res50: result50, res100: result100, maxG: maxG.toFixed(2) }; let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; runs.unshift(run); localStorage.setItem('dh_perf_v1', JSON.stringify(runs)); renderPerfHistory(); }
 function renderPerfHistory() { let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; const list = app.perf.list; list.innerHTML = ''; runs.forEach(run => { const dateStr = new Date(run.date).toLocaleDateString('de-DE'); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h5>${dateStr}</h5><span>Max ${run.maxG} G</span></div><div class="right-side"><span style="color:#ff3b30; font-weight:bold;">0-100: ${run.res100}s</span><br><span style="font-size:0.75rem">0-50: ${run.res50}s</span></div>`; list.appendChild(item); }); }
 
-function manualRefreshWeather() { 
-    app.locText.innerText = "Locating..."; app.tempText.innerText = "--°"; 
-    if(navigator.geolocation) { navigator.geolocation.getCurrentPosition(initWeatherLoc, err => { console.log("GPS Fehler", err); app.locText.innerText = "No GPS"; }, {enableHighAccuracy:false, timeout:10000}); } else { app.locText.innerText = "Not Supported"; } 
-}
+function manualRefreshWeather() { app.locText.innerText = "Locating..."; app.tempText.innerText = "--°"; if(navigator.geolocation) { navigator.geolocation.getCurrentPosition(initWeatherLoc, err => { console.log("GPS Fehler", err); app.locText.innerText = "No GPS"; }, {enableHighAccuracy:false, timeout:10000}); } else { app.locText.innerText = "Not Supported"; } }
+
 // NEU: Begrüßung mit Name
 function updateTimeGreeting() { 
     const h = new Date().getHours(); 
@@ -743,6 +451,7 @@ function updateTimeGreeting() {
         app.greet.innerText = txt; 
     }
 }
+
 function initWeatherLoc(pos) { const lat = pos.coords.latitude; const lng = pos.coords.longitude; fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`).then(r => r.json()).then(d => { app.locText.innerText = d.address.city || d.address.town || "Location Found"; }); fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`).then(r => r.json()).then(d => { const t = Math.round(d.current_weather.temperature); const c = d.current_weather.weathercode; app.tempText.innerText = t + "°"; if(c <= 1) app.weatherIcon.className = "fa-solid fa-sun"; else if(c <= 3) app.weatherIcon.className = "fa-solid fa-cloud-sun"; else app.weatherIcon.className = "fa-solid fa-cloud"; }); }
 
 let db; const request = indexedDB.open("DriverHubDB", 1);
