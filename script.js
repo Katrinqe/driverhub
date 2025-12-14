@@ -528,7 +528,7 @@ document.getElementById('btn-save-drive').addEventListener('click', () => { save
 
 function startTracking() { 
     isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0; 
-    if (!map) { map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map); marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map); } 
+    if (!map) { map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map); marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map); } 
     setTimeout(() => { map.invalidateSize(); }, 200); 
     intervalId = setInterval(updateTimer, 1000); 
     if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
@@ -647,3 +647,4 @@ document.querySelectorAll('.nav-item').forEach(btn => {
         if(app.screens[targetId.split('-')[0]]) { app.screens[targetId.split('-')[0]].classList.add('active'); }
     });
 });
+
