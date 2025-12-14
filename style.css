@@ -67,28 +67,23 @@ body {
 .logo-container.listening .dh-logo { filter: drop-shadow(0 0 30px rgba(255, 59, 48, 0.8)); animation: pulse-listen 1.5s infinite; }
 @keyframes pulse-listen { 0% { filter: drop-shadow(0 0 20px rgba(255, 59, 48, 0.6)); transform: scale(1); } 50% { filter: drop-shadow(0 0 50px rgba(255, 59, 48, 1)); transform: scale(1.02); } 100% { filter: drop-shadow(0 0 20px rgba(255, 59, 48, 0.6)); transform: scale(1); } }
 
-/* HIER NEUES STYLING FÜR DIE BEGRÜSSUNG */
 h1 { 
-    font-size: 2.6rem; /* Größer */
-    font-weight: 900; /* Fetter */
+    font-size: 2.6rem; 
+    font-weight: 900; 
     letter-spacing: 1px; 
     margin-bottom: 2px; 
-    color: white; /* Fallback für alte Browser */
-    background: linear-gradient(to right bottom, #ffffff, #a0a0a0); /* Heller Gradient */
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: #ffffff; 
     text-transform: uppercase; 
     line-height: 1;
 }
 
-/* DIE NEUE KLASSE FÜR DEN NAMEN */
 .greeting-username {
     display: block;
     font-size: 1.1rem;
-    color: var(--accent-blue); /* BLAU statt Grau */
+    color: var(--accent-blue);
     font-weight: 700;
     letter-spacing: 1.5px;
-    margin-bottom: 20px; /* Abstand zum Slogan */
+    margin-bottom: 20px;
     text-transform: uppercase;
 }
 
@@ -110,6 +105,15 @@ button { font-family: var(--font-stack); cursor: pointer; }
 .btn-danger { border: 1px solid var(--accent-red); background: rgba(255, 59, 48, 0.15); color: var(--accent-red); padding: 16px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; backdrop-filter: blur(10px); }
 .icon-btn-floating { position: absolute; top: 40px; left: 20px; width: 45px; height: 45px; background: var(--glass-bg); border-radius: 50%; border: none; color: white; z-index: 3000; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
 .btn-text { background: transparent; color: #555; font-size: 0.9rem; margin-top: 40px; width: 100%; border: none; }
+
+/* NEU: Button Rechts unten */
+.icon-btn-floating.right-side {
+    left: auto;
+    right: 20px;
+    bottom: 140px; /* Über den unteren Anzeigen */
+    background: var(--accent-blue);
+    box-shadow: 0 0 15px rgba(74, 144, 226, 0.4);
+}
 
 /* --- SOCIAL CSS --- */
 .user-search-bar { width: 100%; padding: 12px; border-radius: 12px; background: #1c1c1e; border: 1px solid #333; color: white; margin-bottom: 15px; outline: none; }
