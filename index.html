@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 3.4.0</title>
+    <title>DriverHub 3.5.0</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -20,7 +20,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 
     <style>
-        /* --- CORE CSS (BASIS 3.1.2 - UNBERÜHRT) --- */
+        /* --- CORE CSS (BASIS 3.4.0 - UNBERÜHRT) --- */
         :root {
             --bg-color: #000000;
             --accent-blue: #4a90e2;
@@ -109,9 +109,9 @@
         .icon-btn-floating { position: absolute; top: 40px; left: 20px; width: 45px; height: 45px; background: var(--glass-bg); border-radius: 50%; border: none; color: white; z-index: 3000; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
         .btn-text { background: transparent; color: #555; font-size: 0.9rem; margin-top: 40px; width: 100%; border: none; }
 
-        /* --- EXTENDED SOCIAL CSS (ADDED FOR 3.4.0) --- */
+        /* --- SOCIAL CSS (OPTIMIZED) --- */
         .feed-container { width: 100%; max-width: 360px; margin: 0 auto; }
-        .post-card { background: #1c1c1e; border-radius: 16px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        .post-card { background: #1c1c1e; border-radius: 16px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); position: relative; }
         .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; cursor: pointer; }
         .post-avatar { width: 35px; height: 35px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem; background-size: cover; background-position: center; border: 1px solid #444; }
         .post-user { font-weight: 700; color: white; font-size: 0.95rem; }
@@ -121,12 +121,15 @@
         .action-btn { color: #888; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 5px; }
         .action-btn:hover { color: var(--accent-green); }
         
+        /* DELETE BUTTON */
+        .btn-delete-post { position: absolute; top: 15px; right: 15px; color: #555; background: none; border: none; cursor: pointer; }
+        .btn-delete-post:hover { color: var(--accent-red); }
+
         .create-post-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 16px; margin-bottom: 25px; display: flex; gap: 10px; align-items: center; }
         .create-input { flex: 1; background: transparent; border: none; color: white; font-size: 1rem; outline: none; }
         .btn-send-post { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-green); border: none; color: white; font-size: 1rem; cursor: pointer; }
         .user-search-bar { width: 100%; padding: 12px; border-radius: 12px; background: #111; border: 1px solid #333; color: white; margin-bottom: 20px; outline: none; }
         
-        /* Profile & Search & Chat Overlays */
         #profile-view, #chat-view { display: none; width: 100%; max-width: 360px; margin: 0 auto; text-align: center; }
         
         .profile-header-img { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--accent-blue); margin: 0 auto 15px auto; background: #222; background-size: cover; background-position: center; position: relative; }
@@ -158,7 +161,7 @@
         .no-friends-box { text-align: center; padding: 40px 20px; color: #666; display: none; }
         .no-friends-box i { font-size: 3rem; margin-bottom: 15px; opacity: 0.5; }
 
-        /* CORE MODULES (BASIS 3.1.2) */
+        /* CORE MODULES (BASIS 3.4.0) */
         #map, #detail-map { height: 100%; width: 100%; z-index: 1; filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
         .drive-overlay-top { position: absolute; top: 50px; left: 20px; right: 20px; z-index: 999; display: flex; justify-content: space-between; }
         .drive-overlay-bottom { position: absolute; bottom: 40px; left: 0; right: 0; z-index: 999; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px;}
@@ -191,7 +194,7 @@
 </head>
 <body>
 
-    <div class="version-tag">v3.4.0 (Stable Core + Social)</div>
+    <div class="version-tag">v3.5.0</div>
 
     <div id="auth-screen">
         <div class="auth-box">
@@ -238,7 +241,7 @@
                 
                 <div id="feed-view">
                     <div style="position:relative;">
-                        <input type="text" id="user-search" class="user-search-bar" placeholder="Find Users & Friends...">
+                        <input type="text" id="user-search" class="user-search-bar" placeholder="Suche nach Usern...">
                         <div id="search-results"></div>
                     </div>
 
@@ -246,7 +249,7 @@
                          <div class="no-friends-box" id="no-friends-msg">
                             <i class="fa-solid fa-user-group"></i>
                             <p>Dein Feed ist leer.</p>
-                            <p style="font-size:0.8rem; margin-top:10px;">Nutze die Suche oben, um Freunde zu finden!</p>
+                            <p style="font-size:0.8rem; margin-top:10px;">Suche oben nach Freunden, um ihre Posts zu sehen!</p>
                         </div>
                     </div>
                 </div>
@@ -508,7 +511,7 @@
                 }
             });
 
-            // Start Modules (Legacy 3.1.2)
+            // Start Modules (Legacy 3.4.0)
             renderGarage(); 
             renderPerfHistory(); 
             initMusicPlayer(); 
@@ -520,24 +523,32 @@
             setInterval(manualRefreshWeather, 60000); 
         });
 
-        // --- 5. SOCIAL LOGIC (NEW IN 3.4.0) ---
+        // --- 5. SOCIAL LOGIC (FIXED FOR 3.5.0) ---
 
-        // A. Profile Init (Fix Loading issue)
+        // A. Profile Init (Fix Loading & Persistence)
         function initUserProfile() {
             db_fire.collection('users').doc(currentUser.uid).onSnapshot(doc => {
                 if (!doc.exists) {
-                    // Create minimal profile if missing
-                    db_fire.collection('users').doc(currentUser.uid).set({
+                    // Create minimal profile if missing (Ensure searchKey exists)
+                    const baseData = {
                         email: currentUser.email,
                         username: currentUser.email.split('@')[0],
                         bio: "DriverHub User",
                         photoURL: "",
                         followers: 0,
                         following: 0,
-                        searchKey: currentUser.email.split('@')[0].toLowerCase(),
+                        searchKey: currentUser.email.split('@')[0].toLowerCase(), // WICHTIG FÜR SUCHE
                         joined: new Date()
-                    });
+                    };
+                    db_fire.collection('users').doc(currentUser.uid).set(baseData);
                 } else {
+                    // Ensure searchKey exists on old profiles
+                    if(!doc.data().searchKey) {
+                        db_fire.collection('users').doc(currentUser.uid).update({
+                            searchKey: doc.data().username.toLowerCase()
+                        });
+                    }
+                    
                     // Update header icon
                     const data = doc.data();
                     if(data.photoURL) {
@@ -552,7 +563,6 @@
         // B. Post Logic
         app.comm.postBtn.addEventListener('click', () => {
             const txt = app.comm.postInput.value; if(!txt) return;
-            // Get user info fresh
             db_fire.collection('users').doc(currentUser.uid).get().then(doc => {
                 const uData = doc.data() || {};
                 db_fire.collection('posts').add({ 
@@ -572,7 +582,6 @@
                 // If no friends
                 if(snap.empty) {
                     document.getElementById('no-friends-msg').style.display = 'block';
-                    // Clear posts except the msg
                     const msg = document.getElementById('no-friends-msg');
                     app.comm.feed.innerHTML = "";
                     app.comm.feed.appendChild(msg);
@@ -591,36 +600,51 @@
                     const container = app.comm.feed;
                     const msg = document.getElementById('no-friends-msg');
                     container.innerHTML = "";
-                    container.appendChild(msg); // Keep msg structure but hidden
+                    container.appendChild(msg);
 
                     postSnap.forEach(doc => {
                         const post = doc.data();
-                        // Client-side filtering (Firestore limitation workaround)
+                        // Client-side filtering
                         if(followingIds.includes(post.uid)) {
-                             renderPost(post, container);
+                             renderPost(post, container, doc.id); // Pass doc.id for deletion
                         }
                     });
                 });
             });
         }
 
-        function renderPost(post, container) {
+        function renderPost(post, container, postId) {
             const date = post.timestamp ? new Date(post.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "Now";
             let avaStyle = `background: var(--accent-blue);`;
             let avaContent = post.author.charAt(0).toUpperCase();
             if(post.authorPic) { avaStyle = `background-image: url('${post.authorPic}');`; avaContent = ""; }
 
             const div = document.createElement('div'); div.className = 'post-card';
+            
+            // Delete Button (Only for own posts)
+            let deleteBtn = "";
+            if(post.uid === currentUser.uid) {
+                deleteBtn = `<button class="btn-delete-post" onclick="deletePost('${postId}')"><i class="fa-solid fa-trash"></i></button>`;
+            }
+
             div.innerHTML = `
                 <div class="post-header" onclick="openProfile('${post.uid}')">
                     <div class="post-avatar" style="${avaStyle}">${avaContent}</div>
                     <span class="post-user">${post.author}</span>
                     <span class="post-date">${date}</span>
                 </div>
+                ${deleteBtn}
                 <div class="post-content">${post.text}</div>
                 <div class="post-actions"><span class="action-btn"><i class="fa-regular fa-heart"></i> Like</span></div>`;
             container.appendChild(div);
         }
+
+        // Global Delete Function (Needs to be window accessible)
+        window.deletePost = function(postId) {
+            if(confirm("Post wirklich löschen?")) {
+                db_fire.collection('posts').doc(postId).delete().catch(err => alert("Fehler: " + err.message));
+            }
+        };
 
         // D. Profile Navigation & Data
         app.comm.profileIcon.addEventListener('click', () => openProfile(currentUser.uid));
@@ -636,7 +660,6 @@
             viewingUserUid = uid;
             const isMe = (currentUser.uid === uid);
             
-            // Switch Views
             app.comm.feedView.style.display = 'none';
             app.comm.profileView.style.display = 'block';
             app.comm.chatView.style.display = 'none';
@@ -672,10 +695,9 @@
 
             // Fetch User Posts
             db_fire.collection('posts').where('uid', '==', uid).orderBy('timestamp', 'desc').limit(10).get().then(snap => {
-                snap.forEach(doc => renderPost(doc.data(), postList));
+                snap.forEach(doc => renderPost(doc.data(), postList, doc.id));
             });
 
-            // Toggle Buttons
             if(isMe) {
                 btnEditImg.style.display = 'flex';
                 btnEditBio.style.display = 'inline-block';
@@ -692,30 +714,33 @@
             }
         }
 
-        // E. Edit Bio (Prompt Fix)
+        // E. Edit Bio (FIXED PERSISTENCE)
         document.getElementById('btn-edit-bio').addEventListener('click', () => {
              const currentBio = document.getElementById('p-bio').innerText;
              const newBio = prompt("Neue Bio:", currentBio);
              if(newBio !== null) {
-                 db_fire.collection('users').doc(currentUser.uid).update({ bio: newBio });
+                 // Use set with merge to ensure doc exists
+                 db_fire.collection('users').doc(currentUser.uid).set({ bio: newBio }, { merge: true })
+                 .then(() => console.log("Bio saved"))
+                 .catch(err => alert("Speicherfehler: " + err.message));
              }
         });
 
-        // F. Upload Image
+        // F. Upload Image (FIXED PERSISTENCE)
         document.getElementById('btn-edit-img').addEventListener('click', () => document.getElementById('profile-img-input').click());
         document.getElementById('profile-img-input').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if(!file) return;
-            // Unique path per user
             const storageRef = storage.ref(`profiles/${currentUser.uid}`);
             const uploadTask = storageRef.put(file);
             
             uploadTask.on('state_changed', 
-                (snap) => { console.log("Upload läuft..."); },
-                (err) => { alert("Fehler: " + err.message); },
+                (snap) => { console.log("Upload..."); },
+                (err) => { alert("Upload Fehler. Check Firebase Rules!"); },
                 () => {
                     uploadTask.snapshot.ref.getDownloadURL().then((url) => {
-                        db_fire.collection('users').doc(currentUser.uid).update({ photoURL: url });
+                        // Use set with merge
+                        db_fire.collection('users').doc(currentUser.uid).set({ photoURL: url }, { merge: true });
                     });
                 }
             );
@@ -727,16 +752,14 @@
             const followRef = db_fire.collection('follows').where('followerId', '==', currentUser.uid).where('followingId', '==', viewingUserUid);
             followRef.get().then(snap => {
                 if(snap.empty) {
-                    // Follow
                     db_fire.collection('follows').add({ followerId: currentUser.uid, followingId: viewingUserUid });
-                    db_fire.collection('users').doc(viewingUserUid).update({ followers: firebase.firestore.FieldValue.increment(1) });
-                    db_fire.collection('users').doc(currentUser.uid).update({ following: firebase.firestore.FieldValue.increment(1) });
+                    db_fire.collection('users').doc(viewingUserUid).set({ followers: firebase.firestore.FieldValue.increment(1) }, {merge:true});
+                    db_fire.collection('users').doc(currentUser.uid).set({ following: firebase.firestore.FieldValue.increment(1) }, {merge:true});
                     updateFollowBtn(true);
                 } else {
-                    // Unfollow
                     snap.forEach(doc => doc.ref.delete());
-                    db_fire.collection('users').doc(viewingUserUid).update({ followers: firebase.firestore.FieldValue.increment(-1) });
-                    db_fire.collection('users').doc(currentUser.uid).update({ following: firebase.firestore.FieldValue.increment(-1) });
+                    db_fire.collection('users').doc(viewingUserUid).set({ followers: firebase.firestore.FieldValue.increment(-1) }, {merge:true});
+                    db_fire.collection('users').doc(currentUser.uid).set({ following: firebase.firestore.FieldValue.increment(-1) }, {merge:true});
                     updateFollowBtn(false);
                 }
             });
@@ -753,12 +776,13 @@
             else { btn.innerText = "Folgen"; btn.classList.remove('following'); }
         }
 
-        // H. Search System
+        // H. Search System (FIXED LOGIC)
         app.comm.search.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
             const resBox = app.comm.results;
             if(term.length < 2) { resBox.style.display = 'none'; return; }
             
+            // Search by normalized searchKey
             db_fire.collection('users').where('searchKey', '>=', term).where('searchKey', '<=', term + '\uf8ff').limit(5)
             .get().then(snap => {
                 resBox.innerHTML = "";
@@ -766,6 +790,9 @@
                 resBox.style.display = 'block';
                 snap.forEach(doc => {
                      const u = doc.data();
+                     // Skip self
+                     if(doc.id === currentUser.uid) return;
+
                      const d = document.createElement('div');
                      d.className = 'search-item';
                      const img = u.photoURL ? `background-image:url('${u.photoURL}')` : `background:var(--accent-blue)`;
@@ -790,7 +817,6 @@
         document.getElementById('chat-send').addEventListener('click', sendChatMessage);
 
         function startChat(partnerUid) {
-            // Create unique chat ID (UserA_UserB alphabetically)
             const ids = [currentUser.uid, partnerUid].sort();
             activeChatId = ids.join("_");
             
@@ -803,7 +829,6 @@
         function loadMessages() {
             const msgBox = document.getElementById('chat-messages');
             msgBox.innerHTML = "";
-            
             db_fire.collection('chats').doc(activeChatId).collection('messages').orderBy('timestamp').onSnapshot(snap => {
                 msgBox.innerHTML = "";
                 snap.forEach(doc => {
@@ -821,7 +846,6 @@
             const input = document.getElementById('chat-input');
             const txt = input.value;
             if(!txt || !activeChatId) return;
-            
             db_fire.collection('chats').doc(activeChatId).collection('messages').add({
                 text: txt,
                 senderId: currentUser.uid,
@@ -830,27 +854,30 @@
             input.value = "";
         }
 
-        // --- 6. ORIGINAL MODULE LOGIC (FROM BASIS 3.1.2) ---
-        // Dies sind exakte Kopien der Funktionen, die du in 3.1.2 mochtest.
+        // --- 6. ORIGINAL MODULE LOGIC (FROM BASIS 3.4.0) ---
         
-        // Auth UI Switch
+        // Auth UI
         document.getElementById('auth-switch-btn').addEventListener('click', () => {
             isSignup = !isSignup;
-            const btnLogin = document.getElementById('btn-login-email'); const btnSignup = document.getElementById('btn-signup-email');
-            const switchTxt = document.getElementById('auth-switch-btn');
-            if(isSignup) { btnLogin.style.display = 'none'; btnSignup.style.display = 'block'; switchTxt.innerText = "Have an account? Log In"; } 
-            else { btnLogin.style.display = 'block'; btnSignup.style.display = 'none'; switchTxt.innerText = "No account? Sign Up"; }
+            if(isSignup) { document.getElementById('btn-login-email').style.display='none'; document.getElementById('btn-signup-email').style.display='block'; } 
+            else { document.getElementById('btn-login-email').style.display='block'; document.getElementById('btn-signup-email').style.display='none'; }
         });
-        document.getElementById('btn-login-email').addEventListener('click', () => { auth.signInWithEmailAndPassword(document.getElementById('auth-email').value, document.getElementById('auth-pass').value).catch(err => alert(err.message)); });
+        document.getElementById('btn-login-email').addEventListener('click', () => auth.signInWithEmailAndPassword(document.getElementById('auth-email').value, document.getElementById('auth-pass').value).catch(err => alert(err.message)));
         document.getElementById('btn-signup-email').addEventListener('click', () => {
             const e = document.getElementById('auth-email').value; const p = document.getElementById('auth-pass').value;
             auth.createUserWithEmailAndPassword(e, p).then(cred => { 
-                db_fire.collection('users').doc(cred.user.uid).set({ email: e, username: e.split('@')[0], searchKey: e.split('@')[0].toLowerCase() });
+                // Create profile immediately
+                db_fire.collection('users').doc(cred.user.uid).set({ 
+                    email: e, 
+                    username: e.split('@')[0], 
+                    searchKey: e.split('@')[0].toLowerCase(),
+                    joined: new Date()
+                });
             }).catch(err => alert(err.message));
         });
         document.getElementById('btn-login-google').addEventListener('click', () => { const provider = new firebase.auth.GoogleAuthProvider(); auth.signInWithPopup(provider).catch(err => alert("Google Login Error: " + err.message)); });
 
-        // Map & Drive Logic (Original 3.1.2)
+        // Map & Drive Logic
         document.getElementById('btn-start').addEventListener('click', () => { app.screens.drive.style.display = 'flex'; app.nav.style.display = 'none'; startTracking(); });
         document.getElementById('btn-stop').addEventListener('click', () => { stopTracking(); app.screens.drive.style.display = 'none'; app.screens.summary.style.display = 'flex'; });
         document.getElementById('btn-save-drive').addEventListener('click', () => { saveDriveToStorage(); app.screens.summary.style.display = 'none'; app.nav.style.display = 'flex'; document.querySelectorAll('.nav-item')[4].click(); });
@@ -865,7 +892,7 @@
         document.getElementById('btn-close-detail').addEventListener('click', () => { app.screens.detail.style.display = 'none'; if(detailMap) { detailMap.remove(); detailMap = null; } });
         document.getElementById('btn-reset-data').addEventListener('click', () => { if(confirm("Alles löschen?")) { localStorage.removeItem('dh_drives_v2'); renderGarage(); } });
 
-        // Perf Logic (Original 3.1.2)
+        // Perf Logic
         app.perf.btn.addEventListener('click', () => { if(perfState === 'idle' || perfState === 'finished') { perfState = 'armed'; app.perf.btn.innerText = "READY"; app.perf.btn.classList.add('armed'); app.perf.status.innerText = "Launch when ready!"; app.perf.val50.innerText = "--.- s"; app.perf.val100.innerText = "--.- s"; app.perf.box50.classList.remove('active'); app.perf.box100.classList.remove('active'); maxG = 0; result50 = null; result100 = null; if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') { DeviceMotionEvent.requestPermission().then(s => { if (s === 'granted') startPerfSensors(); }).catch(console.error); } else { startPerfSensors(); } if (navigator.geolocation) { perfWatchId = navigator.geolocation.watchPosition(updatePerfLogic, handleError, {enableHighAccuracy: true}); } } else { resetPerfMode(); } });
         function startPerfSensors() { window.addEventListener('devicemotion', handleMotion); }
         function handleMotion(event) { if(perfState !== 'running') return; const x = event.acceleration.x || 0; const y = event.acceleration.y || 0; const z = event.acceleration.z || 0; const totalAccel = Math.sqrt(x*x + y*y + z*z); const currentG = totalAccel / 9.81; if(currentG > maxG) { maxG = currentG; app.perf.gVal.innerText = maxG.toFixed(2) + " G"; } }
@@ -874,7 +901,7 @@
         function savePerfRun() { const run = { id: Date.now(), date: new Date().toISOString(), res50: result50, res100: result100, maxG: maxG.toFixed(2) }; let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; runs.unshift(run); localStorage.setItem('dh_perf_v1', JSON.stringify(runs)); renderPerfHistory(); }
         function renderPerfHistory() { let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; const list = app.perf.list; list.innerHTML = ''; runs.forEach(run => { const dateStr = new Date(run.date).toLocaleDateString('de-DE'); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h4>${dateStr}</h4><span>Max ${run.maxG} G</span></div><div class="right-side"><span style="color:#ff3b30; font-weight:bold;">0-100: ${run.res100}s</span><br><span style="font-size:0.75rem">0-50: ${run.res50}s</span></div>`; list.appendChild(item); }); }
 
-        // Weather Logic (Original 3.1.2 + Auto Fix)
+        // Weather Logic
         function manualRefreshWeather() { 
             app.locText.innerText = "Locating...";
             app.tempText.innerText = "--°"; 
@@ -890,7 +917,7 @@
         function updateTimeGreeting() { const h = new Date().getHours(); let txt = "WELCOME"; if (h >= 5 && h < 12) txt = "GOOD MORNING"; else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON"; else if (h >= 18 && h < 22) txt = "GOOD EVENING"; else txt = "NIGHT CRUISE"; app.greet.innerText = txt; }
         function initWeatherLoc(pos) { const lat = pos.coords.latitude; const lng = pos.coords.longitude; fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`).then(r => r.json()).then(d => { app.locText.innerText = d.address.city || d.address.town || "Location Found"; }); fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`).then(r => r.json()).then(d => { const t = Math.round(d.current_weather.temperature); const c = d.current_weather.weathercode; app.tempText.innerText = t + "°"; if(c <= 1) app.weatherIcon.className = "fa-solid fa-sun"; else if(c <= 3) app.weatherIcon.className = "fa-solid fa-cloud-sun"; else app.weatherIcon.className = "fa-solid fa-cloud"; }); }
 
-        // Music (Original 3.1.2)
+        // Music
         let db; const request = indexedDB.open("DriverHubDB", 1);
         request.onupgradeneeded = function(event) { db = event.target.result; db.createObjectStore("music", { keyPath: "id" }); };
         request.onsuccess = function(event) { db = event.target.result; loadMusicFromDB(); };
@@ -929,7 +956,7 @@
         function nextTrack() { let next = currentTrackIdx + 1; if(next >= playlist.length) next = 0; loadTrack(next); }
         function prevTrack() { let prev = currentTrackIdx - 1; if(prev < 0) prev = playlist.length - 1; loadTrack(prev); }
 
-        // Co-Pilot (Original 3.1.2)
+        // Co-Pilot
         function initCoPilot() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) return;
@@ -956,7 +983,7 @@
         }
         function speak(text) { if (!synth) return; const utter = new SpeechSynthesisUtterance(text); synth.speak(utter); }
 
-        // Navigation Handlers (Original 3.1.2)
+        // Navigation Handlers
         document.querySelectorAll('.nav-item').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const targetId = btn.getAttribute('data-target'); document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active')); btn.classList.add('active');
