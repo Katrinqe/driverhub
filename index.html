@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 3.6.0</title>
+    <title>DriverHub 3.7.0</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -20,7 +20,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 
     <style>
-        /* --- CORE CSS (BASIS 3.4.0 - UNBERÜHRT) --- */
+        /* --- CORE CSS (STABIL - UNBERÜHRT) --- */
         :root {
             --bg-color: #000000;
             --accent-blue: #4a90e2;
@@ -109,7 +109,7 @@
         .icon-btn-floating { position: absolute; top: 40px; left: 20px; width: 45px; height: 45px; background: var(--glass-bg); border-radius: 50%; border: none; color: white; z-index: 3000; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
         .btn-text { background: transparent; color: #555; font-size: 0.9rem; margin-top: 40px; width: 100%; border: none; }
 
-        /* --- SOCIAL CSS (STABLE) --- */
+        /* --- SOCIAL CSS --- */
         .feed-container { width: 100%; max-width: 360px; margin: 0 auto; }
         .post-card { background: #1c1c1e; border-radius: 16px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); position: relative; }
         .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; cursor: pointer; }
@@ -130,14 +130,12 @@
         .user-search-bar { width: 100%; padding: 12px; border-radius: 12px; background: #111; border: 1px solid #333; color: white; margin-bottom: 20px; outline: none; }
         
         #profile-view, #chat-view { display: none; width: 100%; max-width: 360px; margin: 0 auto; text-align: center; }
-        
         .profile-header-img { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--accent-blue); margin: 0 auto 15px auto; background: #222; background-size: cover; background-position: center; position: relative; }
         .profile-header-img .edit-badge { position: absolute; bottom: 0; right: 0; background: var(--accent-blue); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; border: 2px solid black; cursor: pointer; }
         .profile-name { font-size: 1.5rem; font-weight: 800; color: white; margin-bottom: 5px; }
         .profile-bio { color: #aaa; font-size: 0.9rem; margin-bottom: 20px; font-style: italic; padding: 0 20px; }
         .profile-stats { display: flex; justify-content: space-around; margin-bottom: 25px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; }
         .p-stat { display: flex; flex-direction: column; } .p-stat span:first-child { font-weight: 800; font-size: 1.2rem; } .p-stat span:last-child { font-size: 0.7rem; color: #888; text-transform: uppercase; }
-        
         .profile-actions-row { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
         .btn-follow { background: var(--accent-blue); border: none; color: white; padding: 8px 25px; border-radius: 20px; font-weight: 700; cursor: pointer; }
         .btn-follow.following { background: transparent; border: 1px solid #444; color: #888; }
@@ -192,7 +190,7 @@
 </head>
 <body>
 
-    <div class="version-tag">v3.6.0</div>
+    <div class="version-tag">v3.7.0 (Robust Fix)</div>
 
     <div id="auth-screen">
         <div class="auth-box">
@@ -247,7 +245,7 @@
                          <div class="no-friends-box" id="no-friends-msg">
                             <i class="fa-solid fa-user-group"></i>
                             <p>Dein Feed ist leer.</p>
-                            <p style="font-size:0.8rem; margin-top:10px;">Suche oben nach Freunden, um ihre Posts zu sehen!</p>
+                            <p style="font-size:0.8rem; margin-top:10px;">Suche oben nach Freunden!</p>
                         </div>
                     </div>
                 </div>
@@ -392,7 +390,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // --- 1. CONFIGURATION ---
+        // --- 1. CONFIGURATION (CHECK THIS) ---
         const firebaseConfig = {
             apiKey: "AIzaSyD5pKzbwiM4NRGGyFV1uWIS6dZG30u8ueg",
             authDomain: "driverhub-5a567.firebaseapp.com",
@@ -521,14 +519,14 @@
             setInterval(manualRefreshWeather, 60000); 
         });
 
-        // --- 5. SOCIAL LOGIC (FIXED FOR 3.6.0 - ROBUST & CLIENT-SIDE) ---
+        // --- 5. SOCIAL LOGIC (FIXED FOR 3.7.0 - NO INDEX REQUIRED) ---
 
-        // A. Profile Init (Fix Loading & Persistence)
+        // A. Profile Init (Ensures Persistence)
         function initUserProfile() {
             // Check existence, if not create. Always listen for updates.
             db_fire.collection('users').doc(currentUser.uid).onSnapshot(doc => {
                 if (!doc.exists) {
-                    // Create minimal profile if missing (Ensure searchKey exists)
+                    // Create minimal profile if missing
                     const baseData = {
                         email: currentUser.email,
                         username: currentUser.email.split('@')[0],
@@ -536,9 +534,9 @@
                         photoURL: "",
                         followers: 0,
                         following: 0,
-                        searchKey: currentUser.email.split('@')[0].toLowerCase(), 
                         joined: new Date()
                     };
+                    // Use MERGE to avoid overwriting existing data if race condition
                     db_fire.collection('users').doc(currentUser.uid).set(baseData, {merge:true});
                 } else {
                     // Update header icon live
@@ -576,11 +574,6 @@
                 const followingIds = [];
                 snap.forEach(doc => followingIds.push(doc.data().followingId));
                 followingIds.push(currentUser.uid); // Add self
-
-                if(followingIds.length === 1 && snap.empty) {
-                     // Only me
-                     document.getElementById('no-friends-msg').style.display = 'block';
-                }
 
                 // Load Posts
                 db_fire.collection('posts').orderBy('timestamp', 'desc').limit(50).onSnapshot(postSnap => {
@@ -717,7 +710,7 @@
                  // Use set with merge to ensure doc exists and persistence
                  db_fire.collection('users').doc(currentUser.uid).set({ bio: newBio }, { merge: true })
                  .then(() => console.log("Bio saved"))
-                 .catch(err => alert("Speicherfehler: " + err.message));
+                 .catch(err => alert("Speicherfehler (Regeln prüfen!): " + err.message));
              }
         });
 
@@ -731,7 +724,7 @@
             
             uploadTask.on('state_changed', 
                 (snap) => { console.log("Upload..."); },
-                (err) => { alert("Upload Fehler: " + err.message); },
+                (err) => { alert("Upload Fehler. Check Firebase Rules!"); },
                 () => {
                     uploadTask.snapshot.ref.getDownloadURL().then((url) => {
                         db_fire.collection('users').doc(currentUser.uid).set({ photoURL: url }, { merge: true });
@@ -771,22 +764,22 @@
             else { btn.innerText = "Folgen"; btn.classList.remove('following'); }
         }
 
-        // H. Search System (FIXED - CLIENT SIDE FALLBACK)
+        // H. Search System (FIXED - NO INDEX REQUIRED)
         app.comm.search.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
             const resBox = app.comm.results;
             if(term.length < 2) { resBox.style.display = 'none'; return; }
             
-            // Client-side search (loads 50 most recent users and filters locally)
-            // This avoids "Missing Index" errors from Firestore.
+            // Client-side search (Load most recent users, filter locally)
+            // This bypasses the need for Firestore Composite Indexes
             db_fire.collection('users').limit(50).get().then(snap => {
                 resBox.innerHTML = "";
                 let count = 0;
                 
                 snap.forEach(doc => {
                      const u = doc.data();
-                     // Filter matches
-                     if(u.username.toLowerCase().includes(term) && doc.id !== currentUser.uid) {
+                     // Filter in JS
+                     if(u.username && u.username.toLowerCase().includes(term) && doc.id !== currentUser.uid) {
                          count++;
                          const d = document.createElement('div');
                          d.className = 'search-item';
@@ -866,7 +859,6 @@
                 db_fire.collection('users').doc(cred.user.uid).set({ 
                     email: e, 
                     username: e.split('@')[0], 
-                    searchKey: e.split('@')[0].toLowerCase(),
                     joined: new Date()
                 });
             }).catch(err => alert(err.message));
