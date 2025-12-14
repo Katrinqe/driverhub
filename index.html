@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 3.9.0 Clean</title>
+    <title>DriverHub 3.10.0 Garage</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,6 +13,7 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <link rel="stylesheet" href="style.css">
 
@@ -23,7 +24,7 @@
 </head>
 <body>
 
-    <div class="version-tag">v3.9.0 Clean</div>
+    <div class="version-tag">v3.10.0 Garage</div>
 
     <div id="auth-screen">
         <div class="auth-box">
@@ -113,6 +114,16 @@
                     <p class="profile-bio" id="p-bio">...</p>
                     <i class="fa-solid fa-pen" id="btn-edit-bio" style="font-size:0.8rem; color:#666; cursor:pointer; margin-bottom:15px; display:inline-block; padding:5px;"> Edit Bio</i>
 
+                    <div id="garage-3d-section" style="margin-bottom: 25px;">
+                        <h4 style="text-align:left; color:#888; margin-bottom:10px; padding-left:10px;">YOUR RIDE</h4>
+                        <div id="garage-canvas-container"></div>
+                        
+                        <div id="garage-controls" style="display:none; margin-top:10px; gap:10px; justify-content:center; align-items:center;">
+                            <span style="font-size:0.8rem; color:#aaa;">Lackierung:</span>
+                            <input type="color" id="car-color-picker" value="#ff0000" style="border:none; width:30px; height:30px; cursor:pointer; background:none;">
+                            <button id="btn-save-car" style="background:var(--accent-blue); border:none; color:white; padding:5px 15px; border-radius:15px; font-size:0.8rem;">Speichern</button>
+                        </div>
+                    </div>
                     <div class="profile-stats">
                         <div class="p-stat"><span id="p-followers">0</span><span>Followers</span></div>
                         <div class="p-stat"><span id="p-following">0</span><span>Following</span></div>
