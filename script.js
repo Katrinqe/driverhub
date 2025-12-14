@@ -422,7 +422,9 @@ function startTracking() {
             }
         });
     } 
+    // HIER IST DER FIX: IMMER AUSFÜHREN!
     setTimeout(() => { map.invalidateSize(); }, 200); 
+    
     intervalId = setInterval(updateTimer, 1000); 
     if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
 }
@@ -539,15 +541,10 @@ function checkSpeedLimit(lat, lon) {
         .then(response => response.json())
         .then(data => {
             if (data.elements && data.elements.length > 0) {
-                // Nimm das erste gefundene Limit
                 let speed = data.elements[0].tags.maxspeed;
-                
-                // Manchmal steht da "DE:50" oder "50", wir filtern nur die Zahl
                 if(speed === "none") {
-                    // Keine Begrenzung (Autobahn offen)
                     document.getElementById('limit-sign').style.display = 'none';
                 } else {
-                    // Versuche, nur die Zahl zu holen
                     speed = parseInt(speed); 
                     if(!isNaN(speed)) {
                         document.getElementById('limit-sign').style.display = 'flex';
@@ -555,7 +552,6 @@ function checkSpeedLimit(lat, lon) {
                     }
                 }
             } else {
-                // Kein Limit gefunden (Schild ausblenden)
                 document.getElementById('limit-sign').style.display = 'none';
             }
         })
