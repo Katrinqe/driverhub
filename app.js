@@ -11,12 +11,11 @@ let isDriving = false;
 const app = {
     splash: document.getElementById('splash-screen'),
     nav: document.getElementById('main-nav'),
-    
-    // NEW WIDGET ELEMENTS
     greet: document.getElementById('greeting-text'),
     locText: document.getElementById('loc-text'),
     tempText: document.getElementById('weather-temp'),
     weatherIcon: document.getElementById('weather-icon'),
+    weatherWidget: document.getElementById('status-widget'), // ID korrigiert
 
     screens: {
         home: document.getElementById('home-screen'),
@@ -38,23 +37,23 @@ const app = {
 
 // --- INIT ---
 window.addEventListener('load', () => {
-    // 1. Intro
+    // 1. SPLASH SCREEN (WICHTIG!)
     setTimeout(() => {
         app.splash.style.opacity = '0';
         setTimeout(() => app.splash.style.display = 'none', 800);
-    }, 2000);
+    }, 2200);
 
-    // 2. Load Data
+    // 2. Data & UI
     renderGarage();
     updateTimeGreeting();
-    
-    // 3. Start GPS for Weather
+
+    // 3. GPS & Wetter
     if(navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(initWeatherLoc, err => console.log(err));
     }
 });
 
-// --- NEW: WEATHER & LOC LOGIC ---
+// --- WEATHER & GREETING ---
 function updateTimeGreeting() {
     const h = new Date().getHours();
     let txt = "WELCOME";
@@ -69,14 +68,14 @@ function initWeatherLoc(pos) {
     const lat = pos.coords.latitude;
     const lng = pos.coords.longitude;
     
-    // 1. City Name (Nominatim)
+    // City
     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
         .then(r => r.json())
         .then(d => {
             app.locText.innerText = d.address.city || d.address.town || "Location Found";
         });
 
-    // 2. Weather (Open-Meteo)
+    // Weather
     fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`)
         .then(r => r.json())
         .then(d => {
@@ -90,8 +89,7 @@ function initWeatherLoc(pos) {
         });
 }
 
-
-// --- NAVIGATION SYSTEM ---
+// --- NAV & SCREENS ---
 document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', (e) => {
         const targetId = btn.getAttribute('data-target');
@@ -107,6 +105,7 @@ function showMainScreen(id) {
     app.screens[id.split('-')[0]].classList.add('active');
 }
 
+// --- ACTIONS ---
 document.getElementById('btn-start').addEventListener('click', () => {
     app.screens.drive.style.display = 'flex';
     app.nav.style.display = 'none';
@@ -138,7 +137,7 @@ document.getElementById('btn-reset-data').addEventListener('click', () => {
     }
 });
 
-// --- TRACKING ENGINE ---
+// --- TRACKING ---
 function startTracking() {
     isDriving = true;
     startTime = new Date();
@@ -152,7 +151,7 @@ function startTracking() {
         marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map);
     }
     
-    setTimeout(() => { map.invalidateSize(); }, 200); // Fix Map Size
+    setTimeout(() => { map.invalidateSize(); }, 200);
     intervalId = setInterval(updateTimer, 1000);
 
     if (navigator.geolocation) {
@@ -193,7 +192,7 @@ function stopTracking() {
     const diff = new Date() - startTime;
     const distKm = currentDistance / 1000;
     const durationHours = diff / (1000 * 60 * 60);
-    const avgSpeed = (durationHours > 0 && distKm > 0) ? (distKm / durationHours).toFixed(1) : 0;
+    const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0;
 
     app.display.sumDist.innerText = distKm.toFixed(2);
     app.display.sumSpeed.innerText = currentMaxSpeed;
