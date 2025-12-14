@@ -25,6 +25,7 @@ let currentUserName = "";
 
 // MAP LOGIC VARS
 let isMapFollowing = true; 
+let lastLimitCheck = 0; // Für Tempolimit Abfrage
 
 // Social Vars
 let viewingUserUid = null; 
@@ -123,23 +124,16 @@ window.addEventListener('load', () => {
     // RECENTER BUTTON LOGIC (FIXED)
     const recenterBtn = document.getElementById('btn-recenter');
     if(recenterBtn) {
-        // Wir nutzen 'click', aber verhindern, dass die Map darunter reagiert
         recenterBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // WICHTIG: Klick nicht an Map weitergeben
+            e.stopPropagation(); 
             e.preventDefault();
-            
             isMapFollowing = true;
             recenterBtn.style.display = 'none'; 
-            
             if(map && marker) {
                 map.setView(marker.getLatLng(), 18);
             }
         });
-        
-        // Damit beim Antippen nicht schon "dragstart" von der Map kommt
-        recenterBtn.addEventListener('touchstart', (e) => {
-             e.stopPropagation();
-        });
+        recenterBtn.addEventListener('touchstart', (e) => { e.stopPropagation(); });
     }
 });
 
@@ -413,7 +407,7 @@ document.getElementById('btn-save-drive').addEventListener('click', () => { save
 
 function startTracking() { 
     isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0; isMapFollowing = true; 
-    document.getElementById('btn-recenter').style.display = 'none'; // Hide button initially
+    document.getElementById('btn-recenter').style.display = 'none'; 
     
     if (!map) { 
         map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); 
@@ -424,7 +418,7 @@ function startTracking() {
         map.on('dragstart', () => {
             if(isDriving) {
                 isMapFollowing = false;
-                document.getElementById('btn-recenter').style.display = 'flex'; // Show button
+                document.getElementById('btn-recenter').style.display = 'flex'; 
             }
         });
     } 
@@ -441,6 +435,12 @@ function updatePosition(position) {
     const newLatLng = [lat, lng]; 
     marker.setLatLng(newLatLng); 
     
+    // --- NEU: Speed Limit checken ---
+    if(isDriving) {
+        checkSpeedLimit(lat, lng);
+    }
+    // --------------------------------
+
     if(isMapFollowing) {
         map.setView(newLatLng, 18); 
     }
@@ -518,3 +518,46 @@ function handleVoiceCommand(cmd) { let reply = "Kommando nicht erkannt."; if (cm
 function speak(text) { if (!synth) return; const utter = new SpeechSynthesisUtterance(text); synth.speak(utter); }
 
 document.querySelectorAll('.nav-item').forEach(btn => { btn.addEventListener('click', (e) => { const targetId = btn.getAttribute('data-target'); document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active')); btn.classList.add('active'); Object.values(app.screens).forEach(s => { if(s && !s.classList.contains('screen-overlay')) s.classList.remove('active'); }); if(app.screens[targetId.split('-')[0]]) { app.screens[targetId.split('-')[0]].classList.add('active'); } }); });
+
+// --- SPEED LIMIT LOGIC (OVERPASS API) ---
+function checkSpeedLimit(lat, lon) {
+    const now = Date.now();
+    // Nur alle 8 Sekunden abfragen, um API-Sperre zu vermeiden
+    if (now - lastLimitCheck < 8000) return; 
+    lastLimitCheck = now;
+
+    // Wir suchen Straßen im Umkreis von 15 Metern um deinen Punkt
+    const query = `
+        [out:json];
+        way(around:15, ${lat}, ${lon})["maxspeed"];
+        out tags;
+    `;
+
+    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.elements && data.elements.length > 0) {
+                // Nimm das erste gefundene Limit
+                let speed = data.elements[0].tags.maxspeed;
+                
+                // Manchmal steht da "DE:50" oder "50", wir filtern nur die Zahl
+                if(speed === "none") {
+                    // Keine Begrenzung (Autobahn offen)
+                    document.getElementById('limit-sign').style.display = 'none';
+                } else {
+                    // Versuche, nur die Zahl zu holen
+                    speed = parseInt(speed); 
+                    if(!isNaN(speed)) {
+                        document.getElementById('limit-sign').style.display = 'flex';
+                        document.getElementById('limit-value').innerText = speed;
+                    }
+                }
+            } else {
+                // Kein Limit gefunden (Schild ausblenden)
+                document.getElementById('limit-sign').style.display = 'none';
+            }
+        })
+        .catch(err => console.log("Limit API Error (Ignoriert):", err));
+}
