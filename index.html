@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 1.7 Local Audio</title>
+    <title>DriverHub 1.8 Co-Pilot</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -60,8 +60,23 @@
         .status-pill { background: rgba(30,30,30,0.6); backdrop-filter: blur(15px); padding: 8px 18px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); align-items: center; gap: 12px; font-size: 0.9rem; font-weight: 600; margin-bottom: 30px; }
         .loc-icon, #weather-icon { color: var(--accent-blue); }
         .divider { opacity: 0.3; }
-        .logo-container { margin-bottom: 25px; }
-        .dh-logo { width: 225px; height: auto; filter: drop-shadow(0 0 20px rgba(74,144,226,0.15)); }
+        
+        /* LOGO & CO-PILOT FX */
+        .logo-container { margin-bottom: 25px; position: relative; display: inline-block; transition: transform 0.2s; }
+        .logo-container:active { transform: scale(0.95); }
+        .dh-logo { width: 225px; height: auto; filter: drop-shadow(0 0 20px rgba(74,144,226,0.15)); transition: filter 0.3s ease; }
+        
+        /* Co-Pilot Active State (Red Glow) */
+        .logo-container.listening .dh-logo {
+            filter: drop-shadow(0 0 30px rgba(255, 59, 48, 0.8));
+            animation: pulse-listen 1.5s infinite;
+        }
+        @keyframes pulse-listen {
+            0% { filter: drop-shadow(0 0 20px rgba(255, 59, 48, 0.6)); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 50px rgba(255, 59, 48, 1)); transform: scale(1.02); }
+            100% { filter: drop-shadow(0 0 20px rgba(255, 59, 48, 0.6)); transform: scale(1); }
+        }
+
         h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: 1px; margin-bottom: 5px; background: linear-gradient(to right, #fff, #a0a0a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; }
         .slogan { color: var(--text-grey); font-size: 0.9rem; margin-bottom: 20px; letter-spacing: 1px; text-transform: uppercase; }
         
@@ -132,7 +147,6 @@
         .song-info { text-align: center; margin-bottom: 20px; }
         .song-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 5px; color: white; display: block; }
         .song-artist { font-size: 0.9rem; color: var(--accent-purple); text-transform: uppercase; letter-spacing: 1px; }
-        
         .controls { display: flex; align-items: center; gap: 30px; margin-bottom: 30px; }
         .btn-ctrl { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; transition: transform 0.1s; }
         .btn-ctrl:active { transform: scale(0.9); }
@@ -141,7 +155,7 @@
         .vol-slider { flex: 1; -webkit-appearance: none; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; outline: none; }
         .vol-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: white; cursor: pointer; }
         
-        /* FILE LOAD BUTTON STYLING */
+        /* FILE LOAD BUTTON */
         .btn-load-file {
             background: rgba(255,255,255,0.1); color: var(--accent-purple); border: 1px solid var(--accent-purple);
             padding: 10px 20px; border-radius: 20px; font-size: 0.9rem; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
@@ -176,9 +190,13 @@
                 <div id="status-widget" class="status-pill" style="display:flex;">
                     <i class="fa-solid fa-location-arrow loc-icon"></i><span id="loc-text">Locating...</span><span class="divider">|</span><i id="weather-icon" class="fa-solid fa-cloud"></i><span id="weather-temp">--°</span>
                 </div>
-                <div class="logo-container"><img src="logo.png" alt="DriverHub Logo" class="dh-logo" onerror="this.style.display='none';"></div>
+                
+                <div class="logo-container" id="copilot-trigger">
+                    <img src="logo.png" alt="DriverHub Logo" class="dh-logo" onerror="this.style.display='none';">
+                </div>
+                
                 <h1 id="greeting-text">WELCOME</h1>
-                <p class="slogan">Built for those who drive.</p>
+                <p class="slogan" id="slogan-text">Tap Logo for Co-Pilot</p>
                 <div class="spacer-flex"></div>
                 <button id="btn-start" class="btn-primary"><i class="fa-solid fa-road"></i> Start Drive</button>
             </div>
@@ -207,34 +225,28 @@
             <div class="header-bar"><h2>Music</h2></div>
             <div class="content-scroll">
                 <div class="music-player-container">
-                    
                     <div class="album-art-wrapper">
                         <div class="music-aura" id="music-aura"></div>
                         <div class="album-art"><i class="fa-solid fa-music music-icon-big"></i></div>
                     </div>
-                    
                     <div class="song-info">
                         <span class="song-title" id="track-title">Select Music</span>
                         <span class="song-artist" id="track-artist">Local or Stream</span>
                     </div>
-
                     <input type="file" id="file-input" accept="audio/*" style="display:none">
                     <button class="btn-load-file" onclick="document.getElementById('file-input').click()">
                         <i class="fa-solid fa-folder-open"></i> Eigene Musik laden
                     </button>
-
                     <div class="controls">
                         <button class="btn-ctrl" id="btn-prev"><i class="fa-solid fa-backward-step"></i></button>
                         <button class="btn-ctrl btn-play" id="btn-play-pause"><i class="fa-solid fa-play"></i></button>
                         <button class="btn-ctrl" id="btn-next"><i class="fa-solid fa-forward-step"></i></button>
                     </div>
-                    
                     <div class="volume-container">
                         <i class="fa-solid fa-volume-low" style="color:#888; font-size:0.8rem;"></i>
                         <input type="range" min="0" max="1" step="0.1" value="0.8" class="vol-slider" id="vol-slider">
                         <i class="fa-solid fa-volume-high" style="color:#888; font-size:0.8rem;"></i>
                     </div>
-                    
                     <div class="playlist" id="playlist-container"></div>
                 </div>
                 <div style="height: 100px;"></div>
@@ -315,14 +327,16 @@
         let perfWatchId = null, perfState = 'idle', perfStartTime = 0;
         let result50 = null, result100 = null, maxG = 0;
 
-        // --- MUSIC SETUP (LOCAL + FALLBACK) ---
-        // Backup Track hosted on GitHub Raw (often works on iOS)
-        const playlist = [
-            { title: "Night Drive (Demo)", artist: "GitHub Raw", src: "https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Sample-files/master/sample.mp3" }
-        ];
+        // --- MUSIC ---
+        const playlist = [{ title: "Night Drive (Demo)", artist: "Backup Stream", src: "https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Sample-files/master/sample.mp3" }];
         let currentTrackIdx = 0;
         const audioPlayer = new Audio();
         let isPlaying = false;
+
+        // --- CO-PILOT VARIABLES ---
+        let recognition = null;
+        let isListening = false;
+        let synth = window.speechSynthesis;
 
         // --- DOM ---
         const app = {
@@ -332,6 +346,9 @@
             locText: document.getElementById('loc-text'),
             tempText: document.getElementById('weather-temp'),
             weatherIcon: document.getElementById('weather-icon'),
+            copilotTrigger: document.getElementById('copilot-trigger'), // NEU
+            slogan: document.getElementById('slogan-text'),
+            
             screens: {
                 home: document.getElementById('home-screen'),
                 garage: document.getElementById('garage-screen'),
@@ -377,10 +394,98 @@
         // --- INIT ---
         window.addEventListener('load', () => {
             setTimeout(() => { app.splash.style.opacity = '0'; setTimeout(() => app.splash.style.display = 'none', 800); }, 2200);
-            renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting();
+            renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); // NEU
             if(navigator.geolocation) { navigator.geolocation.getCurrentPosition(initWeatherLoc, err => console.log(err)); }
         });
 
+        // --- CO-PILOT LOGIC (NEU) ---
+        function initCoPilot() {
+            // Check support
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                app.slogan.innerText = "Co-Pilot not supported in this browser";
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'de-DE';
+            recognition.continuous = false; // Stop after one command (safest for mobile)
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                isListening = true;
+                app.copilotTrigger.classList.add('listening');
+                app.slogan.innerText = "Ich höre zu...";
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                app.copilotTrigger.classList.remove('listening');
+                app.slogan.innerText = "Tap Logo for Co-Pilot";
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript.toLowerCase();
+                console.log("Co-Pilot heard:", transcript);
+                handleVoiceCommand(transcript);
+            };
+
+            // Trigger Event
+            app.copilotTrigger.addEventListener('click', () => {
+                if (isListening) {
+                    recognition.stop();
+                } else {
+                    speak("Co Pilot bereit.");
+                    // Delay listening slightly to not record the voice itself
+                    setTimeout(() => recognition.start(), 800);
+                }
+            });
+        }
+
+        function handleVoiceCommand(cmd) {
+            let reply = "";
+            
+            // LOGIC
+            if (cmd.includes("fahrt") || cmd.includes("start") || cmd.includes("drive")) {
+                reply = "Starte Fahrt.";
+                app.screens.drive.style.display = 'flex';
+                app.nav.style.display = 'none';
+                startTracking();
+            }
+            else if (cmd.includes("musik") || cmd.includes("play") || cmd.includes("abspielen")) {
+                reply = "Musik wird gestartet.";
+                togglePlay(); // Tries to play current track
+            }
+            else if (cmd.includes("pause") || cmd.includes("stopp")) {
+                reply = "Pausiert.";
+                if(isPlaying) togglePlay();
+            }
+            else if (cmd.includes("wetter") || cmd.includes("temperatur")) {
+                reply = "Es sind aktuell " + app.tempText.innerText + " in " + app.locText.innerText;
+            }
+            else if (cmd.includes("garage")) {
+                reply = "Öffne Garage.";
+                document.querySelectorAll('.nav-item')[3].click();
+            }
+            else if (cmd.includes("performance") || cmd.includes("leistung")) {
+                reply = "Performance Modus aktiv.";
+                document.querySelectorAll('.nav-item')[1].click();
+            }
+            else {
+                reply = "Kommando nicht erkannt.";
+            }
+
+            speak(reply);
+        }
+
+        function speak(text) {
+            if (!synth) return;
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'de-DE';
+            synth.speak(utter);
+        }
+
+        // --- EXISTING FUNCTIONS (UNCHANGED) ---
         function updateTimeGreeting() {
             const h = new Date().getHours(); let txt = "WELCOME";
             if (h >= 5 && h < 12) txt = "GOOD MORNING"; else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON"; else if (h >= 18 && h < 22) txt = "GOOD EVENING"; else txt = "NIGHT CRUISE";
@@ -406,42 +511,22 @@
             });
         });
 
-        // --- MUSIC LOGIC (LOCAL FILE HANDLING) ---
         function initMusicPlayer() {
-            // Render Playlist (Default)
             renderPlaylist();
-
-            // Setup Controls
             app.music.playBtn.addEventListener('click', togglePlay);
             app.music.nextBtn.addEventListener('click', nextTrack);
             app.music.prevBtn.addEventListener('click', prevTrack);
             app.music.volSlider.addEventListener('input', (e) => { audioPlayer.volume = e.target.value; });
             
-            // LOCAL FILE HANDLER
             app.music.fileInput.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
-
-                // Create a secure URL for the file
                 const fileUrl = URL.createObjectURL(file);
-                
-                // Add to playlist top
-                playlist.unshift({
-                    title: file.name.replace(/\.[^/.]+$/, ""), // remove extension
-                    artist: "Local File",
-                    src: fileUrl
-                });
-
+                playlist.unshift({ title: file.name.replace(/\.[^/.]+$/, ""), artist: "Local File", src: fileUrl });
                 renderPlaylist();
-                loadTrack(0, true); // Play immediately
+                loadTrack(0, true);
             });
-
-            // Error Handling
-            audioPlayer.addEventListener('error', (e) => {
-                console.error("Audio Error", e);
-                alert("Musik konnte nicht laden.\nBitte benutze den 'Eigene Musik laden' Button!");
-                isPlaying = false; updatePlayBtn();
-            });
+            audioPlayer.addEventListener('error', (e) => { console.error("Audio Error", e); isPlaying = false; updatePlayBtn(); });
         }
 
         function renderPlaylist() {
@@ -462,43 +547,25 @@
             audioPlayer.src = track.src;
             app.music.title.innerText = track.title;
             app.music.artist.innerText = track.artist;
-            renderPlaylist(); // Update active class
+            renderPlaylist();
 
             if(autoPlay) {
-                audioPlayer.play().then(() => {
-                    isPlaying = true; updatePlayBtn();
-                }).catch(e => {
-                    console.log("Play block:", e);
-                    isPlaying = false; updatePlayBtn();
-                });
+                audioPlayer.play().then(() => { isPlaying = true; updatePlayBtn(); }).catch(e => { console.log("Play block:", e); isPlaying = false; updatePlayBtn(); });
             }
         }
 
         function togglePlay() {
-            if(isPlaying) {
-                audioPlayer.pause(); isPlaying = false;
-            } else {
-                audioPlayer.play().catch(e => alert("Please load a local file first!"));
-                isPlaying = true;
-            }
+            if(isPlaying) { audioPlayer.pause(); isPlaying = false; } else { audioPlayer.play().catch(e => alert("Please load a local file first or check connection!")); isPlaying = true; }
             updatePlayBtn();
         }
 
         function updatePlayBtn() {
-            if(isPlaying) {
-                app.music.playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-                app.music.aura.classList.add('playing');
-            } else {
-                app.music.playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
-                app.music.aura.classList.remove('playing');
-            }
+            if(isPlaying) { app.music.playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>'; app.music.aura.classList.add('playing'); } else { app.music.playBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; app.music.aura.classList.remove('playing'); }
         }
 
         function nextTrack() { let next = currentTrackIdx + 1; if(next >= playlist.length) next = 0; loadTrack(next); }
         function prevTrack() { let prev = currentTrackIdx - 1; if(prev < 0) prev = playlist.length - 1; loadTrack(prev); }
 
-
-        // --- DRIVE, PERF, GARAGE (UNCHANGED) ---
         document.getElementById('btn-start').addEventListener('click', () => { app.screens.drive.style.display = 'flex'; app.nav.style.display = 'none'; startTracking(); });
         document.getElementById('btn-stop').addEventListener('click', () => { stopTracking(); app.screens.drive.style.display = 'none'; app.screens.summary.style.display = 'flex'; });
         document.getElementById('btn-save-drive').addEventListener('click', () => { saveDriveToStorage(); app.screens.summary.style.display = 'none'; app.nav.style.display = 'flex'; document.querySelectorAll('.nav-item')[3].click(); });
@@ -530,7 +597,15 @@
             } else if(perfState === 'running') {
                 const duration = (Date.now() - perfStartTime) / 1000;
                 if(!result50 && speedKmh >= 50) { result50 = duration.toFixed(2); app.perf.val50.innerText = result50 + " s"; app.perf.box50.classList.add('active'); }
-                if(!result100 && speedKmh >= 100) { result100 = duration.toFixed(2); app.perf.val100.innerText = result100 + " s"; app.perf.box100.classList.add('active'); perfState = 'finished'; app.perf.btn.innerText = "RESET"; app.perf.btn.classList.remove('armed'); app.perf.status.innerText = "Run Complete!"; savePerfRun(); }
+                if(!result100 && speedKmh >= 100) { 
+                    result100 = duration.toFixed(2); app.perf.val100.innerText = result100 + " s"; app.perf.box100.classList.add('active'); 
+                    perfState = 'finished'; app.perf.btn.innerText = "RESET"; app.perf.btn.classList.remove('armed'); app.perf.status.innerText = "Run Complete!"; 
+                    
+                    // CO-PILOT ANNOUNCEMENT (NEU)
+                    speak("Hundert erreicht in " + result100.replace('.', ',') + " Sekunden.");
+                    
+                    savePerfRun(); 
+                }
             }
         }
         function resetPerfMode() { perfState = 'idle'; app.perf.btn.innerText = "ARM"; app.perf.btn.classList.remove('armed'); app.perf.status.innerText = "Tap to arm, then launch."; if(perfWatchId) navigator.geolocation.clearWatch(perfWatchId); window.removeEventListener('devicemotion', handleMotion); app.perf.speed.innerText = "0"; }
