@@ -381,7 +381,14 @@
 
         // --- INIT ---
         window.addEventListener('load', () => {
-            setTimeout(() => { app.splash.style.opacity = '0'; setTimeout(() => app.splash.style.display = 'none', 800); }, 2200);
+            setTimeout(() => { 
+                app.splash.style.opacity = '0'; 
+                setTimeout(() => {
+                    app.splash.style.display = 'none';
+                    // --- FIX: START REFRESH NOW (WHEN VISIBLE) ---
+                    manualRefreshWeather(); 
+                }, 800); 
+            }, 2200);
             
             // Auth Check
             auth.onAuthStateChanged(user => {
@@ -396,9 +403,8 @@
 
             renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
             
-            // --- FIX: AUTO WEATHER REFRESH ---
-            manualRefreshWeather(); // Start sofort
-            setInterval(manualRefreshWeather, 60000); // Dann alle 60 Sekunden (60000ms)
+            // Repeat refresh every 60s
+            setInterval(manualRefreshWeather, 60000); 
         });
 
         // --- AUTH ---
@@ -539,11 +545,17 @@
 
         // --- WEATHER UTIL (MANUAL REFRESH) ---
         function manualRefreshWeather() { 
-            app.locText.innerText = "Refreshing...";
+            // 1. Visuelles Feedback sofort setzen
+            app.locText.innerText = "Locating...";
+            app.tempText.innerText = "--°"; 
+
             if(navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(initWeatherLoc, err => { 
-                    console.log("Auto-Refresh: GPS failed (expected in background)", err);
-                }, {enableHighAccuracy:false, timeout:5000});
+                    console.log("GPS Fehler", err);
+                    app.locText.innerText = "No GPS";
+                }, {enableHighAccuracy:false, timeout:10000}); // Timeout erhöht
+            } else {
+                app.locText.innerText = "Not Supported";
             }
         }
         function updateTimeGreeting() { const h = new Date().getHours(); let txt = "WELCOME"; if (h >= 5 && h < 12) txt = "GOOD MORNING"; else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON"; else if (h >= 18 && h < 22) txt = "GOOD EVENING"; else txt = "NIGHT CRUISE"; app.greet.innerText = txt; }
