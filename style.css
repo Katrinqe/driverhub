@@ -136,7 +136,7 @@ button { font-family: var(--font-stack); cursor: pointer; }
 .btn-follow.following { background: transparent; border: 1px solid #444; color: #888; }
 .btn-chat { background: #333; border: none; color: white; padding: 8px 25px; border-radius: 20px; font-weight: 700; cursor: pointer; }
 
-/* 3D GARAGE CSS (NEU) */
+/* 3D GARAGE CSS */
 #garage-canvas-container {
     width: 100%;
     height: 180px;
