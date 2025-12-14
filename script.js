@@ -436,7 +436,7 @@ function renderPerfHistory() { let runs = JSON.parse(localStorage.getItem('dh_pe
 
 function manualRefreshWeather() { app.locText.innerText = "Locating..."; app.tempText.innerText = "--°"; if(navigator.geolocation) { navigator.geolocation.getCurrentPosition(initWeatherLoc, err => { console.log("GPS Fehler", err); app.locText.innerText = "No GPS"; }, {enableHighAccuracy:false, timeout:10000}); } else { app.locText.innerText = "Not Supported"; } }
 
-// HIER: BEGRÜSSUNG REPARIERT (NAME SICHTBAR GEMACHT)
+// HIER: BEGRÜSSUNG OPTIMIERT (NAME IN NEUER CSS KLASSE)
 function updateTimeGreeting() { 
     const h = new Date().getHours(); 
     let txt = "WELCOME"; 
@@ -445,10 +445,9 @@ function updateTimeGreeting() {
     else if (h >= 18 && h < 22) txt = "GOOD EVENING"; 
     else txt = "NIGHT CRUISE"; 
     
-    // Wir setzen die Farbe hier explizit auf ein helles Grau (#aaaaaa),
-    // damit sie auch auf schwarzem Hintergrund sichtbar ist.
+    // Wir benutzen jetzt die neue CSS Klasse statt Inline-Styles
     if (currentUserName) {
-        app.greet.innerHTML = `${txt}<br><span style="font-size:0.5em; opacity:0.8; font-weight:300; color:#aaaaaa;">${escapeHtml(currentUserName).toUpperCase()}</span>`;
+        app.greet.innerHTML = `${txt}<span class="greeting-username">${escapeHtml(currentUserName).toUpperCase()}</span>`;
     } else {
         app.greet.innerText = txt; 
     }
