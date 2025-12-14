@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 1.8 Co-Pilot</title>
+    <title>DriverHub 1.7.2 MP3 Fix</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -65,17 +65,8 @@
         .logo-container { margin-bottom: 25px; position: relative; display: inline-block; transition: transform 0.2s; }
         .logo-container:active { transform: scale(0.95); }
         .dh-logo { width: 225px; height: auto; filter: drop-shadow(0 0 20px rgba(74,144,226,0.15)); transition: filter 0.3s ease; }
-        
-        /* Co-Pilot Active State (Red Glow) */
-        .logo-container.listening .dh-logo {
-            filter: drop-shadow(0 0 30px rgba(255, 59, 48, 0.8));
-            animation: pulse-listen 1.5s infinite;
-        }
-        @keyframes pulse-listen {
-            0% { filter: drop-shadow(0 0 20px rgba(255, 59, 48, 0.6)); transform: scale(1); }
-            50% { filter: drop-shadow(0 0 50px rgba(255, 59, 48, 1)); transform: scale(1.02); }
-            100% { filter: drop-shadow(0 0 20px rgba(255, 59, 48, 0.6)); transform: scale(1); }
-        }
+        .logo-container.listening .dh-logo { filter: drop-shadow(0 0 30px rgba(255, 59, 48, 0.8)); animation: pulse-listen 1.5s infinite; }
+        @keyframes pulse-listen { 0% { filter: drop-shadow(0 0 20px rgba(255, 59, 48, 0.6)); transform: scale(1); } 50% { filter: drop-shadow(0 0 50px rgba(255, 59, 48, 1)); transform: scale(1.02); } 100% { filter: drop-shadow(0 0 20px rgba(255, 59, 48, 0.6)); transform: scale(1); } }
 
         h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: 1px; margin-bottom: 5px; background: linear-gradient(to right, #fff, #a0a0a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; }
         .slogan { color: var(--text-grey); font-size: 0.9rem; margin-bottom: 20px; letter-spacing: 1px; text-transform: uppercase; }
@@ -231,22 +222,26 @@
                     </div>
                     <div class="song-info">
                         <span class="song-title" id="track-title">Select Music</span>
-                        <span class="song-artist" id="track-artist">Local or Stream</span>
+                        <span class="song-artist" id="track-artist">Local File</span>
                     </div>
-                    <input type="file" id="file-input" accept="audio/*" style="display:none">
+                    
+                    <input type="file" id="file-input" accept="audio/*,.mp3,.wav,.m4a,.aac" style="display:none">
                     <button class="btn-load-file" onclick="document.getElementById('file-input').click()">
                         <i class="fa-solid fa-folder-open"></i> Eigene Musik laden
                     </button>
+
                     <div class="controls">
                         <button class="btn-ctrl" id="btn-prev"><i class="fa-solid fa-backward-step"></i></button>
                         <button class="btn-ctrl btn-play" id="btn-play-pause"><i class="fa-solid fa-play"></i></button>
                         <button class="btn-ctrl" id="btn-next"><i class="fa-solid fa-forward-step"></i></button>
                     </div>
+                    
                     <div class="volume-container">
                         <i class="fa-solid fa-volume-low" style="color:#888; font-size:0.8rem;"></i>
                         <input type="range" min="0" max="1" step="0.1" value="0.8" class="vol-slider" id="vol-slider">
                         <i class="fa-solid fa-volume-high" style="color:#888; font-size:0.8rem;"></i>
                     </div>
+                    
                     <div class="playlist" id="playlist-container"></div>
                 </div>
                 <div style="height: 100px;"></div>
@@ -328,7 +323,7 @@
         let result50 = null, result100 = null, maxG = 0;
 
         // --- MUSIC ---
-        const playlist = [{ title: "Night Drive (Demo)", artist: "Backup Stream", src: "https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Sample-files/master/sample.mp3" }];
+        const playlist = [];
         let currentTrackIdx = 0;
         const audioPlayer = new Audio();
         let isPlaying = false;
@@ -337,6 +332,7 @@
         let recognition = null;
         let isListening = false;
         let synth = window.speechSynthesis;
+        let preferredVoice = null;
 
         // --- DOM ---
         const app = {
@@ -346,7 +342,7 @@
             locText: document.getElementById('loc-text'),
             tempText: document.getElementById('weather-temp'),
             weatherIcon: document.getElementById('weather-icon'),
-            copilotTrigger: document.getElementById('copilot-trigger'), // NEU
+            copilotTrigger: document.getElementById('copilot-trigger'),
             slogan: document.getElementById('slogan-text'),
             
             screens: {
@@ -394,94 +390,75 @@
         // --- INIT ---
         window.addEventListener('load', () => {
             setTimeout(() => { app.splash.style.opacity = '0'; setTimeout(() => app.splash.style.display = 'none', 800); }, 2200);
-            renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); // NEU
+            renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot();
+            // Load Voices
+            if(synth) { synth.onvoiceschanged = loadVoices; loadVoices(); }
             if(navigator.geolocation) { navigator.geolocation.getCurrentPosition(initWeatherLoc, err => console.log(err)); }
         });
 
-        // --- CO-PILOT LOGIC (NEU) ---
+        // --- VOICE ENGINE ---
+        function loadVoices() {
+            const voices = synth.getVoices();
+            // Prefer Google, Siri or Premium voices
+            preferredVoice = voices.find(v => v.lang.includes('de') && (v.name.includes('Google') || v.name.includes('Premium') || v.name.includes('Siri')));
+            if(!preferredVoice) preferredVoice = voices.find(v => v.lang.includes('de'));
+        }
+
+        // --- CO-PILOT LOGIC ---
         function initCoPilot() {
-            // Check support
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                app.slogan.innerText = "Co-Pilot not supported in this browser";
-                return;
-            }
+            if (!SpeechRecognition) return;
 
             recognition = new SpeechRecognition();
             recognition.lang = 'de-DE';
-            recognition.continuous = false; // Stop after one command (safest for mobile)
+            recognition.continuous = false;
             recognition.interimResults = false;
 
-            recognition.onstart = () => {
-                isListening = true;
-                app.copilotTrigger.classList.add('listening');
-                app.slogan.innerText = "Ich höre zu...";
-            };
-
-            recognition.onend = () => {
-                isListening = false;
-                app.copilotTrigger.classList.remove('listening');
-                app.slogan.innerText = "Tap Logo for Co-Pilot";
-            };
-
+            recognition.onstart = () => { isListening = true; app.copilotTrigger.classList.add('listening'); app.slogan.innerText = "Ich höre zu..."; };
+            recognition.onend = () => { isListening = false; app.copilotTrigger.classList.remove('listening'); app.slogan.innerText = "Tap Logo for Co-Pilot"; };
             recognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript.toLowerCase();
-                console.log("Co-Pilot heard:", transcript);
                 handleVoiceCommand(transcript);
             };
 
-            // Trigger Event
             app.copilotTrigger.addEventListener('click', () => {
-                if (isListening) {
-                    recognition.stop();
-                } else {
+                if (isListening) { recognition.stop(); } else {
                     speak("Co Pilot bereit.");
-                    // Delay listening slightly to not record the voice itself
                     setTimeout(() => recognition.start(), 800);
                 }
             });
         }
 
         function handleVoiceCommand(cmd) {
-            let reply = "";
-            
-            // LOGIC
+            let reply = "Kommando nicht erkannt.";
             if (cmd.includes("fahrt") || cmd.includes("start") || cmd.includes("drive")) {
                 reply = "Starte Fahrt.";
-                app.screens.drive.style.display = 'flex';
-                app.nav.style.display = 'none';
-                startTracking();
+                app.screens.drive.style.display = 'flex'; app.nav.style.display = 'none'; startTracking();
             }
-            else if (cmd.includes("musik") || cmd.includes("play") || cmd.includes("abspielen")) {
-                reply = "Musik wird gestartet.";
-                togglePlay(); // Tries to play current track
+            else if (cmd.includes("musik") || cmd.includes("play")) {
+                reply = "Musik wird gestartet."; togglePlay();
             }
             else if (cmd.includes("pause") || cmd.includes("stopp")) {
-                reply = "Pausiert.";
-                if(isPlaying) togglePlay();
+                reply = "Pausiert."; if(isPlaying) togglePlay();
             }
-            else if (cmd.includes("wetter") || cmd.includes("temperatur")) {
+            else if (cmd.includes("wetter")) {
                 reply = "Es sind aktuell " + app.tempText.innerText + " in " + app.locText.innerText;
             }
             else if (cmd.includes("garage")) {
-                reply = "Öffne Garage.";
-                document.querySelectorAll('.nav-item')[3].click();
+                reply = "Öffne Garage."; document.querySelectorAll('.nav-item')[3].click();
             }
-            else if (cmd.includes("performance") || cmd.includes("leistung")) {
-                reply = "Performance Modus aktiv.";
-                document.querySelectorAll('.nav-item')[1].click();
+            else if (cmd.includes("performance")) {
+                reply = "Performance Modus aktiv."; document.querySelectorAll('.nav-item')[1].click();
             }
-            else {
-                reply = "Kommando nicht erkannt.";
-            }
-
             speak(reply);
         }
 
         function speak(text) {
             if (!synth) return;
             const utter = new SpeechSynthesisUtterance(text);
-            utter.lang = 'de-DE';
+            if(preferredVoice) utter.voice = preferredVoice;
+            utter.rate = 0.9; // Etwas langsamer = cooler
+            utter.pitch = 0.9; // Etwas tiefer
             synth.speak(utter);
         }
 
@@ -511,8 +488,8 @@
             });
         });
 
+        // --- MUSIC LOGIC (FILE READER FOR IOS FIX) ---
         function initMusicPlayer() {
-            renderPlaylist();
             app.music.playBtn.addEventListener('click', togglePlay);
             app.music.nextBtn.addEventListener('click', nextTrack);
             app.music.prevBtn.addEventListener('click', prevTrack);
@@ -521,10 +498,16 @@
             app.music.fileInput.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
-                const fileUrl = URL.createObjectURL(file);
-                playlist.unshift({ title: file.name.replace(/\.[^/.]+$/, ""), artist: "Local File", src: fileUrl });
-                renderPlaylist();
-                loadTrack(0, true);
+                
+                // FILE READER LOGIC (iOS FIX)
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const audioData = e.target.result; // Base64 Data URI
+                    playlist.unshift({ title: file.name.replace(/\.[^/.]+$/, ""), artist: "Local File", src: audioData });
+                    renderPlaylist();
+                    loadTrack(0, true);
+                };
+                reader.readAsDataURL(file); // This converts file to data string
             });
             audioPlayer.addEventListener('error', (e) => { console.error("Audio Error", e); isPlaying = false; updatePlayBtn(); });
         }
@@ -555,7 +538,8 @@
         }
 
         function togglePlay() {
-            if(isPlaying) { audioPlayer.pause(); isPlaying = false; } else { audioPlayer.play().catch(e => alert("Please load a local file first or check connection!")); isPlaying = true; }
+            if(playlist.length === 0) { alert("Bitte erst Musik laden!"); return; }
+            if(isPlaying) { audioPlayer.pause(); isPlaying = false; } else { audioPlayer.play(); isPlaying = true; }
             updatePlayBtn();
         }
 
@@ -600,10 +584,7 @@
                 if(!result100 && speedKmh >= 100) { 
                     result100 = duration.toFixed(2); app.perf.val100.innerText = result100 + " s"; app.perf.box100.classList.add('active'); 
                     perfState = 'finished'; app.perf.btn.innerText = "RESET"; app.perf.btn.classList.remove('armed'); app.perf.status.innerText = "Run Complete!"; 
-                    
-                    // CO-PILOT ANNOUNCEMENT (NEU)
                     speak("Hundert erreicht in " + result100.replace('.', ',') + " Sekunden.");
-                    
                     savePerfRun(); 
                 }
             }
