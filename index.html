@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 3.1.1</title>
+    <title>DriverHub 3.2.0</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,9 +17,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-
-    <style>
-        /* --- CSS (STYLE) --- */
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script> <style>
+        /* --- CSS (BASIS 3.1.2) --- */
         :root {
             --bg-color: #000000;
             --accent-blue: #4a90e2;
@@ -40,7 +39,6 @@
             overscroll-behavior: none;
         }
 
-        /* VERSION TAG */
         .version-tag { position: fixed; bottom: 2px; right: 5px; opacity: 0.3; font-size: 0.6rem; z-index: 9999; pointer-events: none; font-family: monospace; }
 
         /* INTRO */
@@ -109,23 +107,40 @@
         .icon-btn-floating { position: absolute; top: 40px; left: 20px; width: 45px; height: 45px; background: var(--glass-bg); border-radius: 50%; border: none; color: white; z-index: 3000; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
         .btn-text { background: transparent; color: #555; font-size: 0.9rem; margin-top: 40px; width: 100%; border: none; }
 
-        /* COMMUNITY */
+        /* --- COMMUNITY & PROFILE UPDATE --- */
         .feed-container { width: 100%; max-width: 360px; margin: 0 auto; }
         .post-card { background: #1c1c1e; border-radius: 16px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
         .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .post-avatar { width: 35px; height: 35px; border-radius: 50%; background: var(--accent-blue); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem; }
+        .post-avatar { width: 35px; height: 35px; border-radius: 50%; background: var(--accent-blue); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem; background-size: cover; background-position: center; }
         .post-user { font-weight: 700; color: white; font-size: 0.95rem; }
         .post-date { font-size: 0.75rem; color: #666; margin-left: auto; }
         .post-content { font-size: 0.95rem; color: #ddd; line-height: 1.4; margin-bottom: 10px; }
         .post-actions { display: flex; gap: 15px; }
         .action-btn { color: #888; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 5px; }
         .action-btn:hover { color: var(--accent-green); }
+        
         .create-post-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 16px; margin-bottom: 25px; display: flex; gap: 10px; align-items: center; }
         .create-input { flex: 1; background: transparent; border: none; color: white; font-size: 1rem; outline: none; }
         .btn-send-post { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-green); border: none; color: white; font-size: 1rem; cursor: pointer; }
         .user-search-bar { width: 100%; padding: 12px; border-radius: 12px; background: #111; border: 1px solid #333; color: white; margin-bottom: 20px; outline: none; }
+        
+        /* NEW PROFILE STYLES */
+        #profile-view { display: none; width: 100%; max-width: 360px; margin: 0 auto; text-align: center; }
+        .profile-header-img { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--accent-blue); margin: 0 auto 15px auto; background: #222; background-size: cover; background-position: center; position: relative; }
+        .profile-header-img .edit-badge { position: absolute; bottom: 0; right: 0; background: var(--accent-blue); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; border: 2px solid black; cursor: pointer; }
+        .profile-name { font-size: 1.5rem; font-weight: 800; color: white; margin-bottom: 5px; }
+        .profile-bio { color: #aaa; font-size: 0.9rem; margin-bottom: 20px; font-style: italic; padding: 0 20px; }
+        .profile-stats { display: flex; justify-content: space-around; margin-bottom: 25px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; }
+        .p-stat { display: flex; flex-direction: column; } .p-stat span:first-child { font-weight: 800; font-size: 1.2rem; } .p-stat span:last-child { font-size: 0.7rem; color: #888; text-transform: uppercase; }
+        .btn-follow { background: var(--accent-blue); border: none; color: white; padding: 8px 25px; border-radius: 20px; font-weight: 700; cursor: pointer; margin-bottom: 20px; }
+        .btn-follow.following { background: transparent; border: 1px solid #444; color: #888; }
+        
+        #search-results { background: #111; border-radius: 0 0 12px 12px; max-height: 200px; overflow-y: auto; display: none; position: absolute; width: calc(100% - 40px); z-index: 50; top: 135px; border: 1px solid #333; }
+        .search-item { padding: 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #222; cursor: pointer; }
+        .search-item:hover { background: #222; }
+        .s-avatar { width: 30px; height: 30px; border-radius: 50%; background: #333; background-size: cover; background-position: center; }
 
-        /* ALL MODULES */
+        /* ALL MODULES (SAME AS 3.1.2) */
         #map, #detail-map { height: 100%; width: 100%; z-index: 1; filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
         .drive-overlay-top { position: absolute; top: 50px; left: 20px; right: 20px; z-index: 999; display: flex; justify-content: space-between; }
         .drive-overlay-bottom { position: absolute; bottom: 40px; left: 0; right: 0; z-index: 999; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px;}
@@ -158,7 +173,7 @@
 </head>
 <body>
 
-    <div class="version-tag">v3.1.1</div>
+    <div class="version-tag">v3.2.0</div>
 
     <div id="auth-screen">
         <div class="auth-box">
@@ -195,14 +210,45 @@
         </section>
 
         <section id="community-screen" class="screen">
-            <div class="header-bar"><h2>Community</h2><i class="fa-solid fa-user-circle" id="user-profile-icon" style="font-size:1.5rem;"></i></div>
+            <div class="header-bar">
+                <h2 id="comm-title">Community</h2>
+                <i class="fa-solid fa-user-circle" id="user-profile-icon" style="font-size:1.5rem; cursor:pointer;"></i>
+            </div>
+            
             <div class="content-scroll">
-                <input type="text" class="user-search-bar" placeholder="Search Users (Coming Soon)">
-                <div class="create-post-box">
-                    <input type="text" id="post-input" class="create-input" placeholder="What's your drive today?">
-                    <button class="btn-send-post" id="btn-post"><i class="fa-solid fa-paper-plane"></i></button>
+                
+                <div id="feed-view">
+                    <div style="position:relative;">
+                        <input type="text" id="user-search" class="user-search-bar" placeholder="Search Users...">
+                        <div id="search-results"></div>
+                    </div>
+
+                    <div class="create-post-box">
+                        <input type="text" id="post-input" class="create-input" placeholder="What's your drive today?">
+                        <button class="btn-send-post" id="btn-post"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                    <div id="feed-container" class="feed-container"><div style="text-align:center; padding:20px; color:#666;">Loading Feed...</div></div>
                 </div>
-                <div id="feed-container" class="feed-container"><div style="text-align:center; padding:20px; color:#666;">Loading Feed...</div></div>
+
+                <div id="profile-view">
+                    <div class="profile-header-img" id="p-header-img">
+                         <div class="edit-badge" id="btn-edit-img"><i class="fa-solid fa-camera"></i></div>
+                    </div>
+                    <input type="file" id="profile-img-input" style="display:none;" accept="image/*">
+                    
+                    <h2 class="profile-name" id="p-name">Loading...</h2>
+                    <p class="profile-bio" id="p-bio" contenteditable="false">No bio yet.</p>
+                    <i class="fa-solid fa-pen" id="btn-edit-bio" style="font-size:0.8rem; color:#666; cursor:pointer; margin-bottom:15px;"> Edit Bio</i>
+
+                    <div class="profile-stats">
+                        <div class="p-stat"><span id="p-followers">0</span><span>Followers</span></div>
+                        <div class="p-stat"><span id="p-following">0</span><span>Following</span></div>
+                    </div>
+
+                    <button id="btn-follow-action" class="btn-follow" style="display:none;">Follow</button>
+                    <button id="btn-back-feed" class="btn-text" style="margin-top:0;">Back to Feed</button>
+                </div>
+
                 <div style="height: 100px;"></div>
             </div>
         </section>
@@ -309,6 +355,7 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db_fire = firebase.firestore();
+        const storage = firebase.storage();
 
         // --- GLOBAL VARIABLES ---
         let map, marker, watchId, intervalId, detailMap;
@@ -317,7 +364,7 @@
         let result50 = null, result100 = null, maxG = 0;
         const playlist = []; let currentTrackIdx = 0; const audioPlayer = new Audio(); let isPlaying = false;
         let recognition = null; let isListening = false; let synth = window.speechSynthesis;
-        let currentUser = null;
+        let currentUser = null; let viewingUserUid = null;
 
         // --- DOM ---
         const app = {
@@ -375,7 +422,12 @@
             comm: {
                 feed: document.getElementById('feed-container'),
                 postInput: document.getElementById('post-input'),
-                postBtn: document.getElementById('btn-post')
+                postBtn: document.getElementById('btn-post'),
+                feedView: document.getElementById('feed-view'),
+                profileView: document.getElementById('profile-view'),
+                profileIcon: document.getElementById('user-profile-icon'),
+                search: document.getElementById('user-search'),
+                results: document.getElementById('search-results')
             }
         };
 
@@ -385,25 +437,30 @@
                 app.splash.style.opacity = '0'; 
                 setTimeout(() => {
                     app.splash.style.display = 'none';
-                    // --- FIX: START REFRESH NOW (WHEN VISIBLE) ---
                     manualRefreshWeather(); 
                 }, 800); 
             }, 2200);
             
-            // Auth Check
             auth.onAuthStateChanged(user => {
                 if (user) {
                     currentUser = user;
                     app.authScreen.classList.add('hidden');
                     loadFeed();
+                    // Load own user profile data
+                    db_fire.collection('users').doc(user.uid).get().then(doc => {
+                        if(doc.exists && doc.data().photoURL) {
+                            app.comm.profileIcon.style.backgroundImage = `url('${doc.data().photoURL}')`;
+                            app.comm.profileIcon.style.backgroundSize = 'cover';
+                            app.comm.profileIcon.classList.remove('fa-user-circle');
+                            app.comm.profileIcon.classList.remove('fa-solid');
+                        }
+                    });
                 } else {
                     app.authScreen.classList.remove('hidden');
                 }
             });
 
             renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
-            
-            // Repeat refresh every 60s
             setInterval(manualRefreshWeather, 60000); 
         });
 
@@ -419,28 +476,226 @@
         document.getElementById('btn-login-email').addEventListener('click', () => { auth.signInWithEmailAndPassword(document.getElementById('auth-email').value, document.getElementById('auth-pass').value).catch(err => alert(err.message)); });
         document.getElementById('btn-signup-email').addEventListener('click', () => {
             const e = document.getElementById('auth-email').value; const p = document.getElementById('auth-pass').value;
-            auth.createUserWithEmailAndPassword(e, p).then(cred => { db_fire.collection('users').doc(cred.user.uid).set({ email: e, username: e.split('@')[0], joined: new Date() }); }).catch(err => alert(err.message));
+            auth.createUserWithEmailAndPassword(e, p).then(cred => { 
+                // Create minimal profile doc
+                db_fire.collection('users').doc(cred.user.uid).set({ 
+                    email: e, 
+                    username: e.split('@')[0], 
+                    bio: "No bio yet.",
+                    photoURL: "",
+                    followers: 0,
+                    following: 0,
+                    searchKey: e.split('@')[0].toLowerCase(),
+                    joined: new Date() 
+                }); 
+            }).catch(err => alert(err.message));
         });
         document.getElementById('btn-login-google').addEventListener('click', () => { const provider = new firebase.auth.GoogleAuthProvider(); auth.signInWithPopup(provider).catch(err => alert("Google Login Error: " + err.message)); });
 
-        // --- COMMUNITY ---
+        // --- COMMUNITY: FEED ---
         app.comm.postBtn.addEventListener('click', () => {
             const txt = app.comm.postInput.value; if(!txt || !currentUser) return;
-            db_fire.collection('posts').add({ text: txt, uid: currentUser.uid, author: currentUser.email.split('@')[0], timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-            app.comm.postInput.value = "";
+            // Get user data for post
+            db_fire.collection('users').doc(currentUser.uid).get().then(doc => {
+                const uData = doc.data() || {};
+                db_fire.collection('posts').add({ 
+                    text: txt, 
+                    uid: currentUser.uid, 
+                    author: uData.username || currentUser.email.split('@')[0],
+                    authorPic: uData.photoURL || "",
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+                });
+                app.comm.postInput.value = "";
+            });
         });
+
         function loadFeed() {
-            db_fire.collection('posts').orderBy('timestamp', 'desc').limit(20).onSnapshot(snap => {
+            db_fire.collection('posts').orderBy('timestamp', 'desc').limit(30).onSnapshot(snap => {
                 app.comm.feed.innerHTML = "";
                 snap.forEach(doc => {
                     const post = doc.data();
                     const date = post.timestamp ? new Date(post.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "Just now";
+                    
+                    // Avatar Handling
+                    let avaStyle = `background: var(--accent-blue);`;
+                    let avaContent = post.author.charAt(0).toUpperCase();
+                    if(post.authorPic) {
+                         avaStyle = `background-image: url('${post.authorPic}');`;
+                         avaContent = "";
+                    }
+
                     const div = document.createElement('div'); div.className = 'post-card';
-                    div.innerHTML = `<div class="post-header"><div class="post-avatar">${post.author.charAt(0).toUpperCase()}</div><span class="post-user">${post.author}</span><span class="post-date">${date}</span></div><div class="post-content">${post.text}</div><div class="post-actions"><span class="action-btn"><i class="fa-regular fa-heart"></i> Like</span><span class="action-btn"><i class="fa-regular fa-comment"></i> Reply</span></div>`;
+                    div.innerHTML = `
+                        <div class="post-header" onclick="openProfile('${post.uid}')">
+                            <div class="post-avatar" style="${avaStyle}">${avaContent}</div>
+                            <span class="post-user">${post.author}</span>
+                            <span class="post-date">${date}</span>
+                        </div>
+                        <div class="post-content">${post.text}</div>
+                        <div class="post-actions">
+                            <span class="action-btn"><i class="fa-regular fa-heart"></i> Like</span>
+                        </div>`;
                     app.comm.feed.appendChild(div);
                 });
             });
         }
+
+        // --- COMMUNITY: PROFILE & SEARCH ---
+        
+        // 1. Navigation
+        app.comm.profileIcon.addEventListener('click', () => openProfile(currentUser.uid));
+        document.getElementById('btn-back-feed').addEventListener('click', () => {
+            app.comm.profileView.style.display = 'none';
+            app.comm.feedView.style.display = 'block';
+            document.getElementById('comm-title').innerText = "Community";
+        });
+
+        // 2. Open Profile Logic
+        function openProfile(uid) {
+            viewingUserUid = uid;
+            const isMe = (currentUser.uid === uid);
+            
+            app.comm.feedView.style.display = 'none';
+            app.comm.profileView.style.display = 'block';
+            document.getElementById('comm-title').innerText = isMe ? "My Profile" : "User Profile";
+            
+            // Elements
+            const pName = document.getElementById('p-name');
+            const pBio = document.getElementById('p-bio');
+            const pImg = document.getElementById('p-header-img');
+            const btnEditImg = document.getElementById('btn-edit-img');
+            const btnEditBio = document.getElementById('btn-edit-bio');
+            const btnFollow = document.getElementById('btn-follow-action');
+            const statFollowers = document.getElementById('p-followers');
+            const statFollowing = document.getElementById('p-following');
+
+            // Reset UI
+            pName.innerText = "Loading...";
+            pImg.style.backgroundImage = "none";
+            
+            // Load Data
+            db_fire.collection('users').doc(uid).onSnapshot(doc => {
+                if(!doc.exists) return;
+                const data = doc.data();
+                pName.innerText = data.username;
+                pBio.innerText = data.bio || "No bio yet.";
+                if(data.photoURL) pImg.style.backgroundImage = `url('${data.photoURL}')`;
+
+                statFollowers.innerText = data.followers || 0;
+                statFollowing.innerText = data.following || 0;
+            });
+
+            // Edit Modes
+            if(isMe) {
+                btnEditImg.style.display = 'flex';
+                btnEditBio.style.display = 'inline-block';
+                btnFollow.style.display = 'none';
+            } else {
+                btnEditImg.style.display = 'none';
+                btnEditBio.style.display = 'none';
+                btnFollow.style.display = 'inline-block';
+                checkIfFollowing(uid);
+            }
+        }
+
+        // 3. Edit Bio
+        const bioText = document.getElementById('p-bio');
+        document.getElementById('btn-edit-bio').addEventListener('click', () => {
+             const newBio = prompt("Update Bio:", bioText.innerText);
+             if(newBio) {
+                 db_fire.collection('users').doc(currentUser.uid).update({ bio: newBio });
+             }
+        });
+
+        // 4. Upload Image
+        document.getElementById('btn-edit-img').addEventListener('click', () => document.getElementById('profile-img-input').click());
+        document.getElementById('profile-img-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const storageRef = storage.ref(`profiles/${currentUser.uid}`);
+            const uploadTask = storageRef.put(file);
+            
+            uploadTask.on('state_changed', 
+                (snap) => { console.log("Uploading..."); },
+                (err) => { alert("Error upload. Did you enable Storage in Firebase Console?"); },
+                () => {
+                    uploadTask.snapshot.ref.getDownloadURL().then((url) => {
+                        db_fire.collection('users').doc(currentUser.uid).update({ photoURL: url });
+                    });
+                }
+            );
+        });
+
+        // 5. Follow System
+        document.getElementById('btn-follow-action').addEventListener('click', () => {
+            if(!viewingUserUid) return;
+            const followRef = db_fire.collection('follows').where('followerId', '==', currentUser.uid).where('followingId', '==', viewingUserUid);
+            
+            followRef.get().then(snap => {
+                if(snap.empty) {
+                    // Follow
+                    db_fire.collection('follows').add({ followerId: currentUser.uid, followingId: viewingUserUid });
+                    // Update Counts (Client side optimistic or Cloud Function ideal. Here we do simple client write)
+                    db_fire.collection('users').doc(viewingUserUid).update({ followers: firebase.firestore.FieldValue.increment(1) });
+                    db_fire.collection('users').doc(currentUser.uid).update({ following: firebase.firestore.FieldValue.increment(1) });
+                    updateFollowBtn(true);
+                } else {
+                    // Unfollow
+                    snap.forEach(doc => doc.ref.delete());
+                    db_fire.collection('users').doc(viewingUserUid).update({ followers: firebase.firestore.FieldValue.increment(-1) });
+                    db_fire.collection('users').doc(currentUser.uid).update({ following: firebase.firestore.FieldValue.increment(-1) });
+                    updateFollowBtn(false);
+                }
+            });
+        });
+
+        function checkIfFollowing(uid) {
+             db_fire.collection('follows').where('followerId', '==', currentUser.uid).where('followingId', '==', uid)
+             .onSnapshot(snap => {
+                 updateFollowBtn(!snap.empty);
+             });
+        }
+
+        function updateFollowBtn(isFollowing) {
+            const btn = document.getElementById('btn-follow-action');
+            if(isFollowing) {
+                btn.innerText = "Following";
+                btn.classList.add('following');
+            } else {
+                btn.innerText = "Follow";
+                btn.classList.remove('following');
+            }
+        }
+
+        // 6. Search Users
+        app.comm.search.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const resBox = app.comm.results;
+            if(term.length < 2) { resBox.style.display = 'none'; return; }
+            
+            // Simple query based on searchKey (needs to be created in DB)
+            db_fire.collection('users').where('searchKey', '>=', term).where('searchKey', '<=', term + '\uf8ff').limit(5)
+            .get().then(snap => {
+                resBox.innerHTML = "";
+                if(snap.empty) { resBox.style.display = 'none'; return; }
+                
+                resBox.style.display = 'block';
+                snap.forEach(doc => {
+                     const u = doc.data();
+                     const d = document.createElement('div');
+                     d.className = 'search-item';
+                     const img = u.photoURL ? `background-image:url('${u.photoURL}')` : `background:var(--accent-blue)`;
+                     d.innerHTML = `<div class="s-avatar" style="${img}"></div><span>${u.username}</span>`;
+                     d.onclick = () => {
+                         resBox.style.display = 'none';
+                         app.comm.search.value = "";
+                         openProfile(doc.id);
+                     };
+                     resBox.appendChild(d);
+                });
+            });
+        });
+
 
         // --- DB LOCAL MUSIC ---
         let db; const request = indexedDB.open("DriverHubDB", 1);
@@ -545,7 +800,6 @@
 
         // --- WEATHER UTIL (MANUAL REFRESH) ---
         function manualRefreshWeather() { 
-            // 1. Visuelles Feedback sofort setzen
             app.locText.innerText = "Locating...";
             app.tempText.innerText = "--°"; 
 
@@ -553,7 +807,7 @@
                 navigator.geolocation.getCurrentPosition(initWeatherLoc, err => { 
                     console.log("GPS Fehler", err);
                     app.locText.innerText = "No GPS";
-                }, {enableHighAccuracy:false, timeout:10000}); // Timeout erhöht
+                }, {enableHighAccuracy:false, timeout:10000}); 
             } else {
                 app.locText.innerText = "Not Supported";
             }
