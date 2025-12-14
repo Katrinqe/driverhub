@@ -186,7 +186,7 @@ function initUserProfile() {
     });
 }
 
-// --- 3D GARAGE LOGIC (NEU) ---
+// --- 3D GARAGE LOGIC (MIT ECHTEM MODELL) ---
 function init3DGarage() {
     const container = document.getElementById('garage-canvas-container');
     if (!container) return;
@@ -194,22 +194,22 @@ function init3DGarage() {
     // Scene
     scene3D = new THREE.Scene();
     scene3D.background = new THREE.Color(0x111111);
-    scene3D.fog = new THREE.Fog(0x111111, 5, 20);
-
+    
     // Camera
     camera3D = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
-    camera3D.position.set(3, 2, 4);
-    camera3D.lookAt(0, 0, 0);
+    camera3D.position.set(4, 2, 4);
+    camera3D.lookAt(0, 0.5, 0);
 
     // Renderer
-    renderer3D = new THREE.WebGLRenderer({ antialias: true });
+    renderer3D = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer3D.setSize(container.clientWidth, container.clientHeight);
+    renderer3D.outputEncoding = THREE.sRGBEncoding; // Wichtig für Farben
     container.appendChild(renderer3D.domElement);
 
     // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1);
     scene3D.add(ambientLight);
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 2);
     dirLight.position.set(5, 10, 7);
     scene3D.add(dirLight);
 
@@ -217,44 +217,52 @@ function init3DGarage() {
     const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
     scene3D.add(gridHelper);
 
-    // BUILD THE "CYBER CAR" (Procedural)
-    carMesh = new THREE.Group();
-
-    // Body
-    const bodyGeo = new THREE.BoxGeometry(2, 0.5, 4);
-    const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff0000, metalness: 0.7, roughness: 0.2 });
-    const body = new THREE.Mesh(bodyGeo, bodyMat);
-    body.position.y = 0.5;
-    body.name = "Body"; // Tag for coloring
-    carMesh.add(body);
-
-    // Cabin
-    const cabinGeo = new THREE.BoxGeometry(1.4, 0.4, 2);
-    const cabinMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.9, roughness: 0.1 });
-    const cabin = new THREE.Mesh(cabinGeo, cabinMat);
-    cabin.position.y = 0.95;
-    carMesh.add(cabin);
-
-    // Wheels
-    const wheelGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
-    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+    // --- MODELL LADEN ---
+    const loader = new THREE.GLTFLoader();
     
-    const w1 = new THREE.Mesh(wheelGeo, wheelMat); w1.rotation.z = Math.PI/2; w1.position.set(1.1, 0.4, 1.2); carMesh.add(w1);
-    const w2 = new THREE.Mesh(wheelGeo, wheelMat); w2.rotation.z = Math.PI/2; w2.position.set(-1.1, 0.4, 1.2); carMesh.add(w2);
-    const w3 = new THREE.Mesh(wheelGeo, wheelMat); w3.rotation.z = Math.PI/2; w3.position.set(1.1, 0.4, -1.2); carMesh.add(w3);
-    const w4 = new THREE.Mesh(wheelGeo, wheelMat); w4.rotation.z = Math.PI/2; w4.position.set(-1.1, 0.4, -1.2); carMesh.add(w4);
+    // DEIN URL HIER FEST EINGEBAUT
+    const modelUrl = 'https://firebasestorage.googleapis.com/v0/b/driverhub-5a567.firebasestorage.app/o/models%2Fhatchback-sports.glb?alt=media&token=f2e4fb7f-6e1b-43d1-8cc3-6b8a7d57be3e';
 
-    scene3D.add(carMesh);
+    loader.load(modelUrl, function (gltf) {
+        carMesh = gltf.scene;
+        
+        // Auto skalieren & positionieren
+        carMesh.scale.set(1, 1, 1); 
+        carMesh.position.y = 0; 
+        
+        // Schatten und Farbe aktivieren
+        carMesh.traverse((node) => {
+            if (node.isMesh) {
+                node.castShadow = true;
+                node.receiveShadow = true;
+                node.name = "Body"; // Tag für Color Picker
+            }
+        });
+
+        scene3D.add(carMesh);
+        
+        // Wenn User Farbe hat, laden
+        if(currentUser) {
+            db_fire.collection('users').doc(currentUser.uid).get().then(doc => {
+                if(doc.exists && doc.data().carColor) {
+                    updateCarColor(doc.data().carColor);
+                }
+            });
+        }
+
+    }, undefined, function (error) {
+        console.error('Fehler beim Laden des Autos:', error);
+    });
 
     // Animation Loop
     const animate = function () {
         requestAnimationFrame(animate);
-        if(carMesh) carMesh.rotation.y += 0.005; // Slow rotation
+        if(carMesh) carMesh.rotation.y += 0.002;
         renderer3D.render(scene3D, camera3D);
     };
     animate();
 
-    // Handle Resize
+    // Resize
     window.addEventListener('resize', () => {
         if(container && camera3D && renderer3D) {
             const width = container.clientWidth;
@@ -274,7 +282,7 @@ function init3DGarage() {
         }
     });
 
-    // Color Picker Logic (Live Preview)
+    // Color Picker
     document.getElementById('car-color-picker').addEventListener('input', (e) => {
         updateCarColor(e.target.value);
     });
@@ -282,9 +290,16 @@ function init3DGarage() {
 
 function updateCarColor(hex) {
     if(!carMesh) return;
-    carMesh.children.forEach(child => {
-        if(child.name === "Body") {
-            child.material.color.set(hex);
+    carMesh.traverse((child) => {
+        if (child.isMesh) {
+            // Einfache Färbung aller Teile (kann verfeinert werden)
+            if(child.name === "Body" || child.name.includes("Paint") || child.name.includes("Body")) {
+                child.material.color.set(hex);
+            } else {
+                // Fallback: Material klonen und färben
+                child.material = child.material.clone();
+                child.material.color.set(hex);
+            }
         }
     });
 }
@@ -477,7 +492,6 @@ function openProfile(uid) {
         // 3D Car Update
         if(data.carColor) {
             updateCarColor(data.carColor);
-            // Wenn es mein Profil ist, Picker updaten
             if(isMe) document.getElementById('car-color-picker').value = data.carColor;
         }
     });
@@ -686,7 +700,7 @@ function handleMotion(event) { if(perfState !== 'running') return; const x = eve
 function updatePerfLogic(position) { const speedKmh = (position.coords.speed || 0) * 3.6; app.perf.speed.innerText = speedKmh.toFixed(0); if(perfState === 'armed') { if(speedKmh > 2.0) { perfState = 'running'; perfStartTime = Date.now(); app.perf.btn.innerText = "GO!"; app.perf.status.innerText = "Recording..."; } } else if(perfState === 'running') { const duration = (Date.now() - perfStartTime) / 1000; if(!result50 && speedKmh >= 50) { result50 = duration.toFixed(2); app.perf.val50.innerText = result50 + " s"; app.perf.box50.classList.add('active'); } if(!result100 && speedKmh >= 100) { result100 = duration.toFixed(2); app.perf.val100.innerText = result100 + " s"; app.perf.box100.classList.add('active'); perfState = 'finished'; app.perf.btn.innerText = "RESET"; app.perf.btn.classList.remove('armed'); app.perf.status.innerText = "Run Complete!"; speak("Hundert erreicht in " + result100.replace('.', ',') + " Sekunden."); savePerfRun(); } } }
 function resetPerfMode() { perfState = 'idle'; app.perf.btn.innerText = "ARM"; app.perf.btn.classList.remove('armed'); app.perf.status.innerText = "Tap to arm, then launch."; if(perfWatchId) navigator.geolocation.clearWatch(perfWatchId); window.removeEventListener('devicemotion', handleMotion); app.perf.speed.innerText = "0"; }
 function savePerfRun() { const run = { id: Date.now(), date: new Date().toISOString(), res50: result50, res100: result100, maxG: maxG.toFixed(2) }; let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; runs.unshift(run); localStorage.setItem('dh_perf_v1', JSON.stringify(runs)); renderPerfHistory(); }
-function renderPerfHistory() { let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; const list = app.perf.list; list.innerHTML = ''; runs.forEach(run => { const dateStr = new Date(run.date).toLocaleDateString('de-DE'); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h4>${dateStr}</h4><span>Max ${run.maxG} G</span></div><div class="right-side"><span style="color:#ff3b30; font-weight:bold;">0-100: ${run.res100}s</span><br><span style="font-size:0.75rem">0-50: ${run.res50}s</span></div>`; list.appendChild(item); }); }
+function renderPerfHistory() { let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; const list = app.perf.list; list.innerHTML = ''; runs.forEach(run => { const dateStr = new Date(run.date).toLocaleDateString('de-DE'); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h5>${dateStr}</h5><span>Max ${run.maxG} G</span></div><div class="right-side"><span style="color:#ff3b30; font-weight:bold;">0-100: ${run.res100}s</span><br><span style="font-size:0.75rem">0-50: ${run.res50}s</span></div>`; list.appendChild(item); }); }
 
 function manualRefreshWeather() { 
     app.locText.innerText = "Locating...";
