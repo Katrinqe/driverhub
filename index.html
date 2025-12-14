@@ -2,239 +2,497 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Driver Hub 1.2 - Night Cruise</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DriverHub</title>
     
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
+        /* --- CSS (STYLE) --- */
         :root {
-            --primary-blue: #007AFF;
-            --bg-color: #050505;
-            --text-color: #ffffff;
-            --glass-bg: rgba(255, 255, 255, 0.05);
+            --bg-color: #000000;
+            --accent-blue: #4a90e2;
+            --accent-glow: rgba(74, 144, 226, 0.4);
+            --text-white: #ffffff;
+            --text-grey: #8e8e93;
+            --glass-bg: rgba(20, 20, 20, 0.85);
+            --danger: #ff3b30;
+            --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            user-select: none; /* Fühlt sich mehr wie eine App an */
+            background-color: var(--bg-color); color: var(--text-white); font-family: var(--font-stack);
+            overflow: hidden; height: 100vh; width: 100vw;
         }
 
-        /* --- HEADER (Wetter & Standort) --- */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 25px;
-            width: 100%;
-            z-index: 10;
+        /* --- INTRO SPLASH SCREEN --- */
+        #splash-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000000; z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.8s ease;
+        }
+        .splash-logo { width: 150px; animation: introAnim 2.5s ease-out forwards; }
+        
+        @keyframes introAnim {
+            0% { opacity: 0; transform: scale(0.8); filter: blur(10px); }
+            30% { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 0 30px var(--accent-blue)); }
+            100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 0px var(--accent-blue)); }
         }
 
-        .info-pill {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            color: rgba(255, 255, 255, 0.7);
-            background: rgba(255, 255, 255, 0.08);
-            padding: 8px 14px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-        }
+        /* --- AURORA HINTERGRUND --- */
+        .aurora-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; overflow: hidden; }
+        .blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.25; animation: float 15s infinite ease-in-out; }
+        .b1 { top: -10%; left: -10%; width: 80vw; height: 80vw; background: #1c3d6e; }
+        .b2 { bottom: -10%; right: -10%; width: 80vw; height: 80vw; background: #2c5f9e; animation-delay: -5s; }
+        
+        @keyframes float { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(20px, -20px); } }
 
-        /* --- HAUPTBEREICH (Aura & Text) --- */
-        .main-stage {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            width: 100%;
-        }
+        /* --- LAYOUTS --- */
+        .content-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+        .content-home-layout { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 80px 20px 20px 20px; text-align: center; }
+        .spacer-flex { flex: 1; }
 
-        /* Die pulsierende Aura */
-        .aura-core {
-            width: 260px;
-            height: 260px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(0, 122, 255, 0.2) 0%, rgba(0, 122, 255, 0) 70%);
-            box-shadow: 0 0 80px rgba(0, 122, 255, 0.15);
-            position: absolute;
-            z-index: 0;
-            animation: pulse 4s ease-in-out infinite;
-        }
+        /* WIDGET & LOGO */
+        .status-pill { background: rgba(30,30,30,0.6); backdrop-filter: blur(15px); padding: 8px 18px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); align-items: center; gap: 12px; font-size: 0.9rem; font-weight: 600; margin-bottom: 30px; }
+        .loc-icon, #weather-icon { color: var(--accent-blue); }
+        .divider { opacity: 0.3; }
+        .logo-container { margin-bottom: 25px; }
+        .dh-logo { width: 225px; height: auto; filter: drop-shadow(0 0 20px rgba(74,144,226,0.15)); } /* Platzhalter Stil */
+        
+        h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: 1px; margin-bottom: 5px; background: linear-gradient(to right, #fff, #a0a0a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; }
+        .slogan { color: var(--text-grey); font-size: 0.9rem; margin-bottom: 20px; letter-spacing: 1px; text-transform: uppercase; }
 
-        /* Der Ring um die Aura (feines Detail) */
-        .aura-ring {
-            width: 260px;
-            height: 260px;
-            border-radius: 50%;
-            border: 1px solid rgba(0, 122, 255, 0.1);
-            position: absolute;
-            z-index: 0;
-            transform: scale(1.2);
-            opacity: 0.5;
-        }
+        /* SCREENS */
+        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; opacity: 0; transition: opacity 0.3s ease; }
+        .screen.active { display: flex; opacity: 1; z-index: 10; }
+        .screen-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; z-index: 2000; background: #000; animation: slideUp 0.4s ease forwards; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-        @keyframes pulse {
-            0% { transform: scale(0.9); opacity: 0.5; }
-            50% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 100px rgba(0, 122, 255, 0.3); }
-            100% { transform: scale(0.9); opacity: 0.5; }
-        }
+        /* BUTTONS */
+        button { font-family: var(--font-stack); cursor: pointer; }
+        .btn-primary { border: none; padding: 18px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; background: linear-gradient(135deg, var(--accent-blue), #2c5f9e); color: white; box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3); margin-bottom: 120px; }
+        .btn-danger { border: 1px solid var(--danger); background: rgba(255, 59, 48, 0.15); color: var(--danger); padding: 16px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; backdrop-filter: blur(10px); }
+        .icon-btn-floating { position: absolute; top: 40px; left: 20px; width: 45px; height: 45px; background: var(--glass-bg); border-radius: 50%; border: none; color: white; z-index: 3000; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+        .btn-text { background: transparent; color: #555; font-size: 0.9rem; margin-top: 40px; width: 100%; border: none; }
 
-        .status-container {
-            z-index: 2;
-            text-align: center;
-        }
+        /* MAP & STATS */
+        #map, #detail-map { height: 100%; width: 100%; z-index: 1; filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
+        .drive-overlay-top { position: absolute; top: 50px; left: 20px; right: 20px; z-index: 999; display: flex; justify-content: space-between; }
+        .stat-box { background: var(--glass-bg); backdrop-filter: blur(15px); padding: 15px 20px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.1); min-width: 100px; }
+        .stat-box .value { font-size: 1.8rem; font-weight: 700; font-variant-numeric: tabular-nums; } 
+        .stat-box .label { font-size: 0.7rem; color: var(--text-grey); font-weight: 700; } 
+        .stat-box .unit { font-size: 0.8rem; color: var(--accent-blue); }
+        
+        .drive-overlay-bottom { position: absolute; bottom: 40px; left: 0; right: 0; z-index: 999; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px;}
+        .drive-overlay-bottom .stat-row { background: var(--glass-bg); backdrop-filter: blur(15px); border-radius: 12px; padding: 10px 20px; display: inline-block; border: 1px solid rgba(255,255,255,0.1); font-weight: 600; }
+        
+        .stats-card { background: #1c1c1e; border-radius: 20px; padding: 30px; width: 100%; max-width: 320px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .stat-row-final { display: flex; justify-content: space-between; margin-bottom: 20px; text-align: left; } 
+        .stat-row-final .final-value { font-size: 1.8rem; font-weight: 700; color: white; display: block; }
+        
+        .drives-list { width: 100%; max-width: 340px; margin: 0 auto; }
+        .drive-item { background: #111; border: 1px solid #222; padding: 20px; border-radius: 16px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; }
+        .drive-item:active { background: #222; }
+        .drive-item h4 { font-size: 1rem; color: white; margin-bottom: 5px; } 
+        .drive-item span { color: var(--text-grey); font-size: 0.85rem; } 
+        .drive-item .right-side { text-align: right; } 
+        .drive-item .dist { font-size: 1.2rem; color: var(--accent-blue); font-weight: 700; }
 
-        .main-title {
-            font-size: 32px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            text-shadow: 0 0 30px rgba(0, 122, 255, 0.6);
-            margin-bottom: 5px;
-        }
+        .detail-stats-overlay { position: absolute; bottom: 40px; left: 20px; right: 20px; background: var(--glass-bg); backdrop-filter: blur(20px); border-radius: 20px; padding: 20px; z-index: 2500; border: 1px solid rgba(255,255,255,0.1); } 
+        .mini { margin-bottom: 0; text-align: center; } 
+        .mini > div { flex: 1; } 
+        .mini .val { font-size: 1.4rem; font-weight: 700; display: block; }
 
-        .sub-status {
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--primary-blue);
-            opacity: 0.8;
-        }
+        /* NAV */
+        .bottom-nav { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 350px; height: 70px; background: rgba(30, 30, 30, 0.8); backdrop-filter: blur(20px); border-radius: 35px; display: flex; justify-content: space-around; align-items: center; border: 1px solid rgba(255,255,255,0.1); z-index: 100; }
+        .nav-item { background: none; border: none; color: #666; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 5px; width: auto; padding: 0; }
+        .nav-item.active { color: var(--accent-blue); }
 
-        /* --- FOOTER (Stats) --- */
-        .stats-deck {
-            display: flex;
-            justify-content: space-around;
-            align-items: flex-end;
-            padding: 0 20px 50px 20px;
-            width: 100%;
-            z-index: 10;
-            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-        }
-
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .stat-value {
-            font-size: 24px;
-            font-weight: 600;
-            font-variant-numeric: tabular-nums; /* Verhindert das Springen der Zahlen */
-        }
-
-        .stat-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        /* Kleiner Indikator für Live-Aufnahme */
-        .rec-dot {
-            width: 8px;
-            height: 8px;
-            background-color: #ff3b30;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 6px;
-            box-shadow: 0 0 10px #ff3b30;
-            animation: blink 2s infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
+        .header-bar { position: absolute; top: 0; left: 0; width: 100%; padding: 50px 20px 10px 20px; background: linear-gradient(to bottom, black, transparent); z-index: 20; }
+        .content-scroll { flex: 1; overflow-y: auto; padding: 80px 20px 100px 20px; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="info-pill">
-            <span>📍</span> Nürnberg
-        </div>
-        <div class="info-pill">
-            <span>🌙</span> 14°C
-        </div>
+    <div id="splash-screen">
+        <img src="logo.png" alt="DriverHub" class="splash-logo" onerror="this.style.display='none'; document.getElementById('splash-text').style.display='block';">
+        <h1 id="splash-text" style="display:none; font-size: 2rem;">DH</h1>
     </div>
 
-    <div class="main-stage">
-        <div class="aura-core"></div>
-        <div class="aura-ring"></div>
+    <div class="aurora-bg">
+        <div class="blob b1"></div>
+        <div class="blob b2"></div>
+    </div>
+
+    <div id="app-container">
         
-        <div class="status-container">
-            <div class="main-title">NIGHT CRUISE</div>
-            <div class="sub-status"><span class="rec-dot"></span>Recording Drive</div>
-        </div>
+        <section id="home-screen" class="screen active">
+            <div class="content-home-layout">
+                
+                <div id="status-widget" class="status-pill" style="display:flex;">
+                    <i class="fa-solid fa-location-arrow loc-icon"></i>
+                    <span id="loc-text">Locating...</span>
+                    <span class="divider">|</span>
+                    <i id="weather-icon" class="fa-solid fa-cloud"></i>
+                    <span id="weather-temp">--°</span>
+                </div>
+
+                <div class="logo-container">
+                    <img src="logo.png" alt="DriverHub Logo" class="dh-logo" onerror="this.style.display='none';">
+                </div>
+                
+                <h1 id="greeting-text">WELCOME</h1>
+                <p class="slogan">Built for those who drive.</p>
+                
+                <div class="spacer-flex"></div>
+                <button id="btn-start" class="btn-primary">
+                    <i class="fa-solid fa-road"></i> Start Drive
+                </button>
+            </div>
+        </section>
+
+        <section id="garage-screen" class="screen">
+            <div class="header-bar">
+                <h2>Your Garage</h2>
+            </div>
+            <div class="content-scroll">
+                <div class="stats-card profile-card">
+                    <div class="stat-row-final">
+                        <div><span class="label">TOTAL KM</span><span class="final-value" id="total-km">0</span></div>
+                        <div><span class="label">DRIVES</span><span class="final-value" id="total-drives">0</span></div>
+                    </div>
+                </div>
+                <h3>Recent Drives</h3>
+                <div id="drives-list" class="drives-list"></div>
+                <button id="btn-reset-data" class="btn-text">Reset Data</button>
+                <div style="height: 100px;"></div>
+            </div>
+        </section>
+
+        <section id="drive-screen" class="screen-overlay">
+            <div id="map"></div>
+            <div class="drive-overlay-top">
+                <div class="stat-box"><span class="label">SPEED</span><span class="value" id="live-speed">0</span><span class="unit">km/h</span></div>
+                <div class="stat-box"><span class="label">TIME</span><span class="value" id="live-time">00:00</span></div>
+            </div>
+            <div class="drive-overlay-bottom">
+                <div class="stat-row"><span id="live-dist">0.0 km</span></div>
+                <button id="btn-stop" class="btn-danger"><i class="fa-solid fa-stop"></i> End Drive</button>
+            </div>
+        </section>
+
+        <section id="summary-screen" class="screen-overlay">
+            <div class="content-center">
+                <h2>Drive Summary</h2>
+                <div class="stats-card">
+                    <div class="stat-row-final">
+                        <div><span class="label">DISTANCE</span><span class="final-value" id="sum-dist">0.0</span><span class="unit">km</span></div>
+                        <div><span class="label">MAX SPEED</span><span class="final-value" id="sum-speed">0</span><span class="unit">km/h</span></div>
+                    </div>
+                    <div class="stat-row-final">
+                         <div><span class="label">AVG SPEED</span><span class="final-value" id="sum-avg">0</span><span class="unit">km/h</span></div>
+                        <div><span class="label">DURATION</span><span class="final-value" id="sum-time">00:00:00</span></div>
+                    </div>
+                </div>
+                <button id="btn-save-drive" class="btn-primary">Save to Garage</button>
+            </div>
+        </section>
+
+        <section id="detail-screen" class="screen-overlay">
+            <button id="btn-close-detail" class="icon-btn-floating"><i class="fa-solid fa-arrow-left"></i></button>
+            <div id="detail-map"></div>
+            <div class="detail-stats-overlay">
+                <div class="stat-row-final mini">
+                    <div><span class="label">KM</span><span id="detail-dist" class="val">0</span></div>
+                    <div><span class="label">MAX</span><span id="detail-max" class="val">0</span></div>
+                    <div><span class="label">AVG</span><span id="detail-avg" class="val">0</span></div>
+                </div>
+            </div>
+        </section>
+
+        <nav class="bottom-nav" id="main-nav">
+            <button class="nav-item active" data-target="home-screen">
+                <i class="fa-solid fa-house"></i><span>Home</span>
+            </button>
+            <button class="nav-item" data-target="garage-screen">
+                <i class="fa-solid fa-layer-group"></i><span>Garage</span>
+            </button>
+        </nav>
+
     </div>
 
-    <div class="stats-deck">
-        <div class="stat-item">
-            <span class="stat-value">124</span>
-            <span class="stat-label">KM Heute</span>
-        </div>
-        
-        <div class="stat-item">
-            <span class="stat-value" id="driveTime">02:15:30</span> 
-            <span class="stat-label">Fahrzeit</span>
-        </div>
-
-        <div class="stat-item">
-            <span class="stat-value">48</span>
-            <span class="stat-label">Ø KM/H</span>
-        </div>
-    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // Einfaches Script, damit die Fahrzeit "lebt" und hochzählt
-        
-        function startTimer() {
-            let hours = 2;
-            let minutes = 15;
-            let seconds = 30;
+        // --- STATE VARIABLES ---
+        let map, marker, watchId, intervalId;
+        let detailMap;
+        let startTime;
+        let path = [];
+        let currentDistance = 0;
+        let currentMaxSpeed = 0;
+        let isDriving = false;
 
-            const timeElement = document.getElementById('driveTime');
+        // --- DOM ELEMENTS ---
+        const app = {
+            splash: document.getElementById('splash-screen'),
+            nav: document.getElementById('main-nav'),
+            greet: document.getElementById('greeting-text'),
+            locText: document.getElementById('loc-text'),
+            tempText: document.getElementById('weather-temp'),
+            weatherIcon: document.getElementById('weather-icon'),
+            weatherWidget: document.getElementById('status-widget'),
 
-            setInterval(() => {
-                seconds++;
-                if (seconds >= 60) {
-                    seconds = 0;
-                    minutes++;
-                }
-                if (minutes >= 60) {
-                    minutes = 0;
-                    hours++;
-                }
+            screens: {
+                home: document.getElementById('home-screen'),
+                garage: document.getElementById('garage-screen'),
+                drive: document.getElementById('drive-screen'),
+                summary: document.getElementById('summary-screen'),
+                detail: document.getElementById('detail-screen')
+            },
+            display: {
+                speed: document.getElementById('live-speed'),
+                time: document.getElementById('live-time'),
+                dist: document.getElementById('live-dist'),
+                sumDist: document.getElementById('sum-dist'),
+                sumSpeed: document.getElementById('sum-speed'),
+                sumAvg: document.getElementById('sum-avg'),
+                sumTime: document.getElementById('sum-time')
+            }
+        };
 
-                // Formatierung mit führenden Nullen (z.B. 09 statt 9)
-                const fHours = hours < 10 ? '0' + hours : hours;
-                const fMinutes = minutes < 10 ? '0' + minutes : minutes;
-                const fSeconds = seconds < 10 ? '0' + seconds : seconds;
+        // --- INIT ---
+        window.addEventListener('load', () => {
+            // 1. SPLASH SCREEN
+            setTimeout(() => {
+                app.splash.style.opacity = '0';
+                setTimeout(() => app.splash.style.display = 'none', 800);
+            }, 2200);
 
-                timeElement.innerText = `${fHours}:${fMinutes}:${fSeconds}`;
-            }, 1000);
+            // 2. Data & UI
+            renderGarage();
+            updateTimeGreeting();
+
+            // 3. GPS & Wetter
+            if(navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(initWeatherLoc, err => console.log(err));
+            }
+        });
+
+        // --- WEATHER & GREETING ---
+        function updateTimeGreeting() {
+            const h = new Date().getHours();
+            let txt = "WELCOME";
+            if (h >= 5 && h < 12) txt = "GOOD MORNING";
+            else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON";
+            else if (h >= 18 && h < 22) txt = "GOOD EVENING";
+            else txt = "NIGHT CRUISE";
+            app.greet.innerText = txt;
         }
 
-        // Timer starten sobald die Seite geladen ist
-        window.onload = startTimer;
-    </script>
+        function initWeatherLoc(pos) {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            
+            // City
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                .then(r => r.json())
+                .then(d => {
+                    app.locText.innerText = d.address.city || d.address.town || "Location Found";
+                });
 
+            // Weather
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`)
+                .then(r => r.json())
+                .then(d => {
+                    const t = Math.round(d.current_weather.temperature);
+                    const c = d.current_weather.weathercode;
+                    app.tempText.innerText = t + "°";
+                    
+                    if(c <= 1) app.weatherIcon.className = "fa-solid fa-sun";
+                    else if(c <= 3) app.weatherIcon.className = "fa-solid fa-cloud-sun";
+                    else app.weatherIcon.className = "fa-solid fa-cloud";
+                });
+        }
+
+        // --- NAV & SCREENS ---
+        document.querySelectorAll('.nav-item').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetId = btn.getAttribute('data-target');
+                document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                showMainScreen(targetId);
+            });
+        });
+
+        function showMainScreen(id) {
+            app.screens.home.classList.remove('active');
+            app.screens.garage.classList.remove('active');
+            app.screens[id.split('-')[0]].classList.add('active');
+        }
+
+        // --- ACTIONS ---
+        document.getElementById('btn-start').addEventListener('click', () => {
+            app.screens.drive.style.display = 'flex';
+            app.nav.style.display = 'none';
+            startTracking();
+        });
+
+        document.getElementById('btn-stop').addEventListener('click', () => {
+            stopTracking();
+            app.screens.drive.style.display = 'none';
+            app.screens.summary.style.display = 'flex';
+        });
+
+        document.getElementById('btn-save-drive').addEventListener('click', () => {
+            saveDriveToStorage();
+            app.screens.summary.style.display = 'none';
+            app.nav.style.display = 'flex';
+            document.querySelectorAll('.nav-item')[1].click(); 
+        });
+
+        document.getElementById('btn-close-detail').addEventListener('click', () => {
+            app.screens.detail.style.display = 'none';
+            if(detailMap) { detailMap.remove(); detailMap = null; }
+        });
+
+        document.getElementById('btn-reset-data').addEventListener('click', () => {
+            if(confirm("Alles löschen?")) {
+                localStorage.removeItem('dh_drives_v2');
+                renderGarage();
+            }
+        });
+
+        // --- TRACKING ---
+        function startTracking() {
+            isDriving = true;
+            startTime = new Date();
+            path = [];
+            currentDistance = 0;
+            currentMaxSpeed = 0;
+
+            if (!map) {
+                map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map);
+                marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map);
+            }
+            
+            setTimeout(() => { map.invalidateSize(); }, 200);
+            intervalId = setInterval(updateTimer, 1000);
+
+            if (navigator.geolocation) {
+                watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true});
+            }
+        }
+
+        function updatePosition(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0);
+
+            if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh);
+            app.display.speed.innerText = speedKmh;
+            
+            const newLatLng = [lat, lng];
+            marker.setLatLng(newLatLng);
+            map.setView(newLatLng, 18);
+
+            if (path.length > 0) {
+                currentDistance += map.distance(path[path.length - 1], newLatLng);
+                app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km";
+            }
+            path.push(newLatLng);
+            L.polyline(path, {color: '#4a90e2', weight: 5}).addTo(map);
+        }
+
+        function updateTimer() {
+            const diff = new Date() - startTime;
+            app.display.time.innerText = new Date(diff).toISOString().substr(11, 8);
+        }
+
+        function stopTracking() {
+            isDriving = false;
+            clearInterval(intervalId);
+            navigator.geolocation.clearWatch(watchId);
+
+            const diff = new Date() - startTime;
+            const distKm = currentDistance / 1000;
+            const durationHours = diff / (1000 * 60 * 60);
+            const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0;
+
+            app.display.sumDist.innerText = distKm.toFixed(2);
+            app.display.sumSpeed.innerText = currentMaxSpeed;
+            app.display.sumAvg.innerText = avgSpeed;
+            app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8);
+        }
+
+        function handleError(err) { console.warn(err); }
+
+        function saveDriveToStorage() {
+            const diff = new Date() - startTime;
+            const distKm = currentDistance / 1000;
+            const durationHours = diff / (1000 * 60 * 60);
+            const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0;
+
+            const newDrive = {
+                id: Date.now(),
+                date: startTime.toISOString(),
+                distance: parseFloat(distKm.toFixed(2)),
+                maxSpeed: currentMaxSpeed,
+                avgSpeed: avgSpeed,
+                duration: new Date(diff).toISOString().substr(11, 8),
+                pathData: path 
+            };
+
+            let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || [];
+            drives.unshift(newDrive);
+            localStorage.setItem('dh_drives_v2', JSON.stringify(drives));
+            renderGarage();
+        }
+
+        function renderGarage() {
+            let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || [];
+            let totalKm = 0;
+            const list = document.getElementById('drives-list');
+            list.innerHTML = '';
+
+            drives.forEach(drive => {
+                totalKm += drive.distance;
+                const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+                
+                const item = document.createElement('div');
+                item.className = 'drive-item';
+                item.innerHTML = `<div><h4>${dateStr} • ${drive.duration}</h4><span>Avg ${drive.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${drive.distance.toFixed(1)} km</span><span>Max ${drive.maxSpeed}</span></div>`;
+                item.addEventListener('click', () => openDetailView(drive));
+                list.appendChild(item);
+            });
+
+            document.getElementById('total-km').innerText = totalKm.toFixed(1);
+            document.getElementById('total-drives').innerText = drives.length;
+        }
+
+        function openDetailView(drive) {
+            app.screens.detail.style.display = 'block';
+            document.getElementById('detail-dist').innerText = drive.distance.toFixed(1);
+            document.getElementById('detail-max').innerText = drive.maxSpeed;
+            document.getElementById('detail-avg').innerText = drive.avgSpeed;
+
+            setTimeout(() => {
+                if(!detailMap) {
+                    detailMap = L.map('detail-map', { zoomControl: false });
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(detailMap);
+                }
+                detailMap.eachLayer((layer) => { if (!!layer.toGeoJSON) { detailMap.removeLayer(layer); } });
+                if(drive.pathData && drive.pathData.length > 0) {
+                    const polyline = L.polyline(drive.pathData, {color: '#4a90e2', weight: 5}).addTo(detailMap);
+                    detailMap.fitBounds(polyline.getBounds(), {padding: [50, 50]});
+                }
+            }, 100);
+        }
+    </script>
 </body>
 </html>
