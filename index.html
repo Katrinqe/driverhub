@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 1.6.2 Sound Test</title>
+    <title>DriverHub 1.6.3 Stable Audio</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -205,7 +205,7 @@
                     </div>
                     <div class="song-info">
                         <span class="song-title" id="track-title">Select a Track</span>
-                        <span class="song-artist" id="track-artist">Sound Test</span>
+                        <span class="song-artist" id="track-artist">Archive Library</span>
                     </div>
                     <div class="controls">
                         <button class="btn-ctrl" id="btn-prev"><i class="fa-solid fa-backward-step"></i></button>
@@ -297,15 +297,16 @@
         let perfWatchId = null, perfState = 'idle', perfStartTime = 0;
         let result50 = null, result100 = null, maxG = 0;
 
-        // --- MUSIC VARS (SOUNDHELIX LINKS - EXTREMELY STABLE) ---
+        // --- MUSIC VARS (ARCHIVE.ORG - STABLE + NO CORS CHECK) ---
+        // Archive.org links are generally very stable. Using Synthwave/Chip style.
         const playlist = [
-            { title: "Synth Pop Test", artist: "SoundHelix 1", src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
-            { title: "Trance Beat", artist: "SoundHelix 15", src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3" },
-            { title: "Electro Vibe", artist: "SoundHelix 8", src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" }
+            { title: "Sunrise Over LA", artist: "TeknoAXE", src: "https://archive.org/download/tekno-ax-synthwave-collection/TeknoAXE%20-%20Synthwave%20D/Sunrise%20Over%20Los%20Angeles%20%28Synthwave%29.mp3" },
+            { title: "The White Kitty", artist: "Rolemusic", src: "https://archive.org/download/Rolemusic_projects_2013-09-06/Rolemusic_-_02_-_The_White_Kitty.mp3" },
+            { title: "Dune", artist: "Creo", src: "https://archive.org/download/Creo_Dune/Creo%20-%20Dune.mp3" }
         ];
         let currentTrackIdx = 0;
         const audioPlayer = new Audio();
-        audioPlayer.crossOrigin = "anonymous";
+        // audioPlayer.crossOrigin = "anonymous";  <-- ENTFERNT! Das fixt das Safari Problem oft.
         let isPlaying = false;
 
         // --- DOM ---
@@ -389,7 +390,7 @@
             });
         });
 
-        // --- MUSIC LOGIC (DEBUG MODE) ---
+        // --- MUSIC LOGIC (ARCHIVE.ORG) ---
         function initMusicPlayer() {
             app.music.list.innerHTML = "";
             playlist.forEach((track, index) => {
@@ -401,7 +402,7 @@
                 app.music.list.appendChild(div);
             });
 
-            // Preload but do not play
+            // Do NOT preload heavily, wait for user interaction
             loadTrack(0, false);
 
             app.music.playBtn.addEventListener('click', togglePlay);
@@ -410,18 +411,13 @@
             app.music.volSlider.addEventListener('input', (e) => { audioPlayer.volume = e.target.value; });
             audioPlayer.addEventListener('ended', nextTrack);
             
-            // ERROR HANDLER
+            // ERROR HANDLING (With Alert)
             audioPlayer.addEventListener('error', (e) => {
-                let msg = "Unknown Error";
-                if(audioPlayer.error) {
-                    switch(audioPlayer.error.code) {
-                        case 1: msg = "Aborted"; break;
-                        case 2: msg = "Network Error"; break;
-                        case 3: msg = "Decode Error"; break;
-                        case 4: msg = "Source Not Supported"; break;
-                    }
-                }
-                alert("Musik Fehler: " + msg + "\nVersuche einen anderen Track.");
+                console.error("Audio Error Code:", audioPlayer.error.code);
+                let msg = "Unknown";
+                if(audioPlayer.error.code === 4) msg = "Format/Source not supported (iOS blockt evtl.)";
+                if(audioPlayer.error.code === 2) msg = "Network Error";
+                alert("Playback Error: " + msg + "\nTry another track or check internet.");
                 isPlaying = false; updatePlayBtn();
             });
         }
@@ -437,15 +433,15 @@
             if(rows[index]) rows[index].classList.add('active');
 
             if(autoPlay) {
+                // Promise handling for play()
                 const playPromise = audioPlayer.play();
                 if (playPromise !== undefined) {
                     playPromise.then(_ => {
                         isPlaying = true; updatePlayBtn();
                     })
                     .catch(error => {
-                        console.log(error);
-                        // alert("Auto-Play Blocked or Error: " + error.message); 
-                        // Auto-play might be blocked initially, we don't alert here to avoid spam
+                        console.log("Auto-play blocked:", error);
+                        // No alert here, just update UI
                         isPlaying = false; updatePlayBtn();
                     });
                 }
@@ -459,7 +455,7 @@
                 const playPromise = audioPlayer.play();
                 if (playPromise !== undefined) {
                     playPromise.then(_ => { isPlaying = true; })
-                    .catch(error => { alert("Playback Error: " + error.message); isPlaying = false; });
+                    .catch(error => { alert("Play Blocked: " + error.message); isPlaying = false; });
                 }
             }
             updatePlayBtn();
