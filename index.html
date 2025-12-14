@@ -396,8 +396,9 @@
 
             renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
             
-            // AUTO WEATHER REFRESH
-            manualRefreshWeather();
+            // --- FIX: AUTO WEATHER REFRESH ---
+            manualRefreshWeather(); // Start sofort
+            setInterval(manualRefreshWeather, 60000); // Dann alle 60 Sekunden (60000ms)
         });
 
         // --- AUTH ---
@@ -542,7 +543,6 @@
             if(navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(initWeatherLoc, err => { 
                     console.log("Auto-Refresh: GPS failed (expected in background)", err);
-                    // Don't show alert on auto-refresh, just let it fail silently
                 }, {enableHighAccuracy:false, timeout:5000});
             }
         }
