@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 3.8.0</title>
+    <title>DriverHub 3.8.0 Stable</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -133,6 +133,11 @@
         .create-post-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 16px; margin-bottom: 25px; display: flex; gap: 10px; align-items: center; }
         .create-input { flex: 1; background: transparent; border: none; color: white; font-size: 1rem; outline: none; }
         .btn-send-post { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-green); border: none; color: white; font-size: 1rem; cursor: pointer; }
+        
+        .post-actions { border-top: 1px solid #333; padding-top: 10px; margin-top: 10px; display: flex; gap: 20px; }
+        .action-btn { font-size: 0.9rem; color: #888; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .action-btn.liked { color: var(--accent-red); }
+        .action-btn i { font-size: 1.1rem; }
 
         /* LISTS (Friends & Chats) */
         .list-item-row { display: flex; align-items: center; padding: 15px; background: #1c1c1e; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
@@ -238,7 +243,7 @@
         <section id="community-screen" class="screen">
             <div class="header-bar">
                 <h2 id="comm-title">Community</h2>
-                <i class="fa-solid fa-user-circle" id="user-profile-icon" style="font-size:1.5rem; cursor:pointer;"></i>
+                <i class="fa-solid fa-user-circle" id="user-profile-icon" style="font-size:1.5rem; cursor:pointer;" onclick="if(currentUser) openProfile(currentUser.uid)"></i>
             </div>
             
             <div class="content-scroll">
@@ -298,8 +303,10 @@
                         <button id="btn-msg-action" class="btn-chat" style="display:none;"><i class="fa-regular fa-envelope"></i> Message</button>
                     </div>
 
-                    <hr style="border:0; border-top:1px solid #222; margin:20px 0;">
-                    <div id="profile-posts-list"></div>
+                    <div id="profile-post-section">
+                        <hr style="border:0; border-top:1px solid #222; margin:20px 0;">
+                        <div id="profile-posts-list"></div>
+                    </div>
                     <button id="btn-back-feed" class="btn-text">Back</button>
                 </div>
 
@@ -460,14 +467,22 @@
             display: {
                 speed: document.getElementById('live-speed'),
                 time: document.getElementById('live-time'),
-                dist: document.getElementById('live-dist')
+                dist: document.getElementById('live-dist'),
+                sumDist: document.getElementById('sum-dist'),
+                sumSpeed: document.getElementById('sum-speed'),
+                sumAvg: document.getElementById('sum-avg'),
+                sumTime: document.getElementById('sum-time')
             },
             perf: {
                 speed: document.getElementById('perf-live-speed'),
                 gVal: document.getElementById('max-g-val'),
                 btn: document.getElementById('btn-arm-perf'),
                 status: document.getElementById('perf-status-text'),
-                list: document.getElementById('perf-history-list')
+                list: document.getElementById('perf-history-list'),
+                box50: document.getElementById('box-0-50'),
+                box100: document.getElementById('box-0-100'),
+                val50: document.getElementById('val-0-50'),
+                val100: document.getElementById('val-0-100')
             },
             music: {
                 title: document.getElementById('track-title'),
@@ -522,6 +537,17 @@
 
         // --- 5. SOCIAL LOGIC (3.8.0 REDESIGN & FIXES) ---
 
+        // SECURITY: Simple XSS Protection
+        function escapeHtml(text) {
+            if (!text) return "";
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         // A. Tab Logic
         window.switchSocialTab = function(tabName) {
             document.querySelectorAll('.social-tab').forEach(t => t.classList.remove('active'));
@@ -538,11 +564,11 @@
                 loadFriendsList();
             } else if(tabName === 'chats') {
                 document.getElementById('tab-chats').style.display = 'block';
-                loadChatInbox(); // FIX: Load inbox
+                loadChatInbox(); 
             }
         };
 
-        // B. Profile Init (Fix Icon Disappearing)
+        // B. Profile Init
         function initUserProfile() {
             db_fire.collection('users').doc(currentUser.uid).onSnapshot(doc => {
                 if (!doc.exists) {
@@ -569,12 +595,11 @@
             });
         }
 
-        // C. Chat Inbox (NEW FIX: Receiving Messages)
+        // C. Chat Inbox
         function loadChatInbox() {
             const list = document.getElementById('chats-list-container');
             list.innerHTML = "<p style='color:#666;text-align:center;'>Lade...</p>";
             
-            // Query chats where I am a participant
             db_fire.collection('chats').where('participants', 'array-contains', currentUser.uid).onSnapshot(snap => {
                 list.innerHTML = "";
                 if(snap.empty) {
@@ -584,10 +609,8 @@
                 
                 snap.forEach(doc => {
                     const chatData = doc.data();
-                    // Identify partner
                     const partnerUid = chatData.participants.find(uid => uid !== currentUser.uid);
                     
-                    // Fetch partner name
                     db_fire.collection('users').doc(partnerUid).get().then(uDoc => {
                         const uData = uDoc.data() || {username: "Unknown"};
                         const d = document.createElement('div');
@@ -595,12 +618,11 @@
                         d.innerHTML = `
                             <div class="s-avatar" style="${uData.photoURL ? `background-image:url('${uData.photoURL}')` : `background:var(--accent-blue)`}"></div>
                             <div class="list-info">
-                                <span class="list-name">${uData.username}</span>
+                                <span class="list-name">${escapeHtml(uData.username)}</span>
                                 <span class="list-sub">Chat öffnen</span>
                             </div>
                         `;
                         d.onclick = () => {
-                            // Open Chat
                             viewingUserUid = partnerUid;
                             startChat(partnerUid, uData.username);
                         };
@@ -630,8 +652,8 @@
                         d.innerHTML = `
                             <div class="s-avatar" style="${uData.photoURL ? `background-image:url('${uData.photoURL}')` : `background:var(--accent-blue)`}"></div>
                             <div class="list-info">
-                                <span class="list-name">${uData.username}</span>
-                                <span class="list-sub">${uData.bio || ""}</span>
+                                <span class="list-name">${escapeHtml(uData.username)}</span>
+                                <span class="list-sub">${escapeHtml(uData.bio || "")}</span>
                             </div>
                         `;
                         d.onclick = () => openProfile(uDoc.id);
@@ -644,6 +666,9 @@
         // E. Post Logic
         app.comm.postBtn.addEventListener('click', () => {
             const txt = app.comm.postInput.value; if(!txt) return;
+            // Basic Input Validation
+            if(txt.length > 300) { alert("Text zu lang!"); return; }
+
             db_fire.collection('users').doc(currentUser.uid).get().then(doc => {
                 const uData = doc.data() || {};
                 db_fire.collection('posts').add({ 
@@ -651,13 +676,14 @@
                     uid: currentUser.uid, 
                     author: uData.username || "User",
                     authorPic: uData.photoURL || "",
+                    likes: [], // NEU: Leeres Array für Likes
                     timestamp: firebase.firestore.FieldValue.serverTimestamp() 
                 });
                 app.comm.postInput.value = "";
             });
         });
 
-        // F. Friends Feed Logic
+        // F. Friends Feed Logic (With Likes)
         function loadFriendsFeed() {
             db_fire.collection('follows').where('followerId', '==', currentUser.uid).onSnapshot(snap => {
                 const followingIds = [];
@@ -692,23 +718,64 @@
             let avaContent = post.author.charAt(0).toUpperCase();
             if(post.authorPic) { avaStyle = `background-image: url('${post.authorPic}');`; avaContent = ""; }
 
+            // LIKES LOGIC
+            const likes = post.likes || [];
+            const isLiked = likes.includes(currentUser.uid);
+            const likeIconClass = isLiked ? "fa-solid fa-heart" : "fa-regular fa-heart";
+            const likeColorClass = isLiked ? "liked" : "";
+
             const div = document.createElement('div'); div.className = 'post-card';
             let deleteBtn = "";
             if(post.uid === currentUser.uid) {
                 deleteBtn = `<button class="btn-delete-post" onclick="deletePost('${postId}')"><i class="fa-solid fa-trash"></i></button>`;
             }
 
+            // SAFETY: escapeHtml used here
             div.innerHTML = `
                 <div class="post-header" onclick="openProfile('${post.uid}')">
                     <div class="post-avatar" style="${avaStyle}">${avaContent}</div>
-                    <span class="post-user">${post.author}</span>
+                    <span class="post-user">${escapeHtml(post.author)}</span>
                     <span class="post-date">${date}</span>
                 </div>
                 ${deleteBtn}
-                <div class="post-content">${post.text}</div>
-                <div class="post-actions"><span class="action-btn"><i class="fa-regular fa-heart"></i> Like</span></div>`;
+                <div class="post-content">${escapeHtml(post.text)}</div>
+                <div class="post-actions">
+                    <span class="action-btn ${likeColorClass}" onclick="toggleLike('${postId}')">
+                        <i class="${likeIconClass}"></i> ${likes.length} Like${likes.length !== 1 ? 's' : ''}
+                    </span>
+                </div>`;
             container.appendChild(div);
         }
+
+        // Like Funktion
+        window.toggleLike = function(postId) {
+            const postRef = db_fire.collection('posts').doc(postId);
+            
+            // Transaction um Race-Conditions zu vermeiden
+            db_fire.runTransaction((transaction) => {
+                return transaction.get(postRef).then((postDoc) => {
+                    if (!postDoc.exists) { throw "Post does not exist!"; }
+
+                    const postData = postDoc.data();
+                    const likes = postData.likes || [];
+                    let newLikes;
+
+                    if (likes.includes(currentUser.uid)) {
+                        // Unlike: User ID entfernen
+                        newLikes = likes.filter(uid => uid !== currentUser.uid);
+                    } else {
+                        // Like: User ID hinzufügen
+                        newLikes = [...likes, currentUser.uid];
+                    }
+
+                    transaction.update(postRef, { likes: newLikes });
+                });
+            }).then(() => {
+                console.log("Like updated");
+            }).catch((err) => {
+                console.error("Like failed: ", err);
+            });
+        };
 
         window.deletePost = function(postId) {
             if(confirm("Post löschen?")) {
@@ -717,11 +784,9 @@
         };
 
         // G. Profile Nav
-        app.comm.profileIcon.addEventListener('click', () => openProfile(currentUser.uid));
-        
         document.getElementById('btn-back-feed').addEventListener('click', () => {
             app.comm.profileView.style.display = 'none';
-            app.comm.mainView.style.display = 'block'; // Back to redesigned main view
+            app.comm.mainView.style.display = 'block'; 
             app.comm.chatView.style.display = 'none';
             document.getElementById('comm-title').innerText = "Community";
         });
@@ -775,11 +840,13 @@
         document.getElementById('btn-edit-bio').addEventListener('click', () => {
              const newBio = prompt("Neue Bio:", document.getElementById('p-bio').innerText);
              if(newBio !== null) {
+                 // Basic sanitize
+                 if(newBio.length > 100) { alert("Zu lang!"); return; }
                  db_fire.collection('users').doc(currentUser.uid).set({ bio: newBio }, { merge: true });
              }
         });
 
-        // IMAGE UPLOAD (FIXED: NO BLOCKING UI)
+        // IMAGE UPLOAD
         document.getElementById('btn-edit-img').addEventListener('click', () => document.getElementById('profile-img-input').click());
         document.getElementById('profile-img-input').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -793,7 +860,6 @@
                 () => {
                     uploadTask.snapshot.ref.getDownloadURL().then((url) => {
                         db_fire.collection('users').doc(currentUser.uid).set({ photoURL: url }, { merge: true });
-                        // NO ALERT HERE - Automatic update via listener
                     });
                 }
             );
@@ -835,7 +901,8 @@
             const resBox = app.comm.results;
             if(term.length < 2) { resBox.style.display = 'none'; return; }
             
-            db_fire.collection('users').limit(50).get().then(snap => {
+            // SECURITY: Limit 20
+            db_fire.collection('users').limit(20).get().then(snap => {
                 resBox.innerHTML = "";
                 let count = 0;
                 snap.forEach(doc => {
@@ -845,7 +912,7 @@
                          const d = document.createElement('div');
                          d.className = 'search-item';
                          const img = u.photoURL ? `background-image:url('${u.photoURL}')` : `background:var(--accent-blue)`;
-                         d.innerHTML = `<div class="s-avatar" style="${img}"></div><span>${u.username}</span>`;
+                         d.innerHTML = `<div class="s-avatar" style="${img}"></div><span>${escapeHtml(u.username)}</span>`;
                          d.onclick = () => {
                              resBox.style.display = 'none'; app.comm.search.value = ""; openProfile(doc.id);
                          };
@@ -856,11 +923,11 @@
             });
         });
 
-        // CHAT SYSTEM (FIXED - ADDED PARTICIPANTS)
+        // CHAT SYSTEM
         document.getElementById('btn-msg-action').addEventListener('click', () => startChat(viewingUserUid, document.getElementById('p-name').innerText));
         document.getElementById('btn-close-chat').addEventListener('click', () => {
             app.comm.chatView.style.display = 'none';
-            app.comm.mainView.style.display = 'block'; // Back to tabs
+            app.comm.mainView.style.display = 'block';
             activeChatId = null;
         });
         document.getElementById('chat-send').addEventListener('click', sendChatMessage);
@@ -869,7 +936,6 @@
             const ids = [currentUser.uid, partnerUid].sort();
             activeChatId = ids.join("_");
             
-            // Ensure chat doc exists with participants for inbox query
             db_fire.collection('chats').doc(activeChatId).set({
                 participants: ids
             }, {merge:true});
@@ -890,7 +956,7 @@
                     const m = doc.data();
                     const bubble = document.createElement('div');
                     bubble.className = `chat-bubble ${m.senderId === currentUser.uid ? 'me' : 'them'}`;
-                    bubble.innerText = m.text;
+                    bubble.innerText = m.text; // Text content is auto-safe, but explicit escapeHtml is better
                     msgBox.appendChild(bubble);
                 });
                 msgBox.scrollTop = msgBox.scrollHeight;
@@ -901,6 +967,8 @@
             const input = document.getElementById('chat-input');
             const txt = input.value;
             if(!txt || !activeChatId) return;
+            if(txt.length > 500) { alert("Zu lang."); return; }
+
             db_fire.collection('chats').doc(activeChatId).collection('messages').add({
                 text: txt,
                 senderId: currentUser.uid,
@@ -932,12 +1000,56 @@
 
         // Map & Drive Logic
         document.getElementById('btn-start').addEventListener('click', () => { app.screens.drive.style.display = 'flex'; app.nav.style.display = 'none'; startTracking(); });
-        document.getElementById('btn-stop').addEventListener('click', () => { stopTracking(); app.screens.drive.style.display = 'none'; app.screens.summary.style.display = 'flex'; });
+        
+        // FIX: Stop Drive Cleaner
+        document.getElementById('btn-stop').addEventListener('click', () => { 
+            stopTracking(); 
+            app.screens.drive.style.display = 'none'; 
+            app.screens.summary.style.display = 'flex'; 
+        });
+
         document.getElementById('btn-save-drive').addEventListener('click', () => { saveDriveToStorage(); app.screens.summary.style.display = 'none'; app.nav.style.display = 'flex'; document.querySelectorAll('.nav-item')[4].click(); });
-        function startTracking() { isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0; if (!map) { map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map); marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map); } setTimeout(() => { map.invalidateSize(); }, 200); intervalId = setInterval(updateTimer, 1000); if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } }
-        function updatePosition(position) { const lat = position.coords.latitude; const lng = position.coords.longitude; const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0); if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh); app.display.speed.innerText = speedKmh; const newLatLng = [lat, lng]; marker.setLatLng(newLatLng); map.setView(newLatLng, 18); if (path.length > 0) { currentDistance += map.distance(path[path.length - 1], newLatLng); app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; } path.push(newLatLng); L.polyline(path, {color: '#4a90e2', weight: 5}).addTo(map); }
+        
+        function startTracking() { 
+            isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0; 
+            if (!map) { map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map); marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map); } 
+            setTimeout(() => { map.invalidateSize(); }, 200); 
+            intervalId = setInterval(updateTimer, 1000); 
+            if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
+        }
+        
+        function updatePosition(position) { 
+            const lat = position.coords.latitude; const lng = position.coords.longitude; 
+            const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0); 
+            if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh); 
+            app.display.speed.innerText = speedKmh; 
+            const newLatLng = [lat, lng]; marker.setLatLng(newLatLng); map.setView(newLatLng, 18); 
+            if (path.length > 0) { currentDistance += map.distance(path[path.length - 1], newLatLng); app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; } 
+            path.push(newLatLng); L.polyline(path, {color: '#4a90e2', weight: 5}).addTo(map); 
+        }
+        
         function updateTimer() { const diff = new Date() - startTime; app.display.time.innerText = new Date(diff).toISOString().substr(11, 8); }
-        function stopTracking() { isDriving = false; clearInterval(intervalId); navigator.geolocation.clearWatch(watchId); const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; app.display.sumDist.innerText = distKm.toFixed(2); app.display.sumSpeed.innerText = currentMaxSpeed; app.display.sumAvg.innerText = avgSpeed; app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); }
+        
+        // FIX: Stop Tracking Clean-up
+        function stopTracking() { 
+            isDriving = false; 
+            clearInterval(intervalId); 
+            if(watchId) {
+                navigator.geolocation.clearWatch(watchId); 
+                watchId = null;
+            }
+            
+            const diff = new Date() - startTime; 
+            const distKm = currentDistance / 1000; 
+            const durationHours = diff / (1000 * 60 * 60); 
+            const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; 
+            
+            app.display.sumDist.innerText = distKm.toFixed(2); 
+            app.display.sumSpeed.innerText = currentMaxSpeed; 
+            app.display.sumAvg.innerText = avgSpeed; 
+            app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); 
+        }
+
         function handleError(err) { console.warn(err); }
         function saveDriveToStorage() { const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; const newDrive = { id: Date.now(), date: startTime.toISOString(), distance: parseFloat(distKm.toFixed(2)), maxSpeed: currentMaxSpeed, avgSpeed: avgSpeed, duration: new Date(diff).toISOString().substr(11, 8), pathData: path }; let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; drives.unshift(newDrive); localStorage.setItem('dh_drives_v2', JSON.stringify(drives)); renderGarage(); }
         function renderGarage() { let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; let totalKm = 0; const list = document.getElementById('drives-list'); list.innerHTML = ''; drives.forEach(drive => { totalKm += drive.distance; const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h4>${dateStr} • ${drive.duration}</h4><span>Avg ${drive.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${drive.distance.toFixed(1)} km</span><span>Max ${drive.maxSpeed}</span></div>`; item.addEventListener('click', () => openDetailView(drive)); list.appendChild(item); }); document.getElementById('total-km').innerText = totalKm.toFixed(1); document.getElementById('total-drives').innerText = drives.length; }
