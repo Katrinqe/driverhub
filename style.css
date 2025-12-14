@@ -148,8 +148,9 @@ button { font-family: var(--font-stack); cursor: pointer; }
 .no-friends-box { text-align: center; padding: 40px 20px; color: #666; display: none; }
 .no-friends-box i { font-size: 3rem; margin-bottom: 15px; opacity: 0.5; }
 
-/* CORE MODULES (NEU: Filter entfernt!) */
-#map, #detail-map { height: 100%; width: 100%; z-index: 1; }
+/* CORE MODULES (HIER GEÄNDERT: FILTER ENTFERNT FÜR DARK MAP) */
+#map, #detail-map { height: 100%; width: 100%; z-index: 1; } 
+
 .drive-overlay-top { position: absolute; top: 50px; left: 20px; right: 20px; z-index: 999; display: flex; justify-content: space-between; }
 .drive-overlay-bottom { position: absolute; bottom: 40px; left: 0; right: 0; z-index: 999; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px;}
 .stat-box { background: var(--glass-bg); backdrop-filter: blur(15px); padding: 15px 20px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.1); min-width: 100px; } .stat-box .value { font-size: 1.8rem; font-weight: 700; } .stat-box .label { font-size: 0.7rem; color: var(--text-grey); font-weight: 700; } .stat-box .unit { font-size: 0.8rem; color: var(--accent-blue); }
