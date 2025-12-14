@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 3.5.0</title>
+    <title>DriverHub 3.6.0</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -109,7 +109,7 @@
         .icon-btn-floating { position: absolute; top: 40px; left: 20px; width: 45px; height: 45px; background: var(--glass-bg); border-radius: 50%; border: none; color: white; z-index: 3000; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
         .btn-text { background: transparent; color: #555; font-size: 0.9rem; margin-top: 40px; width: 100%; border: none; }
 
-        /* --- SOCIAL CSS (OPTIMIZED) --- */
+        /* --- SOCIAL CSS (STABLE) --- */
         .feed-container { width: 100%; max-width: 360px; margin: 0 auto; }
         .post-card { background: #1c1c1e; border-radius: 16px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); position: relative; }
         .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; cursor: pointer; }
@@ -121,8 +121,7 @@
         .action-btn { color: #888; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 5px; }
         .action-btn:hover { color: var(--accent-green); }
         
-        /* DELETE BUTTON */
-        .btn-delete-post { position: absolute; top: 15px; right: 15px; color: #555; background: none; border: none; cursor: pointer; }
+        .btn-delete-post { position: absolute; top: 15px; right: 15px; color: #555; background: none; border: none; cursor: pointer; z-index: 5; }
         .btn-delete-post:hover { color: var(--accent-red); }
 
         .create-post-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 16px; margin-bottom: 25px; display: flex; gap: 10px; align-items: center; }
@@ -149,7 +148,6 @@
         .search-item:hover { background: #222; }
         .s-avatar { width: 30px; height: 30px; border-radius: 50%; background: #333; background-size: cover; background-position: center; }
 
-        /* Chat Specific */
         .chat-container { height: 400px; display: flex; flex-direction: column; background: #111; border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
         .chat-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
         .chat-bubble { padding: 10px 15px; border-radius: 15px; max-width: 80%; word-wrap: break-word; font-size: 0.9rem; }
@@ -194,7 +192,7 @@
 </head>
 <body>
 
-    <div class="version-tag">v3.5.0</div>
+    <div class="version-tag">v3.6.0</div>
 
     <div id="auth-screen">
         <div class="auth-box">
@@ -523,10 +521,11 @@
             setInterval(manualRefreshWeather, 60000); 
         });
 
-        // --- 5. SOCIAL LOGIC (FIXED FOR 3.5.0) ---
+        // --- 5. SOCIAL LOGIC (FIXED FOR 3.6.0 - ROBUST & CLIENT-SIDE) ---
 
         // A. Profile Init (Fix Loading & Persistence)
         function initUserProfile() {
+            // Check existence, if not create. Always listen for updates.
             db_fire.collection('users').doc(currentUser.uid).onSnapshot(doc => {
                 if (!doc.exists) {
                     // Create minimal profile if missing (Ensure searchKey exists)
@@ -537,24 +536,18 @@
                         photoURL: "",
                         followers: 0,
                         following: 0,
-                        searchKey: currentUser.email.split('@')[0].toLowerCase(), // WICHTIG FÜR SUCHE
+                        searchKey: currentUser.email.split('@')[0].toLowerCase(), 
                         joined: new Date()
                     };
-                    db_fire.collection('users').doc(currentUser.uid).set(baseData);
+                    db_fire.collection('users').doc(currentUser.uid).set(baseData, {merge:true});
                 } else {
-                    // Ensure searchKey exists on old profiles
-                    if(!doc.data().searchKey) {
-                        db_fire.collection('users').doc(currentUser.uid).update({
-                            searchKey: doc.data().username.toLowerCase()
-                        });
-                    }
-                    
-                    // Update header icon
+                    // Update header icon live
                     const data = doc.data();
                     if(data.photoURL) {
                         app.comm.profileIcon.style.backgroundImage = `url('${data.photoURL}')`;
                         app.comm.profileIcon.style.backgroundSize = 'cover';
                         app.comm.profileIcon.classList.remove('fa-user-circle');
+                        app.comm.profileIcon.classList.remove('fa-solid');
                     }
                 }
             });
@@ -579,34 +572,34 @@
         // C. Friends Feed Logic
         function loadFriendsFeed() {
             db_fire.collection('follows').where('followerId', '==', currentUser.uid).onSnapshot(snap => {
-                // If no friends
-                if(snap.empty) {
-                    document.getElementById('no-friends-msg').style.display = 'block';
-                    const msg = document.getElementById('no-friends-msg');
-                    app.comm.feed.innerHTML = "";
-                    app.comm.feed.appendChild(msg);
-                    return;
-                }
-                
-                document.getElementById('no-friends-msg').style.display = 'none';
-                
                 // Collect IDs
                 const followingIds = [];
                 snap.forEach(doc => followingIds.push(doc.data().followingId));
                 followingIds.push(currentUser.uid); // Add self
+
+                if(followingIds.length === 1 && snap.empty) {
+                     // Only me
+                     document.getElementById('no-friends-msg').style.display = 'block';
+                }
 
                 // Load Posts
                 db_fire.collection('posts').orderBy('timestamp', 'desc').limit(50).onSnapshot(postSnap => {
                     const container = app.comm.feed;
                     const msg = document.getElementById('no-friends-msg');
                     container.innerHTML = "";
-                    container.appendChild(msg);
+                    
+                    if(snap.empty && postSnap.empty) {
+                        container.appendChild(msg);
+                        msg.style.display = 'block';
+                    } else {
+                        msg.style.display = 'none';
+                    }
 
                     postSnap.forEach(doc => {
                         const post = doc.data();
                         // Client-side filtering
                         if(followingIds.includes(post.uid)) {
-                             renderPost(post, container, doc.id); // Pass doc.id for deletion
+                             renderPost(post, container, doc.id); 
                         }
                     });
                 });
@@ -639,7 +632,7 @@
             container.appendChild(div);
         }
 
-        // Global Delete Function (Needs to be window accessible)
+        // Global Delete Function
         window.deletePost = function(postId) {
             if(confirm("Post wirklich löschen?")) {
                 db_fire.collection('posts').doc(postId).delete().catch(err => alert("Fehler: " + err.message));
@@ -660,6 +653,7 @@
             viewingUserUid = uid;
             const isMe = (currentUser.uid === uid);
             
+            // Switch Views
             app.comm.feedView.style.display = 'none';
             app.comm.profileView.style.display = 'block';
             app.comm.chatView.style.display = 'none';
@@ -682,7 +676,7 @@
             pImg.style.backgroundImage = "none";
             postList.innerHTML = "";
             
-            // Fetch Data
+            // Fetch Data (Realtime)
             db_fire.collection('users').doc(uid).onSnapshot(doc => {
                 if(!doc.exists) return;
                 const data = doc.data();
@@ -698,6 +692,7 @@
                 snap.forEach(doc => renderPost(doc.data(), postList, doc.id));
             });
 
+            // Toggle Buttons
             if(isMe) {
                 btnEditImg.style.display = 'flex';
                 btnEditBio.style.display = 'inline-block';
@@ -714,19 +709,19 @@
             }
         }
 
-        // E. Edit Bio (FIXED PERSISTENCE)
+        // E. Edit Bio (FIXED PERSISTENCE with set+merge)
         document.getElementById('btn-edit-bio').addEventListener('click', () => {
              const currentBio = document.getElementById('p-bio').innerText;
              const newBio = prompt("Neue Bio:", currentBio);
              if(newBio !== null) {
-                 // Use set with merge to ensure doc exists
+                 // Use set with merge to ensure doc exists and persistence
                  db_fire.collection('users').doc(currentUser.uid).set({ bio: newBio }, { merge: true })
                  .then(() => console.log("Bio saved"))
                  .catch(err => alert("Speicherfehler: " + err.message));
              }
         });
 
-        // F. Upload Image (FIXED PERSISTENCE)
+        // F. Upload Image (FIXED)
         document.getElementById('btn-edit-img').addEventListener('click', () => document.getElementById('profile-img-input').click());
         document.getElementById('profile-img-input').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -736,11 +731,11 @@
             
             uploadTask.on('state_changed', 
                 (snap) => { console.log("Upload..."); },
-                (err) => { alert("Upload Fehler. Check Firebase Rules!"); },
+                (err) => { alert("Upload Fehler: " + err.message); },
                 () => {
                     uploadTask.snapshot.ref.getDownloadURL().then((url) => {
-                        // Use set with merge
                         db_fire.collection('users').doc(currentUser.uid).set({ photoURL: url }, { merge: true });
+                        alert("Profilbild aktualisiert!");
                     });
                 }
             );
@@ -776,34 +771,38 @@
             else { btn.innerText = "Folgen"; btn.classList.remove('following'); }
         }
 
-        // H. Search System (FIXED LOGIC)
+        // H. Search System (FIXED - CLIENT SIDE FALLBACK)
         app.comm.search.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
             const resBox = app.comm.results;
             if(term.length < 2) { resBox.style.display = 'none'; return; }
             
-            // Search by normalized searchKey
-            db_fire.collection('users').where('searchKey', '>=', term).where('searchKey', '<=', term + '\uf8ff').limit(5)
-            .get().then(snap => {
+            // Client-side search (loads 50 most recent users and filters locally)
+            // This avoids "Missing Index" errors from Firestore.
+            db_fire.collection('users').limit(50).get().then(snap => {
                 resBox.innerHTML = "";
-                if(snap.empty) { resBox.style.display = 'none'; return; }
-                resBox.style.display = 'block';
+                let count = 0;
+                
                 snap.forEach(doc => {
                      const u = doc.data();
-                     // Skip self
-                     if(doc.id === currentUser.uid) return;
-
-                     const d = document.createElement('div');
-                     d.className = 'search-item';
-                     const img = u.photoURL ? `background-image:url('${u.photoURL}')` : `background:var(--accent-blue)`;
-                     d.innerHTML = `<div class="s-avatar" style="${img}"></div><span>${u.username}</span>`;
-                     d.onclick = () => {
-                         resBox.style.display = 'none';
-                         app.comm.search.value = "";
-                         openProfile(doc.id);
-                     };
-                     resBox.appendChild(d);
+                     // Filter matches
+                     if(u.username.toLowerCase().includes(term) && doc.id !== currentUser.uid) {
+                         count++;
+                         const d = document.createElement('div');
+                         d.className = 'search-item';
+                         const img = u.photoURL ? `background-image:url('${u.photoURL}')` : `background:var(--accent-blue)`;
+                         d.innerHTML = `<div class="s-avatar" style="${img}"></div><span>${u.username}</span>`;
+                         d.onclick = () => {
+                             resBox.style.display = 'none';
+                             app.comm.search.value = "";
+                             openProfile(doc.id);
+                         };
+                         resBox.appendChild(d);
+                     }
                 });
+
+                if(count > 0) resBox.style.display = 'block';
+                else resBox.style.display = 'none';
             });
         });
 
@@ -819,7 +818,6 @@
         function startChat(partnerUid) {
             const ids = [currentUser.uid, partnerUid].sort();
             activeChatId = ids.join("_");
-            
             app.comm.profileView.style.display = 'none';
             app.comm.chatView.style.display = 'block';
             document.getElementById('chat-partner-name').innerText = document.getElementById('p-name').innerText;
@@ -855,7 +853,6 @@
         }
 
         // --- 6. ORIGINAL MODULE LOGIC (FROM BASIS 3.4.0) ---
-        
         // Auth UI
         document.getElementById('auth-switch-btn').addEventListener('click', () => {
             isSignup = !isSignup;
@@ -866,7 +863,6 @@
         document.getElementById('btn-signup-email').addEventListener('click', () => {
             const e = document.getElementById('auth-email').value; const p = document.getElementById('auth-pass').value;
             auth.createUserWithEmailAndPassword(e, p).then(cred => { 
-                // Create profile immediately
                 db_fire.collection('users').doc(cred.user.uid).set({ 
                     email: e, 
                     username: e.split('@')[0], 
