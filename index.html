@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <title>DriverHub 1.6 Music</title>
+    <title>DriverHub 1.6 Music Fix</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="logo.png">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#000000">
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -20,7 +20,7 @@
             --bg-color: #000000;
             --accent-blue: #4a90e2;
             --accent-red: #ff3b30;
-            --accent-purple: #bf5af2; /* Neu für Musik */
+            --accent-purple: #bf5af2; 
             --text-white: #ffffff;
             --text-grey: #8e8e93;
             --glass-bg: rgba(20, 20, 20, 0.85);
@@ -35,7 +35,7 @@
             overscroll-behavior: none;
         }
 
-        /* --- INTRO SPLASH SCREEN --- */
+        /* --- INTRO --- */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: #000000; z-index: 9999;
@@ -43,21 +43,20 @@
             transition: opacity 0.8s ease;
         }
         .splash-logo { width: 150px; animation: introAnim 2.5s ease-out forwards; }
-        
         @keyframes introAnim {
             0% { opacity: 0; transform: scale(0.8); filter: blur(10px); }
             30% { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 0 30px var(--accent-blue)); }
             100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 0px var(--accent-blue)); }
         }
 
-        /* --- AURORA HINTERGRUND --- */
+        /* --- AURORA --- */
         .aurora-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; overflow: hidden; }
         .blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.25; animation: float 15s infinite ease-in-out; }
         .b1 { top: -10%; left: -10%; width: 80vw; height: 80vw; background: #1c3d6e; }
         .b2 { bottom: -10%; right: -10%; width: 80vw; height: 80vw; background: #2c5f9e; animation-delay: -5s; }
         @keyframes float { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(20px, -20px); } }
 
-        /* --- GENERIC UI --- */
+        /* --- UI ELEMENTS --- */
         .status-pill { background: rgba(30,30,30,0.6); backdrop-filter: blur(15px); padding: 8px 18px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); align-items: center; gap: 12px; font-size: 0.9rem; font-weight: 600; margin-bottom: 30px; }
         .loc-icon, #weather-icon { color: var(--accent-blue); }
         .divider { opacity: 0.3; }
@@ -77,14 +76,13 @@
         .spacer-flex { flex: 1; }
         .header-bar { position: absolute; top: 0; left: 0; width: 100%; padding: 50px 20px 10px 20px; background: linear-gradient(to bottom, black, transparent); z-index: 20; }
 
-        /* BUTTONS */
         button { font-family: var(--font-stack); cursor: pointer; }
         .btn-primary { border: none; padding: 18px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; background: linear-gradient(135deg, var(--accent-blue), #2c5f9e); color: white; box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3); margin-bottom: 120px; }
         .btn-danger { border: 1px solid var(--accent-red); background: rgba(255, 59, 48, 0.15); color: var(--accent-red); padding: 16px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; backdrop-filter: blur(10px); }
         .icon-btn-floating { position: absolute; top: 40px; left: 20px; width: 45px; height: 45px; background: var(--glass-bg); border-radius: 50%; border: none; color: white; z-index: 3000; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
         .btn-text { background: transparent; color: #555; font-size: 0.9rem; margin-top: 40px; width: 100%; border: none; }
 
-        /* MAP & DRIVE STATS */
+        /* MAP & STATS */
         #map, #detail-map { height: 100%; width: 100%; z-index: 1; filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
         .drive-overlay-top { position: absolute; top: 50px; left: 20px; right: 20px; z-index: 999; display: flex; justify-content: space-between; }
         .drive-overlay-bottom { position: absolute; bottom: 40px; left: 0; right: 0; z-index: 999; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px;}
@@ -94,7 +92,7 @@
         .stat-box .unit { font-size: 0.8rem; color: var(--accent-blue); }
         .drive-overlay-bottom .stat-row { background: var(--glass-bg); backdrop-filter: blur(15px); border-radius: 12px; padding: 10px 20px; display: inline-block; border: 1px solid rgba(255,255,255,0.1); font-weight: 600; }
 
-        /* GARAGE & LISTS */
+        /* GARAGE */
         .stats-card { background: #1c1c1e; border-radius: 20px; padding: 30px; width: 100%; max-width: 320px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .stat-row-final { display: flex; justify-content: space-between; margin-bottom: 20px; text-align: left; } 
         .stat-row-final .final-value { font-size: 1.8rem; font-weight: 700; color: white; display: block; }
@@ -108,7 +106,7 @@
         .detail-stats-overlay { position: absolute; bottom: 40px; left: 20px; right: 20px; background: var(--glass-bg); backdrop-filter: blur(20px); border-radius: 20px; padding: 20px; z-index: 2500; border: 1px solid rgba(255,255,255,0.1); } 
         .mini { margin-bottom: 0; text-align: center; } .mini > div { flex: 1; } .mini .val { font-size: 1.4rem; font-weight: 700; display: block; }
 
-        /* --- PERFORMANCE MODE --- */
+        /* PERF MODE */
         .perf-display { text-align: center; margin-bottom: 40px; }
         .perf-speed { font-size: 5rem; font-weight: 900; color: white; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 0 40px rgba(255, 59, 48, 0.4); }
         .perf-unit { font-size: 1.2rem; color: var(--text-grey); font-weight: 600; }
@@ -123,59 +121,24 @@
         .btn-arm.armed { background: transparent; border: 2px solid var(--accent-red); animation: none; color: var(--accent-red); }
         @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(255,59,48,0.5); } 100% { transform: scale(1); } }
 
-        /* --- MUSIC MODE CSS (NEU) --- */
+        /* MUSIC MODE CSS */
         .music-player-container { width: 100%; max-width: 320px; display: flex; flex-direction: column; align-items: center; }
-        
-        .album-art-wrapper {
-            width: 200px; height: 200px;
-            margin: 20px 0 30px 0;
-            position: relative;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .album-art {
-            width: 100%; height: 100%;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #1c1c1e, #000);
-            box-shadow: 0 0 30px rgba(191, 90, 242, 0.1);
-            position: relative; z-index: 2;
-            display: flex; align-items: center; justify-content: center;
-            border: 2px solid rgba(255,255,255,0.05);
-        }
+        .album-art-wrapper { width: 200px; height: 200px; margin: 20px 0 30px 0; position: relative; display: flex; align-items: center; justify-content: center; }
+        .album-art { width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(135deg, #1c1c1e, #000); box-shadow: 0 0 30px rgba(191, 90, 242, 0.1); position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,0.05); }
         .music-icon-big { font-size: 3rem; color: var(--accent-purple); opacity: 0.8; }
-        
-        /* Visualizer Aura */
-        .music-aura {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(191,90,242,0.4) 0%, transparent 70%);
-            z-index: 1; opacity: 0;
-            transition: opacity 0.5s;
-        }
+        .music-aura { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle, rgba(191,90,242,0.4) 0%, transparent 70%); z-index: 1; opacity: 0; transition: opacity 0.5s; }
         .music-aura.playing { animation: pulse-music 1.5s infinite ease-in-out; opacity: 1; }
         @keyframes pulse-music { 0% { transform: scale(0.9); opacity: 0.3; } 50% { transform: scale(1.2); opacity: 0.6; } 100% { transform: scale(0.9); opacity: 0.3; } }
-
         .song-info { text-align: center; margin-bottom: 30px; }
         .song-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 5px; color: white; display: block; }
         .song-artist { font-size: 0.9rem; color: var(--accent-purple); text-transform: uppercase; letter-spacing: 1px; }
-
         .controls { display: flex; align-items: center; gap: 30px; margin-bottom: 40px; }
         .btn-ctrl { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; transition: transform 0.1s; }
         .btn-ctrl:active { transform: scale(0.9); }
-        .btn-play {
-            width: 70px; height: 70px;
-            border-radius: 50%;
-            background: var(--accent-purple);
-            box-shadow: 0 0 20px rgba(191, 90, 242, 0.4);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.8rem;
-        }
-
+        .btn-play { width: 70px; height: 70px; border-radius: 50%; background: var(--accent-purple); box-shadow: 0 0 20px rgba(191, 90, 242, 0.4); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
         .volume-container { width: 100%; display: flex; align-items: center; gap: 15px; margin-bottom: 30px; padding: 0 10px; }
-        .vol-slider {
-            flex: 1; -webkit-appearance: none; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; outline: none;
-        }
+        .vol-slider { flex: 1; -webkit-appearance: none; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; outline: none; }
         .vol-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: white; cursor: pointer; }
-
         .playlist { width: 100%; text-align: left; }
         .track-row { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
         .track-row.active { color: var(--accent-purple); }
@@ -186,10 +149,8 @@
         .bottom-nav { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 380px; height: 70px; background: rgba(30, 30, 30, 0.8); backdrop-filter: blur(20px); border-radius: 35px; display: flex; justify-content: space-around; align-items: center; border: 1px solid rgba(255,255,255,0.1); z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { background: none; border: none; color: #666; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 5px; width: auto; padding: 0; }
         .nav-item.active { color: var(--accent-blue); }
-        /* Spezifische Farben für aktive Tabs */
         .nav-item.active[data-target="perf-screen"] { color: var(--accent-red); }
         .nav-item.active[data-target="music-screen"] { color: var(--accent-purple); }
-
     </style>
 </head>
 <body>
@@ -199,25 +160,16 @@
         <h1 id="splash-text" style="display:none; font-size: 2rem;">DH</h1>
     </div>
 
-    <div class="aurora-bg">
-        <div class="blob b1"></div>
-        <div class="blob b2"></div>
-    </div>
+    <div class="aurora-bg"><div class="blob b1"></div><div class="blob b2"></div></div>
 
     <div id="app-container">
         
         <section id="home-screen" class="screen active">
             <div class="content-home-layout">
                 <div id="status-widget" class="status-pill" style="display:flex;">
-                    <i class="fa-solid fa-location-arrow loc-icon"></i>
-                    <span id="loc-text">Locating...</span>
-                    <span class="divider">|</span>
-                    <i id="weather-icon" class="fa-solid fa-cloud"></i>
-                    <span id="weather-temp">--°</span>
+                    <i class="fa-solid fa-location-arrow loc-icon"></i><span id="loc-text">Locating...</span><span class="divider">|</span><i id="weather-icon" class="fa-solid fa-cloud"></i><span id="weather-temp">--°</span>
                 </div>
-                <div class="logo-container">
-                    <img src="logo.png" alt="DriverHub Logo" class="dh-logo" onerror="this.style.display='none';">
-                </div>
+                <div class="logo-container"><img src="logo.png" alt="DriverHub Logo" class="dh-logo" onerror="this.style.display='none';"></div>
                 <h1 id="greeting-text">WELCOME</h1>
                 <p class="slogan">Built for those who drive.</p>
                 <div class="spacer-flex"></div>
@@ -226,14 +178,9 @@
         </section>
 
         <section id="perf-screen" class="screen">
-            <div class="header-bar">
-                <h2>Performance</h2>
-            </div>
+            <div class="header-bar"><h2>Performance</h2></div>
             <div class="content-scroll">
-                <div class="perf-display">
-                    <span id="perf-live-speed" class="perf-speed">0</span>
-                    <span class="perf-unit">KM/H</span>
-                </div>
+                <div class="perf-display"><span id="perf-live-speed" class="perf-speed">0</span><span class="perf-unit">KM/H</span></div>
                 <div class="perf-grid">
                     <div class="perf-box" id="box-0-50"><span class="perf-lbl">0 - 50</span><span class="perf-val" id="val-0-50">--.- s</span></div>
                     <div class="perf-box" id="box-0-100"><span class="perf-lbl">0 - 100</span><span class="perf-val" id="val-0-100">--.- s</span></div>
@@ -250,38 +197,28 @@
         </section>
 
         <section id="music-screen" class="screen">
-            <div class="header-bar">
-                <h2>Music</h2>
-            </div>
+            <div class="header-bar"><h2>Music</h2></div>
             <div class="content-scroll">
                 <div class="music-player-container">
-                    
                     <div class="album-art-wrapper">
                         <div class="music-aura" id="music-aura"></div>
-                        <div class="album-art">
-                            <i class="fa-solid fa-music music-icon-big"></i>
-                        </div>
+                        <div class="album-art"><i class="fa-solid fa-music music-icon-big"></i></div>
                     </div>
-
                     <div class="song-info">
                         <span class="song-title" id="track-title">Select a Track</span>
                         <span class="song-artist" id="track-artist">DriverHub Radio</span>
                     </div>
-
                     <div class="controls">
                         <button class="btn-ctrl" id="btn-prev"><i class="fa-solid fa-backward-step"></i></button>
                         <button class="btn-ctrl btn-play" id="btn-play-pause"><i class="fa-solid fa-play"></i></button>
                         <button class="btn-ctrl" id="btn-next"><i class="fa-solid fa-forward-step"></i></button>
                     </div>
-
                     <div class="volume-container">
                         <i class="fa-solid fa-volume-low" style="color:#888; font-size:0.8rem;"></i>
                         <input type="range" min="0" max="1" step="0.1" value="0.8" class="vol-slider" id="vol-slider">
                         <i class="fa-solid fa-volume-high" style="color:#888; font-size:0.8rem;"></i>
                     </div>
-
-                    <div class="playlist" id="playlist-container">
-                        </div>
+                    <div class="playlist" id="playlist-container"></div>
                 </div>
                 <div style="height: 100px;"></div>
             </div>
@@ -345,18 +282,10 @@
         </section>
 
         <nav class="bottom-nav" id="main-nav">
-            <button class="nav-item active" data-target="home-screen">
-                <i class="fa-solid fa-house"></i><span>Home</span>
-            </button>
-            <button class="nav-item" data-target="perf-screen">
-                <i class="fa-solid fa-gauge-high"></i><span>Perf</span>
-            </button>
-            <button class="nav-item" data-target="music-screen">
-                <i class="fa-solid fa-music"></i><span>Music</span>
-            </button>
-            <button class="nav-item" data-target="garage-screen">
-                <i class="fa-solid fa-layer-group"></i><span>Garage</span>
-            </button>
+            <button class="nav-item active" data-target="home-screen"><i class="fa-solid fa-house"></i><span>Home</span></button>
+            <button class="nav-item" data-target="perf-screen"><i class="fa-solid fa-gauge-high"></i><span>Perf</span></button>
+            <button class="nav-item" data-target="music-screen"><i class="fa-solid fa-music"></i><span>Music</span></button>
+            <button class="nav-item" data-target="garage-screen"><i class="fa-solid fa-layer-group"></i><span>Garage</span></button>
         </nav>
 
     </div>
@@ -365,31 +294,22 @@
 
     <script>
         // --- GLOBAL VARIABLES ---
-        let map, marker, watchId, intervalId;
-        let detailMap;
-        let startTime;
-        let path = [];
-        let currentDistance = 0;
-        let currentMaxSpeed = 0;
-        let isDriving = false;
+        let map, marker, watchId, intervalId, detailMap;
+        let startTime, path = [], currentDistance = 0, currentMaxSpeed = 0, isDriving = false;
 
-        // --- PERF VARIABLES ---
-        let perfWatchId = null;
-        let perfState = 'idle';
-        let perfStartTime = 0;
-        let result50 = null;
-        let result100 = null;
-        let maxG = 0;
+        // --- PERF VARS ---
+        let perfWatchId = null, perfState = 'idle', perfStartTime = 0;
+        let result50 = null, result100 = null, maxG = 0;
 
-        // --- MUSIC VARIABLES (NEU) ---
-        // Nutzung von Mixkit Preview URLs (Legal für Demo)
+        // --- MUSIC VARS (REPLACED WITH STABLE LINKS) ---
         const playlist = [
-            { title: "Night Drive Vibes", artist: "Deep Tech", src: "https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3" },
-            { title: "Driving Ambition", artist: "Phonk Style", src: "https://assets.mixkit.co/music/preview/mixkit-driving-ambition-32.mp3" },
-            { title: "Deep Urban", artist: "Bass Flow", src: "https://assets.mixkit.co/music/preview/mixkit-hip-hop-02-738.mp3" }
+            { title: "Enthusiast", artist: "Tours", src: "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Tours/Enthusiast/Tours_-_01_-_Enthusiast.mp3" },
+            { title: "Night Owl", artist: "Broke For Free", src: "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/WFMU/Broke_For_Free/Directionless_EP/Broke_For_Free_-_01_-_Night_Owl.mp3" },
+            { title: "BoxCat Games", artist: "Mt Fox Shop", src: "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/BoxCat_Games/Nameless_the_Hackers_RPG_Soundtrack/BoxCat_Games_-_10_-_Mt_Fox_Shop.mp3" }
         ];
         let currentTrackIdx = 0;
         const audioPlayer = new Audio();
+        audioPlayer.crossOrigin = "anonymous"; // Helps with loading
         let isPlaying = false;
 
         // --- DOM ELEMENTS ---
@@ -400,7 +320,6 @@
             locText: document.getElementById('loc-text'),
             tempText: document.getElementById('weather-temp'),
             weatherIcon: document.getElementById('weather-icon'),
-            
             screens: {
                 home: document.getElementById('home-screen'),
                 garage: document.getElementById('garage-screen'),
@@ -451,7 +370,7 @@
 
             renderGarage();
             renderPerfHistory();
-            initMusicPlayer(); // NEU
+            initMusicPlayer();
             updateTimeGreeting();
 
             if(navigator.geolocation) {
@@ -459,7 +378,6 @@
             }
         });
 
-        // --- WEATHER & GREETING ---
         function updateTimeGreeting() {
             const h = new Date().getHours();
             let txt = "WELCOME";
@@ -488,28 +406,24 @@
                 });
         }
 
-        // --- NAVIGATION ---
         document.querySelectorAll('.nav-item').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const targetId = btn.getAttribute('data-target');
                 document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 
-                // Hide all screens
                 Object.values(app.screens).forEach(s => {
                     if(s && !s.classList.contains('screen-overlay')) s.classList.remove('active');
                 });
                 
-                // Show target
                 if(app.screens[targetId.split('-')[0]]) {
                     app.screens[targetId.split('-')[0]].classList.add('active');
                 }
             });
         });
 
-        // --- MUSIC LOGIC (NEU) ---
+        // --- MUSIC LOGIC ---
         function initMusicPlayer() {
-            // Setup Playlist UI
             app.music.list.innerHTML = "";
             playlist.forEach((track, index) => {
                 const div = document.createElement('div');
@@ -520,10 +434,8 @@
                 app.music.list.appendChild(div);
             });
 
-            // Load first track (but don't play yet)
             loadTrack(0, false);
 
-            // Controls
             app.music.playBtn.addEventListener('click', togglePlay);
             app.music.nextBtn.addEventListener('click', nextTrack);
             app.music.prevBtn.addEventListener('click', prevTrack);
@@ -531,8 +443,11 @@
                 audioPlayer.volume = e.target.value;
             });
 
-            // Auto Next
             audioPlayer.addEventListener('ended', nextTrack);
+            audioPlayer.addEventListener('error', (e) => {
+                console.error("Audio Error", e);
+                // Optional: Alert user
+            });
         }
 
         function loadTrack(index, autoPlay = true) {
@@ -542,13 +457,12 @@
             app.music.title.innerText = track.title;
             app.music.artist.innerText = track.artist;
 
-            // Highlight in list
             const rows = document.querySelectorAll('.track-row');
             rows.forEach(r => r.classList.remove('active'));
             if(rows[index]) rows[index].classList.add('active');
 
             if(autoPlay) {
-                audioPlayer.play();
+                audioPlayer.play().catch(e => console.log("Autoplay blocked usually ok", e));
                 isPlaying = true;
                 updatePlayBtn();
             }
@@ -587,7 +501,7 @@
             loadTrack(prev);
         }
 
-        // --- MAIN DRIVE LOGIC ---
+        // --- DRIVE LOGIC ---
         document.getElementById('btn-start').addEventListener('click', () => {
             app.screens.drive.style.display = 'flex';
             app.nav.style.display = 'none';
@@ -602,11 +516,10 @@
             saveDriveToStorage();
             app.screens.summary.style.display = 'none';
             app.nav.style.display = 'flex';
-            // Go to garage
             document.querySelectorAll('.nav-item')[3].click(); 
         });
 
-        // --- PERFORMANCE LOGIC ---
+        // --- PERF LOGIC ---
         app.perf.btn.addEventListener('click', () => {
             if(perfState === 'idle' || perfState === 'finished') {
                 perfState = 'armed';
@@ -633,16 +546,12 @@
                 if (navigator.geolocation) {
                     perfWatchId = navigator.geolocation.watchPosition(updatePerfLogic, handleError, {enableHighAccuracy: true});
                 }
-
             } else {
                 resetPerfMode();
             }
         });
 
-        function startPerfSensors() {
-            window.addEventListener('devicemotion', handleMotion);
-        }
-
+        function startPerfSensors() { window.addEventListener('devicemotion', handleMotion); }
         function handleMotion(event) {
             if(perfState !== 'running') return;
             const x = event.acceleration.x || 0;
@@ -650,7 +559,6 @@
             const z = event.acceleration.z || 0;
             const totalAccel = Math.sqrt(x*x + y*y + z*z);
             const currentG = totalAccel / 9.81;
-
             if(currentG > maxG) {
                 maxG = currentG;
                 app.perf.gVal.innerText = maxG.toFixed(2) + " G";
@@ -660,7 +568,6 @@
         function updatePerfLogic(position) {
             const speedKmh = (position.coords.speed || 0) * 3.6;
             app.perf.speed.innerText = speedKmh.toFixed(0);
-
             if(perfState === 'armed') {
                 if(speedKmh > 2.0) {
                     perfState = 'running';
@@ -670,13 +577,11 @@
                 }
             } else if(perfState === 'running') {
                 const duration = (Date.now() - perfStartTime) / 1000;
-                
                 if(!result50 && speedKmh >= 50) {
                     result50 = duration.toFixed(2);
                     app.perf.val50.innerText = result50 + " s";
                     app.perf.box50.classList.add('active');
                 }
-
                 if(!result100 && speedKmh >= 100) {
                     result100 = duration.toFixed(2);
                     app.perf.val100.innerText = result100 + " s";
@@ -701,13 +606,7 @@
         }
 
         function savePerfRun() {
-            const run = {
-                id: Date.now(),
-                date: new Date().toISOString(),
-                res50: result50,
-                res100: result100,
-                maxG: maxG.toFixed(2)
-            };
+            const run = { id: Date.now(), date: new Date().toISOString(), res50: result50, res100: result100, maxG: maxG.toFixed(2) };
             let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || [];
             runs.unshift(run);
             localStorage.setItem('dh_perf_v1', JSON.stringify(runs));
@@ -722,25 +621,14 @@
                 const dateStr = new Date(run.date).toLocaleDateString('de-DE');
                 const item = document.createElement('div');
                 item.className = 'drive-item';
-                item.innerHTML = `
-                    <div><h4>${dateStr}</h4><span>Max ${run.maxG} G</span></div>
-                    <div class="right-side">
-                        <span style="color:#ff3b30; font-weight:bold;">0-100: ${run.res100}s</span><br>
-                        <span style="font-size:0.75rem">0-50: ${run.res50}s</span>
-                    </div>
-                `;
+                item.innerHTML = `<div><h4>${dateStr}</h4><span>Max ${run.maxG} G</span></div><div class="right-side"><span style="color:#ff3b30; font-weight:bold;">0-100: ${run.res100}s</span><br><span style="font-size:0.75rem">0-50: ${run.res50}s</span></div>`;
                 list.appendChild(item);
             });
         }
 
-        // --- MAP & TRACKING ---
+        // --- MAP ---
         function startTracking() {
-            isDriving = true;
-            startTime = new Date();
-            path = [];
-            currentDistance = 0;
-            currentMaxSpeed = 0;
-
+            isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0;
             if (!map) {
                 map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map);
@@ -748,23 +636,17 @@
             }
             setTimeout(() => { map.invalidateSize(); }, 200);
             intervalId = setInterval(updateTimer, 1000);
-            if (navigator.geolocation) {
-                watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true});
-            }
+            if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); }
         }
 
         function updatePosition(position) {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
+            const lat = position.coords.latitude; const lng = position.coords.longitude;
             const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0);
-
             if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh);
             app.display.speed.innerText = speedKmh;
-            
             const newLatLng = [lat, lng];
             marker.setLatLng(newLatLng);
             map.setView(newLatLng, 18);
-
             if (path.length > 0) {
                 currentDistance += map.distance(path[path.length - 1], newLatLng);
                 app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km";
@@ -779,9 +661,7 @@
         }
 
         function stopTracking() {
-            isDriving = false;
-            clearInterval(intervalId);
-            navigator.geolocation.clearWatch(watchId);
+            isDriving = false; clearInterval(intervalId); navigator.geolocation.clearWatch(watchId);
             const diff = new Date() - startTime;
             const distKm = currentDistance / 1000;
             const durationHours = diff / (1000 * 60 * 60);
@@ -799,15 +679,7 @@
             const distKm = currentDistance / 1000;
             const durationHours = diff / (1000 * 60 * 60);
             const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0;
-            const newDrive = {
-                id: Date.now(),
-                date: startTime.toISOString(),
-                distance: parseFloat(distKm.toFixed(2)),
-                maxSpeed: currentMaxSpeed,
-                avgSpeed: avgSpeed,
-                duration: new Date(diff).toISOString().substr(11, 8),
-                pathData: path 
-            };
+            const newDrive = { id: Date.now(), date: startTime.toISOString(), distance: parseFloat(distKm.toFixed(2)), maxSpeed: currentMaxSpeed, avgSpeed: avgSpeed, duration: new Date(diff).toISOString().substr(11, 8), pathData: path };
             let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || [];
             drives.unshift(newDrive);
             localStorage.setItem('dh_drives_v2', JSON.stringify(drives));
