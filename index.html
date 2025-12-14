@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>DriverHub</title>
     
     <link rel="manifest" href="manifest.json">
@@ -12,117 +12,402 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+
+    <style>
+        /* --- CSS DESIGN START --- */
+        :root {
+            --bg: #000000;
+            --blue: #4a90e2;
+            --glass: rgba(20, 20, 20, 0.85);
+            --border: rgba(255, 255, 255, 0.15);
+            --text: #ffffff;
+            --grey: #8e8e93;
+            --danger: #ff3b30;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            overflow: hidden; width: 100%; height: 100%; position: fixed;
+        }
+
+        /* SPLASH SCREEN */
+        #splash {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+        .splash-img { width: 150px; animation: popIn 1.5s ease forwards; }
+        @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        /* AURORA BG */
+        .aurora { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+        .blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.3; animation: float 15s infinite; }
+        .b1 { top: -10%; left: -10%; width: 300px; height: 300px; background: #1c3d6e; }
+        .b2 { bottom: -10%; right: -10%; width: 300px; height: 300px; background: #2c5f9e; animation-delay: -5s; }
+        @keyframes float { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,-20px)} }
+
+        /* SCREENS */
+        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; background: transparent; }
+        .screen.active { display: flex; z-index: 10; }
+        .overlay { background: #000; z-index: 2000; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+
+        /* HOME UI */
+        .home-content { flex: 1; display: flex; flex-direction: column; align-items: center; padding-top: 60px; text-align: center; }
+        
+        .widget {
+            background: rgba(30,30,30,0.6); backdrop-filter: blur(10px);
+            padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border);
+            display: flex; gap: 10px; font-size: 0.9rem; font-weight: 600; margin-bottom: 30px;
+        }
+        .icon-blue { color: var(--blue); }
+        
+        .logo-img { width: 220px; filter: drop-shadow(0 0 20px rgba(74,144,226,0.2)); margin-bottom: 20px; }
+        
+        h1 { font-size: 2rem; font-weight: 800; letter-spacing: 2px; color: var(--blue); margin-bottom: 5px; }
+        
+        /* MY MACHINE INPUT */
+        .machine-box { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; margin-top: 10px; }
+        .icon-btn { background: none; border: none; color: var(--blue); font-size: 1.2rem; cursor: pointer; padding: 5px; }
+        .machine-input { 
+            background: none; border: none; border-bottom: 1px solid #333; 
+            color: var(--grey); font-size: 1rem; font-weight: 600; 
+            text-transform: uppercase; width: 160px; text-align: center;
+            font-family: var(--font); outline: none; transition: 0.3s;
+        }
+        .machine-input:focus { border-bottom-color: var(--blue); color: #fff; }
+
+        .btn-main {
+            background: linear-gradient(135deg, var(--blue), #2c5f9e);
+            border: none; color: white; padding: 18px 40px; border-radius: 30px;
+            font-size: 1.2rem; font-weight: 700; width: 80%; max-width: 300px;
+            box-shadow: 0 5px 20px rgba(74,144,226,0.3); margin-top: auto; margin-bottom: 130px;
+        }
+
+        /* DRIVE UI */
+        #map { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 0; filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
+        .hud-top { position: absolute; top: 50px; left: 20px; right: 20px; display: flex; justify-content: space-between; z-index: 100; }
+        .hud-box { background: var(--glass); backdrop-filter: blur(10px); padding: 10px 20px; border-radius: 15px; border: 1px solid var(--border); text-align: center; min-width: 90px; }
+        .val { display: block; font-size: 1.6rem; font-weight: 700; } .lbl { font-size: 0.7rem; color: var(--grey); }
+        .hud-bot { position: absolute; bottom: 40px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; z-index: 100; }
+        .pill { background: var(--glass); padding: 8px 20px; border-radius: 20px; font-weight: 600; border: 1px solid var(--border); }
+        .btn-stop { background: rgba(255,59,48,0.2); border: 1px solid var(--danger); color: var(--danger); padding: 15px 50px; border-radius: 30px; font-weight: 700; backdrop-filter: blur(10px); }
+
+        /* GARAGE & SUMMARY */
+        .scroll-area { padding: 80px 20px 100px; overflow-y: auto; height: 100%; }
+        .card { background: #111; border: 1px solid #333; padding: 20px; border-radius: 20px; margin-bottom: 20px; }
+        .row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .item { background: #161616; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #222; }
+        .btn-save { width: 100%; padding: 15px; background: var(--blue); border: none; border-radius: 20px; color: white; font-weight: 700; font-size: 1.1rem; }
+        .btn-reset { width: 100%; padding: 20px; background: none; border: none; color: #555; margin-top: 20px; }
+
+        /* NAV */
+        .navbar {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 240px; height: 65px; background: rgba(30,30,30,0.9); backdrop-filter: blur(20px);
+            border-radius: 35px; border: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 500;
+        }
+        .nav-btn { background: none; border: none; color: #666; font-size: 1.4rem; width: 100%; height: 100%; }
+        .nav-btn.active { color: var(--blue); }
+
+        /* DETAIL MAP */
+        #detail-map { position: absolute; top:0; left:0; width:100%; height:100%; z-index:-1; filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
+        .close-btn { position: absolute; top: 50px; left: 20px; width: 45px; height: 45px; background: #222; border-radius: 50%; color: white; border: 1px solid #444; z-index: 100; font-size: 1.2rem; }
+        .det-stats { position: absolute; bottom: 40px; left: 20px; right: 20px; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 20px; display: flex; justify-content: space-around; text-align: center; z-index: 100; border: 1px solid #333; }
+
+    </style>
 </head>
 <body>
 
-    <div id="splash-screen">
-        <img src="logo.png" alt="Logo" class="splash-logo">
+    <div id="splash">
+        <img src="logo.png" class="splash-img">
     </div>
 
-    <div class="aurora-bg">
-        <div class="blob b1"></div>
-        <div class="blob b2"></div>
-    </div>
+    <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div></div>
 
-    <div id="app-container">
-        
-        <section id="home-screen" class="screen active">
-            <div class="content-home-layout">
-                
-                <div id="status-widget" class="status-pill" style="display:flex;">
-                    <i class="fa-solid fa-location-arrow loc-icon"></i>
-                    <span id="loc-text">Locating...</span>
-                    <span class="divider">|</span>
-                    <i id="weather-icon" class="fa-solid fa-cloud"></i>
-                    <span id="weather-temp">--°</span>
-                </div>
-
-                <div class="logo-container">
-                    <img src="logo.png" alt="DriverHub Logo" class="dh-logo">
-                </div>
-                
-                <h1 id="greeting-text">WELCOME</h1>
-                <p class="slogan">Built for those who drive.</p>
-                
-                <div class="spacer-flex"></div>
-                <button id="btn-start" class="btn-primary">
-                    <i class="fa-solid fa-road"></i> Start Drive
-                </button>
+    <section id="s-home" class="screen active">
+        <div class="home-content">
+            
+            <div class="widget">
+                <i class="fa-solid fa-location-arrow icon-blue"></i> <span id="txt-loc">Locating...</span>
+                <span style="opacity:0.3">|</span> 
+                <i id="icon-weather" class="fa-solid fa-cloud"></i> <span id="txt-temp">--°</span>
             </div>
-        </section>
 
-        <section id="garage-screen" class="screen">
-            <div class="header-bar">
-                <h2>Your Garage</h2>
+            <img src="logo.png" class="logo-img">
+            
+            <h1 id="txt-greet">WELCOME</h1>
+            
+            <div class="machine-box">
+                <button class="icon-btn" id="btn-icon-switch"><i id="icon-car" class="fa-solid fa-car"></i></button>
+                <input type="text" id="inp-car-name" class="machine-input" placeholder="MY CAR NAME">
             </div>
-            <div class="content-scroll">
-                <div class="stats-card profile-card">
-                    <div class="stat-row-final">
-                        <div><span class="label">TOTAL KM</span><span class="final-value" id="total-km">0</span></div>
-                        <div><span class="label">DRIVES</span><span class="final-value" id="total-drives">0</span></div>
-                    </div>
-                </div>
-                <h3>Recent Drives</h3>
-                <div id="drives-list" class="drives-list"></div>
-                <button id="btn-reset-data" class="btn-text">Reset Data</button>
-                <div style="height: 100px;"></div>
-            </div>
-        </section>
 
-        <section id="drive-screen" class="screen-overlay">
-            <div id="map"></div>
-            <div class="drive-overlay-top">
-                <div class="stat-box"><span class="label">SPEED</span><span class="value" id="live-speed">0</span><span class="unit">km/h</span></div>
-                <div class="stat-box"><span class="label">TIME</span><span class="value" id="live-time">00:00</span></div>
-            </div>
-            <div class="drive-overlay-bottom">
-                <div class="stat-row"><span id="live-dist">0.0 km</span></div>
-                <button id="btn-stop" class="btn-danger"><i class="fa-solid fa-stop"></i> End Drive</button>
-            </div>
-        </section>
+            <button id="btn-start" class="btn-main">START DRIVE</button>
+        </div>
+    </section>
 
-        <section id="summary-screen" class="screen-overlay">
-            <div class="content-center">
-                <h2>Drive Summary</h2>
-                <div class="stats-card">
-                    <div class="stat-row-final">
-                        <div><span class="label">DISTANCE</span><span class="final-value" id="sum-dist">0.0</span><span class="unit">km</span></div>
-                        <div><span class="label">MAX SPEED</span><span class="final-value" id="sum-speed">0</span><span class="unit">km/h</span></div>
-                    </div>
-                    <div class="stat-row-final">
-                         <div><span class="label">AVG SPEED</span><span class="final-value" id="sum-avg">0</span><span class="unit">km/h</span></div>
-                        <div><span class="label">DURATION</span><span class="final-value" id="sum-time">00:00:00</span></div>
-                    </div>
-                </div>
-                <button id="btn-save-drive" class="btn-primary">Save to Garage</button>
+    <section id="s-drive" class="screen overlay">
+        <div id="map"></div>
+        <div class="hud-top">
+            <div class="hud-box"><span class="lbl">KM/H</span><span class="val" id="d-spd">0</span></div>
+            <div class="hud-box"><span class="lbl">TIME</span><span class="val" id="d-time">00:00</span></div>
+        </div>
+        <div class="hud-bot">
+            <div class="pill"><span id="d-dist">0.00 km</span></div>
+            <button id="btn-stop" class="btn-stop">END DRIVE</button>
+        </div>
+    </section>
+
+    <section id="s-summ" class="screen overlay">
+        <div class="scroll-area" style="display:flex; flex-direction:column; justify-content:center; text-align:center;">
+            <h2 style="margin-bottom:30px">SUMMARY</h2>
+            <div class="card">
+                <div class="row"><span>DISTANCE</span><span id="s-dist" style="font-weight:700">0.0 km</span></div>
+                <div class="row"><span>MAX SPEED</span><span id="s-max" style="font-weight:700">0 km/h</span></div>
+                <div class="row"><span>TIME</span><span id="s-time" style="font-weight:700">00:00</span></div>
             </div>
-        </section>
+            <button id="btn-save" class="btn-save">SAVE TO GARAGE</button>
+        </div>
+    </section>
 
-        <section id="detail-screen" class="screen-overlay">
-            <button id="btn-close-detail" class="icon-btn-floating"><i class="fa-solid fa-arrow-left"></i></button>
-            <div id="detail-map"></div>
-            <div class="detail-stats-overlay">
-                <div class="stat-row-final mini">
-                    <div><span class="label">KM</span><span id="detail-dist" class="val">0</span></div>
-                    <div><span class="label">MAX</span><span id="detail-max" class="val">0</span></div>
-                    <div><span class="label">AVG</span><span id="detail-avg" class="val">0</span></div>
-                </div>
+    <section id="s-gar" class="screen">
+        <div class="scroll-area">
+            <h2 style="margin-bottom:20px; text-align:center;">GARAGE</h2>
+            <div class="card">
+                <div class="row"><span>TOTAL DISTANCE</span><span id="g-tot" style="font-weight:700; font-size:1.4rem">0.0 km</span></div>
+                <div class="row"><span>TRIPS</span><span id="g-trips" style="font-weight:700">0</span></div>
             </div>
-        </section>
+            <h3 style="color:#666; font-size:0.9rem; margin-bottom:15px">HISTORY</h3>
+            <div id="list"></div>
+            <button id="btn-reset" class="btn-reset">Reset Data</button>
+            <div style="height:100px"></div>
+        </div>
+    </section>
 
-        <nav class="bottom-nav" id="main-nav">
-            <button class="nav-item active" data-target="home-screen">
-                <i class="fa-solid fa-house"></i><span>Home</span>
-            </button>
-            <button class="nav-item" data-target="garage-screen">
-                <i class="fa-solid fa-layer-group"></i><span>Garage</span>
-            </button>
-        </nav>
+    <section id="s-det" class="screen overlay">
+        <button id="btn-close-det" class="close-btn"><i class="fa-solid fa-arrow-left"></i></button>
+        <div id="detail-map"></div>
+        <div class="det-stats">
+            <div><span class="lbl">DIST</span><br><span id="det-dist" style="font-weight:700">0</span></div>
+            <div><span class="lbl">MAX</span><br><span id="det-max" style="font-weight:700">0</span></div>
+            <div><span class="lbl">AVG</span><br><span id="det-avg" style="font-weight:700">0</span></div>
+        </div>
+    </section>
 
-    </div>
+    <nav id="navbar" class="navbar">
+        <button class="nav-btn active" onclick="goHome()"><i class="fa-solid fa-house"></i></button>
+        <button class="nav-btn" onclick="goGarage()"><i class="fa-solid fa-layer-group"></i></button>
+    </nav>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js"></script>
+    <script>
+        // --- GLOBALE VARIABLEN ---
+        let map, marker, line, detailMap;
+        let start, path=[], dist=0, max=0, timerId, watchId;
+        let isDriving = false;
+        
+        // --- STARTUP ---
+        window.onload = () => {
+            // Splash ausblenden
+            setTimeout(() => {
+                document.getElementById('splash').style.opacity = '0';
+                setTimeout(() => document.getElementById('splash').style.display='none', 500);
+            }, 2000);
+
+            // Daten laden
+            loadGarage();
+            loadCar();
+            setGreeting();
+            
+            // GPS & Wetter holen
+            if(navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+                    // Wetter API
+                    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`)
+                        .then(r=>r.json()).then(d => {
+                            const t = Math.round(d.current_weather.temperature);
+                            const c = d.current_weather.weathercode;
+                            document.getElementById('txt-temp').innerText = t + "°";
+                            const ico = document.getElementById('icon-weather');
+                            ico.className = c<=1?"fa-solid fa-sun icon-blue":c<=3?"fa-solid fa-cloud-sun icon-blue":"fa-solid fa-cloud icon-blue";
+                        });
+                    // Stadt API
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                        .then(r=>r.json()).then(d => {
+                            document.getElementById('txt-loc').innerText = d.address.city || d.address.town || "Located";
+                        });
+                });
+            }
+        };
+
+        // --- NAVIGATION ---
+        function go(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            
+            const nav = document.getElementById('navbar');
+            const btns = document.querySelectorAll('.nav-btn');
+            
+            if(id === 's-home') { nav.style.display='flex'; btns[0].classList.add('active'); btns[1].classList.remove('active'); }
+            else if(id === 's-gar') { nav.style.display='flex'; btns[0].classList.remove('active'); btns[1].classList.add('active'); }
+            else { nav.style.display='none'; }
+        }
+        function goHome() { go('s-home'); }
+        function goGarage() { go('s-gar'); }
+
+        // --- CAR SETTINGS ---
+        const icons = ["fa-car", "fa-car-side", "fa-truck-pickup", "fa-motorcycle"];
+        let iconIdx = 0;
+        
+        document.getElementById('btn-icon-switch').onclick = () => {
+            iconIdx = (iconIdx + 1) % icons.length;
+            const cls = icons[iconIdx];
+            document.getElementById('icon-car').className = `fa-solid ${cls}`;
+            localStorage.setItem('dh_icon', cls);
+        };
+        
+        document.getElementById('inp-car-name').oninput = (e) => {
+            localStorage.setItem('dh_name', e.target.value);
+        };
+
+        function loadCar() {
+            const n = localStorage.getItem('dh_name');
+            const i = localStorage.getItem('dh_icon');
+            if(n) document.getElementById('inp-car-name').value = n;
+            if(i) {
+                document.getElementById('icon-car').className = `fa-solid ${i}`;
+                iconIdx = icons.indexOf(i) > -1 ? icons.indexOf(i) : 0;
+            }
+        }
+
+        function setGreeting() {
+            const h = new Date().getHours();
+            const g = document.getElementById('txt-greet');
+            if(h>=5 && h<12) g.innerText="GOOD MORNING";
+            else if(h>=12 && h<18) g.innerText="GOOD AFTERNOON";
+            else if(h>=18 && h<22) g.innerText="GOOD EVENING";
+            else g.innerText="NIGHT CRUISE";
+        }
+
+        // --- DRIVING ---
+        document.getElementById('btn-start').onclick = () => {
+            isDriving = true; start = new Date(); path = []; dist = 0; max = 0;
+            go('s-drive');
+            
+            // Map Init
+            if(!map) {
+                map = L.map('map', {zoomControl:false}).setView([51.16, 10.45], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                marker = L.marker([0,0], {icon:L.divIcon({className:'c', html:'<div style="width:18px;height:18px;background:#4a90e2;border:3px solid white;border-radius:50%;box-shadow:0 0 10px #4a90e2"></div>', iconSize:[20,20]})}).addTo(map);
+            }
+            setTimeout(() => map.invalidateSize(), 200);
+
+            // Timer
+            timerId = setInterval(() => {
+                const d = new Date(new Date() - start);
+                document.getElementById('d-time').innerText = d.toISOString().substr(11,8);
+            }, 1000);
+
+            // GPS
+            if(navigator.geolocation) {
+                watchId = navigator.geolocation.watchPosition(pos => {
+                    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+                    const s = Math.max(0, (pos.coords.speed||0)*3.6);
+                    if(s>max) max=s;
+                    
+                    document.getElementById('d-spd').innerText = s.toFixed(0);
+                    const pt = [lat,lng];
+                    marker.setLatLng(pt); map.setView(pt, 18);
+                    
+                    if(path.length) {
+                        dist += map.distance(path[path.length-1], pt);
+                        document.getElementById('d-dist').innerText = (dist/1000).toFixed(2)+" km";
+                    }
+                    path.push(pt);
+                    if(!line) line=L.polyline(path, {color:'#4a90e2', weight:5}).addTo(map);
+                    else line.setLatLngs(path);
+
+                }, null, {enableHighAccuracy:true});
+            }
+        };
+
+        document.getElementById('btn-stop').onclick = () => {
+            isDriving = false; clearInterval(timerId); navigator.geolocation.clearWatch(watchId);
+            go('s-summ');
+            
+            const diff = new Date() - start;
+            document.getElementById('s-dist').innerText = (dist/1000).toFixed(2)+" km";
+            document.getElementById('s-max').innerText = max.toFixed(0)+" km/h";
+            document.getElementById('s-time').innerText = new Date(diff).toISOString().substr(11,8);
+        };
+
+        // --- SAVING ---
+        document.getElementById('btn-save').onclick = () => {
+            const diff = new Date() - start;
+            const durHrs = diff / 3600000;
+            const k = dist/1000;
+            const avg = durHrs>0 ? (k/durHrs).toFixed(1) : 0;
+            
+            const entry = {
+                d: start.toISOString(),
+                dist: k, max: max, avg: avg,
+                dur: new Date(diff).toISOString().substr(11,8),
+                path: path
+            };
+            
+            let db = JSON.parse(localStorage.getItem('dh_db_final')) || [];
+            db.unshift(entry);
+            localStorage.setItem('dh_db_final', JSON.stringify(db));
+            
+            loadGarage(); goGarage();
+        };
+
+        function loadGarage() {
+            let db = JSON.parse(localStorage.getItem('dh_db_final')) || [];
+            let t=0;
+            const l = document.getElementById('list'); l.innerHTML='';
+            
+            db.forEach(x => {
+                t += x.dist;
+                const div = document.createElement('div'); div.className='item';
+                div.innerHTML = `<div><div style="font-weight:700">${new Date(x.d).toLocaleDateString()} • ${x.dur}</div><div style="color:#666;font-size:0.8rem">Avg ${x.avg} km/h</div></div><div style="text-align:right"><div style="color:#4a90e2;font-weight:700;font-size:1.1rem">${x.dist.toFixed(1)} km</div><div style="color:#666;font-size:0.8rem">Max ${x.max.toFixed(0)}</div></div>`;
+                div.onclick = () => openDetail(x);
+                l.appendChild(div);
+            });
+            document.getElementById('g-tot').innerText = t.toFixed(1)+" km";
+            document.getElementById('g-trips').innerText = db.length;
+        }
+
+        // --- DETAIL VIEW ---
+        function openDetail(x) {
+            go('s-det');
+            document.getElementById('det-dist').innerText = x.dist.toFixed(1)+" km";
+            document.getElementById('det-max').innerText = x.max.toFixed(0)+" km/h";
+            document.getElementById('det-avg').innerText = x.avg+" km/h";
+            
+            setTimeout(() => {
+                if(!detailMap) { detailMap=L.map('detail-map',{zoomControl:false}); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(detailMap); }
+                detailMap.eachLayer(l=>{if(!!l.toGeoJSON)detailMap.removeLayer(l)});
+                if(x.path && x.path.length) {
+                    const pl = L.polyline(x.path, {color:'#4a90e2', weight:5}).addTo(detailMap);
+                    detailMap.fitBounds(pl.getBounds(), {padding:[50,50]});
+                }
+            }, 100);
+        }
+        document.getElementById('btn-close-det').onclick = () => goGarage();
+        
+        document.getElementById('btn-reset').onclick = () => {
+            if(confirm("Alles löschen?")) { localStorage.removeItem('dh_db_final'); loadGarage(); }
+        };
+
+    </script>
 </body>
 </html>
