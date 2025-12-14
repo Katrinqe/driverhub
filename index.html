@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 3.11.2 Fix</title>
+    <title>DriverHub 3.12.0 Speed Limit</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -23,7 +23,7 @@
 </head>
 <body>
 
-    <div class="version-tag">v3.11.2 Function Fix</div>
+    <div class="version-tag">v3.12.0 Speed Limit</div>
 
     <div id="auth-screen">
         <div class="auth-box">
@@ -200,11 +200,22 @@
 
         <section id="drive-screen" class="screen-overlay">
             <div id="map"></div>
-            <div class="drive-overlay-top"><div class="stat-box"><span class="label">SPEED</span><span class="value" id="live-speed">0</span><span class="unit">km/h</span></div><div class="stat-box"><span class="label">TIME</span><span class="value" id="live-time">00:00</span></div></div>
+            
+            <div class="drive-overlay-top">
+                <div class="stat-box"><span class="label">SPEED</span><span class="value" id="live-speed">0</span><span class="unit">km/h</span></div>
+                <div class="stat-box"><span class="label">TIME</span><span class="value" id="live-time">00:00</span></div>
+            </div>
+
+            <div id="limit-sign" style="display:none;">
+                <span id="limit-value">50</span>
+            </div>
             
             <button id="btn-recenter" class="icon-btn-floating right-side" style="display:none;"><i class="fa-solid fa-crosshairs"></i></button>
-            
-            <div class="drive-overlay-bottom"><div class="stat-row"><span id="live-dist">0.0 km</span></div><button id="btn-stop" class="btn-danger"><i class="fa-solid fa-stop"></i> End Drive</button></div>
+
+            <div class="drive-overlay-bottom">
+                <div class="stat-row"><span id="live-dist">0.0 km</span></div>
+                <button id="btn-stop" class="btn-danger"><i class="fa-solid fa-stop"></i> End Drive</button>
+            </div>
         </section>
 
         <section id="summary-screen" class="screen-overlay">
