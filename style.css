@@ -106,11 +106,12 @@ button { font-family: var(--font-stack); cursor: pointer; }
 .icon-btn-floating { position: absolute; top: 40px; left: 20px; width: 45px; height: 45px; background: var(--glass-bg); border-radius: 50%; border: none; color: white; z-index: 3000; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
 .btn-text { background: transparent; color: #555; font-size: 0.9rem; margin-top: 40px; width: 100%; border: none; }
 
-/* NEU: Button Rechts unten */
+/* HIER: DER BUTTON WIRD NACH UNTEN RECHTS GESCHOBEN */
 .icon-btn-floating.right-side {
     left: auto;
-    right: 20px;
-    bottom: 140px; /* Über den unteren Anzeigen */
+    right: 25px;
+    top: auto;
+    bottom: 150px; /* Schön über dem "End Drive" Button */
     background: var(--accent-blue);
     box-shadow: 0 0 15px rgba(74, 144, 226, 0.4);
 }
