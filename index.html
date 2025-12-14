@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 1.6 Music Fix</title>
+    <title>DriverHub 1.6.2 Sound Test</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -20,7 +20,7 @@
             --bg-color: #000000;
             --accent-blue: #4a90e2;
             --accent-red: #ff3b30;
-            --accent-purple: #bf5af2; 
+            --accent-purple: #bf5af2;
             --text-white: #ffffff;
             --text-grey: #8e8e93;
             --glass-bg: rgba(20, 20, 20, 0.85);
@@ -35,7 +35,7 @@
             overscroll-behavior: none;
         }
 
-        /* --- INTRO --- */
+        /* INTRO */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: #000000; z-index: 9999;
@@ -49,14 +49,14 @@
             100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 0px var(--accent-blue)); }
         }
 
-        /* --- AURORA --- */
+        /* BG */
         .aurora-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; overflow: hidden; }
         .blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.25; animation: float 15s infinite ease-in-out; }
         .b1 { top: -10%; left: -10%; width: 80vw; height: 80vw; background: #1c3d6e; }
         .b2 { bottom: -10%; right: -10%; width: 80vw; height: 80vw; background: #2c5f9e; animation-delay: -5s; }
         @keyframes float { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(20px, -20px); } }
 
-        /* --- UI ELEMENTS --- */
+        /* UI */
         .status-pill { background: rgba(30,30,30,0.6); backdrop-filter: blur(15px); padding: 8px 18px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); align-items: center; gap: 12px; font-size: 0.9rem; font-weight: 600; margin-bottom: 30px; }
         .loc-icon, #weather-icon { color: var(--accent-blue); }
         .divider { opacity: 0.3; }
@@ -106,7 +106,7 @@
         .detail-stats-overlay { position: absolute; bottom: 40px; left: 20px; right: 20px; background: var(--glass-bg); backdrop-filter: blur(20px); border-radius: 20px; padding: 20px; z-index: 2500; border: 1px solid rgba(255,255,255,0.1); } 
         .mini { margin-bottom: 0; text-align: center; } .mini > div { flex: 1; } .mini .val { font-size: 1.4rem; font-weight: 700; display: block; }
 
-        /* PERF MODE */
+        /* PERF */
         .perf-display { text-align: center; margin-bottom: 40px; }
         .perf-speed { font-size: 5rem; font-weight: 900; color: white; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 0 40px rgba(255, 59, 48, 0.4); }
         .perf-unit { font-size: 1.2rem; color: var(--text-grey); font-weight: 600; }
@@ -121,7 +121,7 @@
         .btn-arm.armed { background: transparent; border: 2px solid var(--accent-red); animation: none; color: var(--accent-red); }
         @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(255,59,48,0.5); } 100% { transform: scale(1); } }
 
-        /* MUSIC MODE CSS */
+        /* MUSIC */
         .music-player-container { width: 100%; max-width: 320px; display: flex; flex-direction: column; align-items: center; }
         .album-art-wrapper { width: 200px; height: 200px; margin: 20px 0 30px 0; position: relative; display: flex; align-items: center; justify-content: center; }
         .album-art { width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(135deg, #1c1c1e, #000); box-shadow: 0 0 30px rgba(191, 90, 242, 0.1); position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,0.05); }
@@ -163,7 +163,6 @@
     <div class="aurora-bg"><div class="blob b1"></div><div class="blob b2"></div></div>
 
     <div id="app-container">
-        
         <section id="home-screen" class="screen active">
             <div class="content-home-layout">
                 <div id="status-widget" class="status-pill" style="display:flex;">
@@ -206,7 +205,7 @@
                     </div>
                     <div class="song-info">
                         <span class="song-title" id="track-title">Select a Track</span>
-                        <span class="song-artist" id="track-artist">DriverHub Radio</span>
+                        <span class="song-artist" id="track-artist">Sound Test</span>
                     </div>
                     <div class="controls">
                         <button class="btn-ctrl" id="btn-prev"><i class="fa-solid fa-backward-step"></i></button>
@@ -287,7 +286,6 @@
             <button class="nav-item" data-target="music-screen"><i class="fa-solid fa-music"></i><span>Music</span></button>
             <button class="nav-item" data-target="garage-screen"><i class="fa-solid fa-layer-group"></i><span>Garage</span></button>
         </nav>
-
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -296,23 +294,21 @@
         // --- GLOBAL VARIABLES ---
         let map, marker, watchId, intervalId, detailMap;
         let startTime, path = [], currentDistance = 0, currentMaxSpeed = 0, isDriving = false;
-
-        // --- PERF VARS ---
         let perfWatchId = null, perfState = 'idle', perfStartTime = 0;
         let result50 = null, result100 = null, maxG = 0;
 
-        // --- MUSIC VARS (REPLACED WITH STABLE LINKS) ---
+        // --- MUSIC VARS (SOUNDHELIX LINKS - EXTREMELY STABLE) ---
         const playlist = [
-            { title: "Enthusiast", artist: "Tours", src: "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Tours/Enthusiast/Tours_-_01_-_Enthusiast.mp3" },
-            { title: "Night Owl", artist: "Broke For Free", src: "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/WFMU/Broke_For_Free/Directionless_EP/Broke_For_Free_-_01_-_Night_Owl.mp3" },
-            { title: "BoxCat Games", artist: "Mt Fox Shop", src: "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/BoxCat_Games/Nameless_the_Hackers_RPG_Soundtrack/BoxCat_Games_-_10_-_Mt_Fox_Shop.mp3" }
+            { title: "Synth Pop Test", artist: "SoundHelix 1", src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+            { title: "Trance Beat", artist: "SoundHelix 15", src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3" },
+            { title: "Electro Vibe", artist: "SoundHelix 8", src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" }
         ];
         let currentTrackIdx = 0;
         const audioPlayer = new Audio();
-        audioPlayer.crossOrigin = "anonymous"; // Helps with loading
+        audioPlayer.crossOrigin = "anonymous";
         let isPlaying = false;
 
-        // --- DOM ELEMENTS ---
+        // --- DOM ---
         const app = {
             splash: document.getElementById('splash-screen'),
             nav: document.getElementById('main-nav'),
@@ -363,66 +359,37 @@
 
         // --- INIT ---
         window.addEventListener('load', () => {
-            setTimeout(() => {
-                app.splash.style.opacity = '0';
-                setTimeout(() => app.splash.style.display = 'none', 800);
-            }, 2200);
-
-            renderGarage();
-            renderPerfHistory();
-            initMusicPlayer();
-            updateTimeGreeting();
-
-            if(navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(initWeatherLoc, err => console.log(err));
-            }
+            setTimeout(() => { app.splash.style.opacity = '0'; setTimeout(() => app.splash.style.display = 'none', 800); }, 2200);
+            renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting();
+            if(navigator.geolocation) { navigator.geolocation.getCurrentPosition(initWeatherLoc, err => console.log(err)); }
         });
 
         function updateTimeGreeting() {
-            const h = new Date().getHours();
-            let txt = "WELCOME";
-            if (h >= 5 && h < 12) txt = "GOOD MORNING";
-            else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON";
-            else if (h >= 18 && h < 22) txt = "GOOD EVENING";
-            else txt = "NIGHT CRUISE";
+            const h = new Date().getHours(); let txt = "WELCOME";
+            if (h >= 5 && h < 12) txt = "GOOD MORNING"; else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON"; else if (h >= 18 && h < 22) txt = "GOOD EVENING"; else txt = "NIGHT CRUISE";
             app.greet.innerText = txt;
         }
 
         function initWeatherLoc(pos) {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
-                .then(r => r.json()).then(d => {
-                    app.locText.innerText = d.address.city || d.address.town || "Location Found";
-                });
-            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`)
-                .then(r => r.json()).then(d => {
-                    const t = Math.round(d.current_weather.temperature);
-                    const c = d.current_weather.weathercode;
-                    app.tempText.innerText = t + "°";
-                    if(c <= 1) app.weatherIcon.className = "fa-solid fa-sun";
-                    else if(c <= 3) app.weatherIcon.className = "fa-solid fa-cloud-sun";
-                    else app.weatherIcon.className = "fa-solid fa-cloud";
-                });
+            const lat = pos.coords.latitude; const lng = pos.coords.longitude;
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`).then(r => r.json()).then(d => { app.locText.innerText = d.address.city || d.address.town || "Location Found"; });
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`).then(r => r.json()).then(d => {
+                const t = Math.round(d.current_weather.temperature); const c = d.current_weather.weathercode;
+                app.tempText.innerText = t + "°";
+                if(c <= 1) app.weatherIcon.className = "fa-solid fa-sun"; else if(c <= 3) app.weatherIcon.className = "fa-solid fa-cloud-sun"; else app.weatherIcon.className = "fa-solid fa-cloud";
+            });
         }
 
         document.querySelectorAll('.nav-item').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const targetId = btn.getAttribute('data-target');
-                document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                
-                Object.values(app.screens).forEach(s => {
-                    if(s && !s.classList.contains('screen-overlay')) s.classList.remove('active');
-                });
-                
-                if(app.screens[targetId.split('-')[0]]) {
-                    app.screens[targetId.split('-')[0]].classList.add('active');
-                }
+                document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active')); btn.classList.add('active');
+                Object.values(app.screens).forEach(s => { if(s && !s.classList.contains('screen-overlay')) s.classList.remove('active'); });
+                if(app.screens[targetId.split('-')[0]]) { app.screens[targetId.split('-')[0]].classList.add('active'); }
             });
         });
 
-        // --- MUSIC LOGIC ---
+        // --- MUSIC LOGIC (DEBUG MODE) ---
         function initMusicPlayer() {
             app.music.list.innerHTML = "";
             playlist.forEach((track, index) => {
@@ -434,19 +401,28 @@
                 app.music.list.appendChild(div);
             });
 
+            // Preload but do not play
             loadTrack(0, false);
 
             app.music.playBtn.addEventListener('click', togglePlay);
             app.music.nextBtn.addEventListener('click', nextTrack);
             app.music.prevBtn.addEventListener('click', prevTrack);
-            app.music.volSlider.addEventListener('input', (e) => {
-                audioPlayer.volume = e.target.value;
-            });
-
+            app.music.volSlider.addEventListener('input', (e) => { audioPlayer.volume = e.target.value; });
             audioPlayer.addEventListener('ended', nextTrack);
+            
+            // ERROR HANDLER
             audioPlayer.addEventListener('error', (e) => {
-                console.error("Audio Error", e);
-                // Optional: Alert user
+                let msg = "Unknown Error";
+                if(audioPlayer.error) {
+                    switch(audioPlayer.error.code) {
+                        case 1: msg = "Aborted"; break;
+                        case 2: msg = "Network Error"; break;
+                        case 3: msg = "Decode Error"; break;
+                        case 4: msg = "Source Not Supported"; break;
+                    }
+                }
+                alert("Musik Fehler: " + msg + "\nVersuche einen anderen Track.");
+                isPlaying = false; updatePlayBtn();
             });
         }
 
@@ -456,25 +432,35 @@
             audioPlayer.src = track.src;
             app.music.title.innerText = track.title;
             app.music.artist.innerText = track.artist;
-
             const rows = document.querySelectorAll('.track-row');
             rows.forEach(r => r.classList.remove('active'));
             if(rows[index]) rows[index].classList.add('active');
 
             if(autoPlay) {
-                audioPlayer.play().catch(e => console.log("Autoplay blocked usually ok", e));
-                isPlaying = true;
-                updatePlayBtn();
+                const playPromise = audioPlayer.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(_ => {
+                        isPlaying = true; updatePlayBtn();
+                    })
+                    .catch(error => {
+                        console.log(error);
+                        // alert("Auto-Play Blocked or Error: " + error.message); 
+                        // Auto-play might be blocked initially, we don't alert here to avoid spam
+                        isPlaying = false; updatePlayBtn();
+                    });
+                }
             }
         }
 
         function togglePlay() {
             if(isPlaying) {
-                audioPlayer.pause();
-                isPlaying = false;
+                audioPlayer.pause(); isPlaying = false;
             } else {
-                audioPlayer.play();
-                isPlaying = true;
+                const playPromise = audioPlayer.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(_ => { isPlaying = true; })
+                    .catch(error => { alert("Playback Error: " + error.message); isPlaying = false; });
+                }
             }
             updatePlayBtn();
         }
@@ -489,248 +475,58 @@
             }
         }
 
-        function nextTrack() {
-            let next = currentTrackIdx + 1;
-            if(next >= playlist.length) next = 0;
-            loadTrack(next);
-        }
+        function nextTrack() { let next = currentTrackIdx + 1; if(next >= playlist.length) next = 0; loadTrack(next); }
+        function prevTrack() { let prev = currentTrackIdx - 1; if(prev < 0) prev = playlist.length - 1; loadTrack(prev); }
 
-        function prevTrack() {
-            let prev = currentTrackIdx - 1;
-            if(prev < 0) prev = playlist.length - 1;
-            loadTrack(prev);
-        }
+        // --- DRIVE, PERF, GARAGE (UNCHANGED) ---
+        document.getElementById('btn-start').addEventListener('click', () => { app.screens.drive.style.display = 'flex'; app.nav.style.display = 'none'; startTracking(); });
+        document.getElementById('btn-stop').addEventListener('click', () => { stopTracking(); app.screens.drive.style.display = 'none'; app.screens.summary.style.display = 'flex'; });
+        document.getElementById('btn-save-drive').addEventListener('click', () => { saveDriveToStorage(); app.screens.summary.style.display = 'none'; app.nav.style.display = 'flex'; document.querySelectorAll('.nav-item')[3].click(); });
 
-        // --- DRIVE LOGIC ---
-        document.getElementById('btn-start').addEventListener('click', () => {
-            app.screens.drive.style.display = 'flex';
-            app.nav.style.display = 'none';
-            startTracking();
-        });
-        document.getElementById('btn-stop').addEventListener('click', () => {
-            stopTracking();
-            app.screens.drive.style.display = 'none';
-            app.screens.summary.style.display = 'flex';
-        });
-        document.getElementById('btn-save-drive').addEventListener('click', () => {
-            saveDriveToStorage();
-            app.screens.summary.style.display = 'none';
-            app.nav.style.display = 'flex';
-            document.querySelectorAll('.nav-item')[3].click(); 
-        });
-
-        // --- PERF LOGIC ---
         app.perf.btn.addEventListener('click', () => {
             if(perfState === 'idle' || perfState === 'finished') {
-                perfState = 'armed';
-                app.perf.btn.innerText = "READY";
-                app.perf.btn.classList.add('armed');
+                perfState = 'armed'; app.perf.btn.innerText = "READY"; app.perf.btn.classList.add('armed');
                 app.perf.status.innerText = "Launch when ready! Timer starts > 1 km/h";
-                app.perf.val50.innerText = "--.- s";
-                app.perf.val100.innerText = "--.- s";
-                app.perf.box50.classList.remove('active');
-                app.perf.box100.classList.remove('active');
-                app.perf.gVal.innerText = "0.00 G";
-                maxG = 0;
-                result50 = null;
-                result100 = null;
-
-                if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-                    DeviceMotionEvent.requestPermission()
-                        .then(permissionState => { if (permissionState === 'granted') startPerfSensors(); })
-                        .catch(console.error);
-                } else {
-                    startPerfSensors();
-                }
-
-                if (navigator.geolocation) {
-                    perfWatchId = navigator.geolocation.watchPosition(updatePerfLogic, handleError, {enableHighAccuracy: true});
-                }
-            } else {
-                resetPerfMode();
-            }
+                app.perf.val50.innerText = "--.- s"; app.perf.val100.innerText = "--.- s";
+                app.perf.box50.classList.remove('active'); app.perf.box100.classList.remove('active');
+                app.perf.gVal.innerText = "0.00 G"; maxG = 0; result50 = null; result100 = null;
+                if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') { DeviceMotionEvent.requestPermission().then(s => { if (s === 'granted') startPerfSensors(); }).catch(console.error); } else { startPerfSensors(); }
+                if (navigator.geolocation) { perfWatchId = navigator.geolocation.watchPosition(updatePerfLogic, handleError, {enableHighAccuracy: true}); }
+            } else { resetPerfMode(); }
         });
 
         function startPerfSensors() { window.addEventListener('devicemotion', handleMotion); }
         function handleMotion(event) {
             if(perfState !== 'running') return;
-            const x = event.acceleration.x || 0;
-            const y = event.acceleration.y || 0;
-            const z = event.acceleration.z || 0;
-            const totalAccel = Math.sqrt(x*x + y*y + z*z);
-            const currentG = totalAccel / 9.81;
-            if(currentG > maxG) {
-                maxG = currentG;
-                app.perf.gVal.innerText = maxG.toFixed(2) + " G";
-            }
+            const x = event.acceleration.x || 0; const y = event.acceleration.y || 0; const z = event.acceleration.z || 0;
+            const totalAccel = Math.sqrt(x*x + y*y + z*z); const currentG = totalAccel / 9.81;
+            if(currentG > maxG) { maxG = currentG; app.perf.gVal.innerText = maxG.toFixed(2) + " G"; }
         }
 
         function updatePerfLogic(position) {
-            const speedKmh = (position.coords.speed || 0) * 3.6;
-            app.perf.speed.innerText = speedKmh.toFixed(0);
+            const speedKmh = (position.coords.speed || 0) * 3.6; app.perf.speed.innerText = speedKmh.toFixed(0);
             if(perfState === 'armed') {
-                if(speedKmh > 2.0) {
-                    perfState = 'running';
-                    perfStartTime = Date.now();
-                    app.perf.btn.innerText = "GO!";
-                    app.perf.status.innerText = "Recording...";
-                }
+                if(speedKmh > 2.0) { perfState = 'running'; perfStartTime = Date.now(); app.perf.btn.innerText = "GO!"; app.perf.status.innerText = "Recording..."; }
             } else if(perfState === 'running') {
                 const duration = (Date.now() - perfStartTime) / 1000;
-                if(!result50 && speedKmh >= 50) {
-                    result50 = duration.toFixed(2);
-                    app.perf.val50.innerText = result50 + " s";
-                    app.perf.box50.classList.add('active');
-                }
-                if(!result100 && speedKmh >= 100) {
-                    result100 = duration.toFixed(2);
-                    app.perf.val100.innerText = result100 + " s";
-                    app.perf.box100.classList.add('active');
-                    perfState = 'finished';
-                    app.perf.btn.innerText = "RESET";
-                    app.perf.btn.classList.remove('armed');
-                    app.perf.status.innerText = "Run Complete!";
-                    savePerfRun();
-                }
+                if(!result50 && speedKmh >= 50) { result50 = duration.toFixed(2); app.perf.val50.innerText = result50 + " s"; app.perf.box50.classList.add('active'); }
+                if(!result100 && speedKmh >= 100) { result100 = duration.toFixed(2); app.perf.val100.innerText = result100 + " s"; app.perf.box100.classList.add('active'); perfState = 'finished'; app.perf.btn.innerText = "RESET"; app.perf.btn.classList.remove('armed'); app.perf.status.innerText = "Run Complete!"; savePerfRun(); }
             }
         }
-
-        function resetPerfMode() {
-            perfState = 'idle';
-            app.perf.btn.innerText = "ARM";
-            app.perf.btn.classList.remove('armed');
-            app.perf.status.innerText = "Tap to arm, then launch.";
-            if(perfWatchId) navigator.geolocation.clearWatch(perfWatchId);
-            window.removeEventListener('devicemotion', handleMotion);
-            app.perf.speed.innerText = "0";
-        }
-
-        function savePerfRun() {
-            const run = { id: Date.now(), date: new Date().toISOString(), res50: result50, res100: result100, maxG: maxG.toFixed(2) };
-            let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || [];
-            runs.unshift(run);
-            localStorage.setItem('dh_perf_v1', JSON.stringify(runs));
-            renderPerfHistory();
-        }
-
-        function renderPerfHistory() {
-            let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || [];
-            const list = app.perf.list;
-            list.innerHTML = '';
-            runs.forEach(run => {
-                const dateStr = new Date(run.date).toLocaleDateString('de-DE');
-                const item = document.createElement('div');
-                item.className = 'drive-item';
-                item.innerHTML = `<div><h4>${dateStr}</h4><span>Max ${run.maxG} G</span></div><div class="right-side"><span style="color:#ff3b30; font-weight:bold;">0-100: ${run.res100}s</span><br><span style="font-size:0.75rem">0-50: ${run.res50}s</span></div>`;
-                list.appendChild(item);
-            });
-        }
-
-        // --- MAP ---
-        function startTracking() {
-            isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0;
-            if (!map) {
-                map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map);
-                marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map);
-            }
-            setTimeout(() => { map.invalidateSize(); }, 200);
-            intervalId = setInterval(updateTimer, 1000);
-            if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); }
-        }
-
-        function updatePosition(position) {
-            const lat = position.coords.latitude; const lng = position.coords.longitude;
-            const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0);
-            if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh);
-            app.display.speed.innerText = speedKmh;
-            const newLatLng = [lat, lng];
-            marker.setLatLng(newLatLng);
-            map.setView(newLatLng, 18);
-            if (path.length > 0) {
-                currentDistance += map.distance(path[path.length - 1], newLatLng);
-                app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km";
-            }
-            path.push(newLatLng);
-            L.polyline(path, {color: '#4a90e2', weight: 5}).addTo(map);
-        }
-
-        function updateTimer() {
-            const diff = new Date() - startTime;
-            app.display.time.innerText = new Date(diff).toISOString().substr(11, 8);
-        }
-
-        function stopTracking() {
-            isDriving = false; clearInterval(intervalId); navigator.geolocation.clearWatch(watchId);
-            const diff = new Date() - startTime;
-            const distKm = currentDistance / 1000;
-            const durationHours = diff / (1000 * 60 * 60);
-            const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0;
-            app.display.sumDist.innerText = distKm.toFixed(2);
-            app.display.sumSpeed.innerText = currentMaxSpeed;
-            app.display.sumAvg.innerText = avgSpeed;
-            app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8);
-        }
-
+        function resetPerfMode() { perfState = 'idle'; app.perf.btn.innerText = "ARM"; app.perf.btn.classList.remove('armed'); app.perf.status.innerText = "Tap to arm, then launch."; if(perfWatchId) navigator.geolocation.clearWatch(perfWatchId); window.removeEventListener('devicemotion', handleMotion); app.perf.speed.innerText = "0"; }
+        function savePerfRun() { const run = { id: Date.now(), date: new Date().toISOString(), res50: result50, res100: result100, maxG: maxG.toFixed(2) }; let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; runs.unshift(run); localStorage.setItem('dh_perf_v1', JSON.stringify(runs)); renderPerfHistory(); }
+        function renderPerfHistory() { let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; const list = app.perf.list; list.innerHTML = ''; runs.forEach(run => { const dateStr = new Date(run.date).toLocaleDateString('de-DE'); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h4>${dateStr}</h4><span>Max ${run.maxG} G</span></div><div class="right-side"><span style="color:#ff3b30; font-weight:bold;">0-100: ${run.res100}s</span><br><span style="font-size:0.75rem">0-50: ${run.res50}s</span></div>`; list.appendChild(item); }); }
+        
+        function startTracking() { isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0; if (!map) { map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map); marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map); } setTimeout(() => { map.invalidateSize(); }, 200); intervalId = setInterval(updateTimer, 1000); if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } }
+        function updatePosition(position) { const lat = position.coords.latitude; const lng = position.coords.longitude; const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0); if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh); app.display.speed.innerText = speedKmh; const newLatLng = [lat, lng]; marker.setLatLng(newLatLng); map.setView(newLatLng, 18); if (path.length > 0) { currentDistance += map.distance(path[path.length - 1], newLatLng); app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; } path.push(newLatLng); L.polyline(path, {color: '#4a90e2', weight: 5}).addTo(map); }
+        function updateTimer() { const diff = new Date() - startTime; app.display.time.innerText = new Date(diff).toISOString().substr(11, 8); }
+        function stopTracking() { isDriving = false; clearInterval(intervalId); navigator.geolocation.clearWatch(watchId); const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; app.display.sumDist.innerText = distKm.toFixed(2); app.display.sumSpeed.innerText = currentMaxSpeed; app.display.sumAvg.innerText = avgSpeed; app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); }
         function handleError(err) { console.warn(err); }
-
-        function saveDriveToStorage() {
-            const diff = new Date() - startTime;
-            const distKm = currentDistance / 1000;
-            const durationHours = diff / (1000 * 60 * 60);
-            const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0;
-            const newDrive = { id: Date.now(), date: startTime.toISOString(), distance: parseFloat(distKm.toFixed(2)), maxSpeed: currentMaxSpeed, avgSpeed: avgSpeed, duration: new Date(diff).toISOString().substr(11, 8), pathData: path };
-            let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || [];
-            drives.unshift(newDrive);
-            localStorage.setItem('dh_drives_v2', JSON.stringify(drives));
-            renderGarage();
-        }
-
-        function renderGarage() {
-            let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || [];
-            let totalKm = 0;
-            const list = document.getElementById('drives-list');
-            list.innerHTML = '';
-            drives.forEach(drive => {
-                totalKm += drive.distance;
-                const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-                const item = document.createElement('div');
-                item.className = 'drive-item';
-                item.innerHTML = `<div><h4>${dateStr} • ${drive.duration}</h4><span>Avg ${drive.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${drive.distance.toFixed(1)} km</span><span>Max ${drive.maxSpeed}</span></div>`;
-                item.addEventListener('click', () => openDetailView(drive));
-                list.appendChild(item);
-            });
-            document.getElementById('total-km').innerText = totalKm.toFixed(1);
-            document.getElementById('total-drives').innerText = drives.length;
-        }
-
-        function openDetailView(drive) {
-            app.screens.detail.style.display = 'block';
-            document.getElementById('detail-dist').innerText = drive.distance.toFixed(1);
-            document.getElementById('detail-max').innerText = drive.maxSpeed;
-            document.getElementById('detail-avg').innerText = drive.avgSpeed;
-            setTimeout(() => {
-                if(!detailMap) {
-                    detailMap = L.map('detail-map', { zoomControl: false });
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(detailMap);
-                }
-                detailMap.eachLayer((layer) => { if (!!layer.toGeoJSON) { detailMap.removeLayer(layer); } });
-                if(drive.pathData && drive.pathData.length > 0) {
-                    const polyline = L.polyline(drive.pathData, {color: '#4a90e2', weight: 5}).addTo(detailMap);
-                    detailMap.fitBounds(polyline.getBounds(), {padding: [50, 50]});
-                }
-            }, 100);
-        }
-        document.getElementById('btn-close-detail').addEventListener('click', () => {
-            app.screens.detail.style.display = 'none';
-            if(detailMap) { detailMap.remove(); detailMap = null; }
-        });
-        document.getElementById('btn-reset-data').addEventListener('click', () => {
-            if(confirm("Alles löschen?")) {
-                localStorage.removeItem('dh_drives_v2');
-                renderGarage();
-            }
-        });
+        function saveDriveToStorage() { const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; const newDrive = { id: Date.now(), date: startTime.toISOString(), distance: parseFloat(distKm.toFixed(2)), maxSpeed: currentMaxSpeed, avgSpeed: avgSpeed, duration: new Date(diff).toISOString().substr(11, 8), pathData: path }; let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; drives.unshift(newDrive); localStorage.setItem('dh_drives_v2', JSON.stringify(drives)); renderGarage(); }
+        function renderGarage() { let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; let totalKm = 0; const list = document.getElementById('drives-list'); list.innerHTML = ''; drives.forEach(drive => { totalKm += drive.distance; const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h4>${dateStr} • ${drive.duration}</h4><span>Avg ${drive.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${drive.distance.toFixed(1)} km</span><span>Max ${drive.maxSpeed}</span></div>`; item.addEventListener('click', () => openDetailView(drive)); list.appendChild(item); }); document.getElementById('total-km').innerText = totalKm.toFixed(1); document.getElementById('total-drives').innerText = drives.length; }
+        function openDetailView(drive) { app.screens.detail.style.display = 'block'; document.getElementById('detail-dist').innerText = drive.distance.toFixed(1); document.getElementById('detail-max').innerText = drive.maxSpeed; document.getElementById('detail-avg').innerText = drive.avgSpeed; setTimeout(() => { if(!detailMap) { detailMap = L.map('detail-map', { zoomControl: false }); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(detailMap); } detailMap.eachLayer((layer) => { if (!!layer.toGeoJSON) { detailMap.removeLayer(layer); } }); if(drive.pathData && drive.pathData.length > 0) { const polyline = L.polyline(drive.pathData, {color: '#4a90e2', weight: 5}).addTo(detailMap); detailMap.fitBounds(polyline.getBounds(), {padding: [50, 50]}); } }, 100); }
+        document.getElementById('btn-close-detail').addEventListener('click', () => { app.screens.detail.style.display = 'none'; if(detailMap) { detailMap.remove(); detailMap = null; } });
+        document.getElementById('btn-reset-data').addEventListener('click', () => { if(confirm("Alles löschen?")) { localStorage.removeItem('dh_drives_v2'); renderGarage(); } });
     </script>
 </body>
 </html>
