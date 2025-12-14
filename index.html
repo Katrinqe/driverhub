@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub</title>
+    <title>DriverHub Perf</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -13,11 +13,10 @@
         :root {
             --bg-color: #000000;
             --accent-blue: #4a90e2;
-            --accent-glow: rgba(74, 144, 226, 0.4);
+            --accent-red: #ff3b30; /* Neu für Performance */
             --text-white: #ffffff;
             --text-grey: #8e8e93;
             --glass-bg: rgba(20, 20, 20, 0.85);
-            --danger: #ff3b30;
             --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
@@ -48,52 +47,49 @@
         .blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.25; animation: float 15s infinite ease-in-out; }
         .b1 { top: -10%; left: -10%; width: 80vw; height: 80vw; background: #1c3d6e; }
         .b2 { bottom: -10%; right: -10%; width: 80vw; height: 80vw; background: #2c5f9e; animation-delay: -5s; }
-        
         @keyframes float { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(20px, -20px); } }
 
-        /* --- LAYOUTS --- */
-        .content-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
-        .content-home-layout { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 80px 20px 20px 20px; text-align: center; }
-        .spacer-flex { flex: 1; }
-
-        /* WIDGET & LOGO */
+        /* --- GENERIC UI --- */
         .status-pill { background: rgba(30,30,30,0.6); backdrop-filter: blur(15px); padding: 8px 18px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); align-items: center; gap: 12px; font-size: 0.9rem; font-weight: 600; margin-bottom: 30px; }
         .loc-icon, #weather-icon { color: var(--accent-blue); }
         .divider { opacity: 0.3; }
         .logo-container { margin-bottom: 25px; }
-        .dh-logo { width: 225px; height: auto; filter: drop-shadow(0 0 20px rgba(74,144,226,0.15)); } /* Platzhalter Stil */
-        
+        .dh-logo { width: 225px; height: auto; filter: drop-shadow(0 0 20px rgba(74,144,226,0.15)); }
         h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: 1px; margin-bottom: 5px; background: linear-gradient(to right, #fff, #a0a0a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; }
         .slogan { color: var(--text-grey); font-size: 0.9rem; margin-bottom: 20px; letter-spacing: 1px; text-transform: uppercase; }
-
-        /* SCREENS */
+        
         .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; opacity: 0; transition: opacity 0.3s ease; }
         .screen.active { display: flex; opacity: 1; z-index: 10; }
         .screen-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; z-index: 2000; background: #000; animation: slideUp 0.4s ease forwards; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
+        .content-home-layout { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 80px 20px 20px 20px; text-align: center; }
+        .content-scroll { flex: 1; overflow-y: auto; padding: 80px 20px 100px 20px; }
+        .content-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+        .spacer-flex { flex: 1; }
+        .header-bar { position: absolute; top: 0; left: 0; width: 100%; padding: 50px 20px 10px 20px; background: linear-gradient(to bottom, black, transparent); z-index: 20; }
+
         /* BUTTONS */
         button { font-family: var(--font-stack); cursor: pointer; }
         .btn-primary { border: none; padding: 18px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; background: linear-gradient(135deg, var(--accent-blue), #2c5f9e); color: white; box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3); margin-bottom: 120px; }
-        .btn-danger { border: 1px solid var(--danger); background: rgba(255, 59, 48, 0.15); color: var(--danger); padding: 16px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; backdrop-filter: blur(10px); }
+        .btn-danger { border: 1px solid var(--accent-red); background: rgba(255, 59, 48, 0.15); color: var(--accent-red); padding: 16px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; backdrop-filter: blur(10px); }
         .icon-btn-floating { position: absolute; top: 40px; left: 20px; width: 45px; height: 45px; background: var(--glass-bg); border-radius: 50%; border: none; color: white; z-index: 3000; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
         .btn-text { background: transparent; color: #555; font-size: 0.9rem; margin-top: 40px; width: 100%; border: none; }
 
-        /* MAP & STATS */
+        /* MAP & DRIVE STATS */
         #map, #detail-map { height: 100%; width: 100%; z-index: 1; filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
         .drive-overlay-top { position: absolute; top: 50px; left: 20px; right: 20px; z-index: 999; display: flex; justify-content: space-between; }
+        .drive-overlay-bottom { position: absolute; bottom: 40px; left: 0; right: 0; z-index: 999; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px;}
         .stat-box { background: var(--glass-bg); backdrop-filter: blur(15px); padding: 15px 20px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.1); min-width: 100px; }
         .stat-box .value { font-size: 1.8rem; font-weight: 700; font-variant-numeric: tabular-nums; } 
         .stat-box .label { font-size: 0.7rem; color: var(--text-grey); font-weight: 700; } 
         .stat-box .unit { font-size: 0.8rem; color: var(--accent-blue); }
-        
-        .drive-overlay-bottom { position: absolute; bottom: 40px; left: 0; right: 0; z-index: 999; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px;}
         .drive-overlay-bottom .stat-row { background: var(--glass-bg); backdrop-filter: blur(15px); border-radius: 12px; padding: 10px 20px; display: inline-block; border: 1px solid rgba(255,255,255,0.1); font-weight: 600; }
-        
+
+        /* GARAGE & LISTS */
         .stats-card { background: #1c1c1e; border-radius: 20px; padding: 30px; width: 100%; max-width: 320px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .stat-row-final { display: flex; justify-content: space-between; margin-bottom: 20px; text-align: left; } 
         .stat-row-final .final-value { font-size: 1.8rem; font-weight: 700; color: white; display: block; }
-        
         .drives-list { width: 100%; max-width: 340px; margin: 0 auto; }
         .drive-item { background: #111; border: 1px solid #222; padding: 20px; border-radius: 16px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; }
         .drive-item:active { background: #222; }
@@ -101,19 +97,71 @@
         .drive-item span { color: var(--text-grey); font-size: 0.85rem; } 
         .drive-item .right-side { text-align: right; } 
         .drive-item .dist { font-size: 1.2rem; color: var(--accent-blue); font-weight: 700; }
-
         .detail-stats-overlay { position: absolute; bottom: 40px; left: 20px; right: 20px; background: var(--glass-bg); backdrop-filter: blur(20px); border-radius: 20px; padding: 20px; z-index: 2500; border: 1px solid rgba(255,255,255,0.1); } 
-        .mini { margin-bottom: 0; text-align: center; } 
-        .mini > div { flex: 1; } 
-        .mini .val { font-size: 1.4rem; font-weight: 700; display: block; }
+        .mini { margin-bottom: 0; text-align: center; } .mini > div { flex: 1; } .mini .val { font-size: 1.4rem; font-weight: 700; display: block; }
+
+        /* --- NEU: PERFORMANCE MODE CSS --- */
+        .perf-display {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .perf-speed {
+            font-size: 5rem;
+            font-weight: 900;
+            color: white;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            text-shadow: 0 0 40px rgba(255, 59, 48, 0.4);
+        }
+        .perf-unit {
+            font-size: 1.2rem;
+            color: var(--text-grey);
+            font-weight: 600;
+        }
+        .perf-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            width: 100%;
+            max-width: 320px;
+            margin-bottom: 30px;
+        }
+        .perf-box {
+            background: #1c1c1e;
+            padding: 15px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .perf-box.active { border-color: var(--accent-red); box-shadow: 0 0 15px rgba(255,59,48,0.2); }
+        .perf-val { display: block; font-size: 1.5rem; font-weight: 700; color: white; margin-top: 5px; }
+        .perf-lbl { font-size: 0.75rem; color: var(--text-grey); font-weight: 700; letter-spacing: 1px; }
+        
+        .g-force-container {
+            width: 100%; max-width: 320px; margin-bottom: 40px;
+            background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .g-val { font-weight: bold; font-size: 1.2rem; color: var(--accent-blue); }
+
+        .btn-arm {
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            font-weight: 700; font-size: 1rem;
+            box-shadow: 0 0 30px rgba(255,59,48,0.3);
+            text-transform: uppercase;
+            animation: pulse-red 2s infinite;
+        }
+        .btn-arm.armed { background: transparent; border: 2px solid var(--accent-red); animation: none; color: var(--accent-red); }
+        @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(255,59,48,0.5); } 100% { transform: scale(1); } }
 
         /* NAV */
         .bottom-nav { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 350px; height: 70px; background: rgba(30, 30, 30, 0.8); backdrop-filter: blur(20px); border-radius: 35px; display: flex; justify-content: space-around; align-items: center; border: 1px solid rgba(255,255,255,0.1); z-index: 100; }
         .nav-item { background: none; border: none; color: #666; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 5px; width: auto; padding: 0; }
         .nav-item.active { color: var(--accent-blue); }
-
-        .header-bar { position: absolute; top: 0; left: 0; width: 100%; padding: 50px 20px 10px 20px; background: linear-gradient(to bottom, black, transparent); z-index: 20; }
-        .content-scroll { flex: 1; overflow-y: auto; padding: 80px 20px 100px 20px; }
     </style>
 </head>
 <body>
@@ -132,7 +180,6 @@
         
         <section id="home-screen" class="screen active">
             <div class="content-home-layout">
-                
                 <div id="status-widget" class="status-pill" style="display:flex;">
                     <i class="fa-solid fa-location-arrow loc-icon"></i>
                     <span id="loc-text">Locating...</span>
@@ -140,25 +187,55 @@
                     <i id="weather-icon" class="fa-solid fa-cloud"></i>
                     <span id="weather-temp">--°</span>
                 </div>
-
                 <div class="logo-container">
                     <img src="logo.png" alt="DriverHub Logo" class="dh-logo" onerror="this.style.display='none';">
                 </div>
-                
                 <h1 id="greeting-text">WELCOME</h1>
                 <p class="slogan">Built for those who drive.</p>
-                
                 <div class="spacer-flex"></div>
-                <button id="btn-start" class="btn-primary">
-                    <i class="fa-solid fa-road"></i> Start Drive
-                </button>
+                <button id="btn-start" class="btn-primary"><i class="fa-solid fa-road"></i> Start Drive</button>
+            </div>
+        </section>
+
+        <section id="perf-screen" class="screen">
+            <div class="header-bar">
+                <h2>Performance</h2>
+            </div>
+            <div class="content-scroll">
+                <div class="perf-display">
+                    <span id="perf-live-speed" class="perf-speed">0</span>
+                    <span class="perf-unit">KM/H</span>
+                </div>
+
+                <div class="perf-grid">
+                    <div class="perf-box" id="box-0-50">
+                        <span class="perf-lbl">0 - 50</span>
+                        <span class="perf-val" id="val-0-50">--.- s</span>
+                    </div>
+                    <div class="perf-box" id="box-0-100">
+                        <span class="perf-lbl">0 - 100</span>
+                        <span class="perf-val" id="val-0-100">--.- s</span>
+                    </div>
+                </div>
+
+                <div class="g-force-container">
+                    <span class="perf-lbl">MAX G-FORCE</span>
+                    <span class="g-val" id="max-g-val">0.00 G</span>
+                </div>
+
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <button id="btn-arm-perf" class="btn-arm">ARM</button>
+                    <p style="margin-top:15px; color:#666; font-size:0.8rem;" id="perf-status-text">Tap to arm, then launch.</p>
+                </div>
+
+                <h3>History</h3>
+                <div id="perf-history-list" class="drives-list"></div>
+                <div style="height: 100px;"></div>
             </div>
         </section>
 
         <section id="garage-screen" class="screen">
-            <div class="header-bar">
-                <h2>Your Garage</h2>
-            </div>
+            <div class="header-bar"><h2>Your Garage</h2></div>
             <div class="content-scroll">
                 <div class="stats-card profile-card">
                     <div class="stat-row-final">
@@ -218,6 +295,9 @@
             <button class="nav-item active" data-target="home-screen">
                 <i class="fa-solid fa-house"></i><span>Home</span>
             </button>
+            <button class="nav-item" data-target="perf-screen">
+                <i class="fa-solid fa-gauge-high"></i><span>Perf</span>
+            </button>
             <button class="nav-item" data-target="garage-screen">
                 <i class="fa-solid fa-layer-group"></i><span>Garage</span>
             </button>
@@ -228,7 +308,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // --- STATE VARIABLES ---
+        // --- GLOBAL VARIABLES ---
         let map, marker, watchId, intervalId;
         let detailMap;
         let startTime;
@@ -236,6 +316,14 @@
         let currentDistance = 0;
         let currentMaxSpeed = 0;
         let isDriving = false;
+
+        // --- PERF VARIABLES ---
+        let perfWatchId = null;
+        let perfState = 'idle'; // idle, armed, running, finished
+        let perfStartTime = 0;
+        let result50 = null;
+        let result100 = null;
+        let maxG = 0;
 
         // --- DOM ELEMENTS ---
         const app = {
@@ -245,11 +333,11 @@
             locText: document.getElementById('loc-text'),
             tempText: document.getElementById('weather-temp'),
             weatherIcon: document.getElementById('weather-icon'),
-            weatherWidget: document.getElementById('status-widget'),
-
+            
             screens: {
                 home: document.getElementById('home-screen'),
                 garage: document.getElementById('garage-screen'),
+                perf: document.getElementById('perf-screen'),
                 drive: document.getElementById('drive-screen'),
                 summary: document.getElementById('summary-screen'),
                 detail: document.getElementById('detail-screen')
@@ -262,22 +350,32 @@
                 sumSpeed: document.getElementById('sum-speed'),
                 sumAvg: document.getElementById('sum-avg'),
                 sumTime: document.getElementById('sum-time')
+            },
+            perf: {
+                speed: document.getElementById('perf-live-speed'),
+                val50: document.getElementById('val-0-50'),
+                val100: document.getElementById('val-0-100'),
+                box50: document.getElementById('box-0-50'),
+                box100: document.getElementById('box-0-100'),
+                gVal: document.getElementById('max-g-val'),
+                btn: document.getElementById('btn-arm-perf'),
+                status: document.getElementById('perf-status-text'),
+                list: document.getElementById('perf-history-list')
             }
         };
 
         // --- INIT ---
         window.addEventListener('load', () => {
-            // 1. SPLASH SCREEN
+            // Splash
             setTimeout(() => {
                 app.splash.style.opacity = '0';
                 setTimeout(() => app.splash.style.display = 'none', 800);
             }, 2200);
 
-            // 2. Data & UI
             renderGarage();
+            renderPerfHistory();
             updateTimeGreeting();
 
-            // 3. GPS & Wetter
             if(navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(initWeatherLoc, err => console.log(err));
             }
@@ -297,77 +395,201 @@
         function initWeatherLoc(pos) {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
-            
-            // City
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
-                .then(r => r.json())
-                .then(d => {
+                .then(r => r.json()).then(d => {
                     app.locText.innerText = d.address.city || d.address.town || "Location Found";
                 });
-
-            // Weather
             fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`)
-                .then(r => r.json())
-                .then(d => {
+                .then(r => r.json()).then(d => {
                     const t = Math.round(d.current_weather.temperature);
                     const c = d.current_weather.weathercode;
                     app.tempText.innerText = t + "°";
-                    
                     if(c <= 1) app.weatherIcon.className = "fa-solid fa-sun";
                     else if(c <= 3) app.weatherIcon.className = "fa-solid fa-cloud-sun";
                     else app.weatherIcon.className = "fa-solid fa-cloud";
                 });
         }
 
-        // --- NAV & SCREENS ---
+        // --- NAVIGATION ---
         document.querySelectorAll('.nav-item').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const targetId = btn.getAttribute('data-target');
                 document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                showMainScreen(targetId);
+                
+                // Switch Logic
+                app.screens.home.classList.remove('active');
+                app.screens.garage.classList.remove('active');
+                app.screens.perf.classList.remove('active');
+                
+                if(targetId === 'home-screen') app.screens.home.classList.add('active');
+                if(targetId === 'garage-screen') app.screens.garage.classList.add('active');
+                if(targetId === 'perf-screen') {
+                    app.screens.perf.classList.add('active');
+                    // Stop regular GPS if running? No, separate logic.
+                }
             });
         });
 
-        function showMainScreen(id) {
-            app.screens.home.classList.remove('active');
-            app.screens.garage.classList.remove('active');
-            app.screens[id.split('-')[0]].classList.add('active');
-        }
-
-        // --- ACTIONS ---
+        // --- MAIN DRIVE LOGIC (Original) ---
         document.getElementById('btn-start').addEventListener('click', () => {
             app.screens.drive.style.display = 'flex';
             app.nav.style.display = 'none';
             startTracking();
         });
-
         document.getElementById('btn-stop').addEventListener('click', () => {
             stopTracking();
             app.screens.drive.style.display = 'none';
             app.screens.summary.style.display = 'flex';
         });
-
         document.getElementById('btn-save-drive').addEventListener('click', () => {
             saveDriveToStorage();
             app.screens.summary.style.display = 'none';
             app.nav.style.display = 'flex';
-            document.querySelectorAll('.nav-item')[1].click(); 
+            // Go to garage
+            document.querySelectorAll('.nav-item')[2].click(); 
         });
 
-        document.getElementById('btn-close-detail').addEventListener('click', () => {
-            app.screens.detail.style.display = 'none';
-            if(detailMap) { detailMap.remove(); detailMap = null; }
-        });
+        // --- PERFORMANCE LOGIC (NEW) ---
+        app.perf.btn.addEventListener('click', () => {
+            if(perfState === 'idle' || perfState === 'finished') {
+                // ARMING
+                perfState = 'armed';
+                app.perf.btn.innerText = "READY";
+                app.perf.btn.classList.add('armed');
+                app.perf.status.innerText = "Launch when ready! Timer starts > 1 km/h";
+                
+                // Reset UI
+                app.perf.val50.innerText = "--.- s";
+                app.perf.val100.innerText = "--.- s";
+                app.perf.box50.classList.remove('active');
+                app.perf.box100.classList.remove('active');
+                app.perf.gVal.innerText = "0.00 G";
+                maxG = 0;
+                result50 = null;
+                result100 = null;
 
-        document.getElementById('btn-reset-data').addEventListener('click', () => {
-            if(confirm("Alles löschen?")) {
-                localStorage.removeItem('dh_drives_v2');
-                renderGarage();
+                // Permissions for G-Sensor (iOS requires interaction)
+                if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                    DeviceMotionEvent.requestPermission()
+                        .then(permissionState => { if (permissionState === 'granted') startPerfSensors(); })
+                        .catch(console.error);
+                } else {
+                    startPerfSensors();
+                }
+
+                // Start High Freq GPS for Perf
+                if (navigator.geolocation) {
+                    perfWatchId = navigator.geolocation.watchPosition(updatePerfLogic, handleError, {enableHighAccuracy: true});
+                }
+
+            } else {
+                // CANCEL / RESET
+                resetPerfMode();
             }
         });
 
-        // --- TRACKING ---
+        function startPerfSensors() {
+            window.addEventListener('devicemotion', handleMotion);
+        }
+
+        function handleMotion(event) {
+            if(perfState !== 'running') return;
+            // Calculate total G
+            const x = event.acceleration.x || 0;
+            const y = event.acceleration.y || 0;
+            const z = event.acceleration.z || 0;
+            const totalAccel = Math.sqrt(x*x + y*y + z*z);
+            const currentG = totalAccel / 9.81;
+
+            if(currentG > maxG) {
+                maxG = currentG;
+                app.perf.gVal.innerText = maxG.toFixed(2) + " G";
+            }
+        }
+
+        function updatePerfLogic(position) {
+            const speedKmh = (position.coords.speed || 0) * 3.6;
+            app.perf.speed.innerText = speedKmh.toFixed(0);
+
+            if(perfState === 'armed') {
+                if(speedKmh > 2.0) { // Trigger start
+                    perfState = 'running';
+                    perfStartTime = Date.now();
+                    app.perf.btn.innerText = "GO!";
+                    app.perf.status.innerText = "Recording...";
+                }
+            } else if(perfState === 'running') {
+                const duration = (Date.now() - perfStartTime) / 1000;
+                
+                // CHECK 0-50
+                if(!result50 && speedKmh >= 50) {
+                    result50 = duration.toFixed(2);
+                    app.perf.val50.innerText = result50 + " s";
+                    app.perf.box50.classList.add('active');
+                }
+
+                // CHECK 0-100
+                if(!result100 && speedKmh >= 100) {
+                    result100 = duration.toFixed(2);
+                    app.perf.val100.innerText = result100 + " s";
+                    app.perf.box100.classList.add('active');
+                    
+                    // FINISH
+                    perfState = 'finished';
+                    app.perf.btn.innerText = "RESET";
+                    app.perf.btn.classList.remove('armed');
+                    app.perf.status.innerText = "Run Complete!";
+                    savePerfRun();
+                }
+            }
+        }
+
+        function resetPerfMode() {
+            perfState = 'idle';
+            app.perf.btn.innerText = "ARM";
+            app.perf.btn.classList.remove('armed');
+            app.perf.status.innerText = "Tap to arm, then launch.";
+            if(perfWatchId) navigator.geolocation.clearWatch(perfWatchId);
+            window.removeEventListener('devicemotion', handleMotion);
+            app.perf.speed.innerText = "0";
+        }
+
+        function savePerfRun() {
+            const run = {
+                id: Date.now(),
+                date: new Date().toISOString(),
+                res50: result50,
+                res100: result100,
+                maxG: maxG.toFixed(2)
+            };
+            let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || [];
+            runs.unshift(run);
+            localStorage.setItem('dh_perf_v1', JSON.stringify(runs));
+            renderPerfHistory();
+        }
+
+        function renderPerfHistory() {
+            let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || [];
+            const list = app.perf.list;
+            list.innerHTML = '';
+            runs.forEach(run => {
+                const dateStr = new Date(run.date).toLocaleDateString('de-DE');
+                const item = document.createElement('div');
+                item.className = 'drive-item';
+                // HTML for Perf Item
+                item.innerHTML = `
+                    <div><h4>${dateStr}</h4><span>Max ${run.maxG} G</span></div>
+                    <div class="right-side">
+                        <span style="color:#ff3b30; font-weight:bold;">0-100: ${run.res100}s</span><br>
+                        <span style="font-size:0.75rem">0-50: ${run.res50}s</span>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // --- MAP & TRACKING (Original Logic) ---
         function startTracking() {
             isDriving = true;
             startTime = new Date();
@@ -380,10 +602,8 @@
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(map);
                 marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map);
             }
-            
             setTimeout(() => { map.invalidateSize(); }, 200);
             intervalId = setInterval(updateTimer, 1000);
-
             if (navigator.geolocation) {
                 watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true});
             }
@@ -418,12 +638,10 @@
             isDriving = false;
             clearInterval(intervalId);
             navigator.geolocation.clearWatch(watchId);
-
             const diff = new Date() - startTime;
             const distKm = currentDistance / 1000;
             const durationHours = diff / (1000 * 60 * 60);
             const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0;
-
             app.display.sumDist.innerText = distKm.toFixed(2);
             app.display.sumSpeed.innerText = currentMaxSpeed;
             app.display.sumAvg.innerText = avgSpeed;
@@ -437,7 +655,6 @@
             const distKm = currentDistance / 1000;
             const durationHours = diff / (1000 * 60 * 60);
             const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0;
-
             const newDrive = {
                 id: Date.now(),
                 date: startTime.toISOString(),
@@ -447,7 +664,6 @@
                 duration: new Date(diff).toISOString().substr(11, 8),
                 pathData: path 
             };
-
             let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || [];
             drives.unshift(newDrive);
             localStorage.setItem('dh_drives_v2', JSON.stringify(drives));
@@ -459,18 +675,15 @@
             let totalKm = 0;
             const list = document.getElementById('drives-list');
             list.innerHTML = '';
-
             drives.forEach(drive => {
                 totalKm += drive.distance;
                 const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-                
                 const item = document.createElement('div');
                 item.className = 'drive-item';
                 item.innerHTML = `<div><h4>${dateStr} • ${drive.duration}</h4><span>Avg ${drive.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${drive.distance.toFixed(1)} km</span><span>Max ${drive.maxSpeed}</span></div>`;
                 item.addEventListener('click', () => openDetailView(drive));
                 list.appendChild(item);
             });
-
             document.getElementById('total-km').innerText = totalKm.toFixed(1);
             document.getElementById('total-drives').innerText = drives.length;
         }
@@ -480,7 +693,6 @@
             document.getElementById('detail-dist').innerText = drive.distance.toFixed(1);
             document.getElementById('detail-max').innerText = drive.maxSpeed;
             document.getElementById('detail-avg').innerText = drive.avgSpeed;
-
             setTimeout(() => {
                 if(!detailMap) {
                     detailMap = L.map('detail-map', { zoomControl: false });
@@ -493,6 +705,16 @@
                 }
             }, 100);
         }
+        document.getElementById('btn-close-detail').addEventListener('click', () => {
+            app.screens.detail.style.display = 'none';
+            if(detailMap) { detailMap.remove(); detailMap = null; }
+        });
+        document.getElementById('btn-reset-data').addEventListener('click', () => {
+            if(confirm("Alles löschen?")) {
+                localStorage.removeItem('dh_drives_v2');
+                renderGarage();
+            }
+        });
     </script>
 </body>
 </html>
