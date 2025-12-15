@@ -128,12 +128,6 @@ window.addEventListener('load', () => {
     renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
     setInterval(manualRefreshWeather, 60000); 
     
-    // RECENTER BUTTON LOGIC (OLD TRACKING)
-    const recenterBtn = document.getElementById('btn-recenter');
-    if(recenterBtn) {
-        // Logik ist jetzt im HTML onclick, aber wir lassen den Listener sicherheitshalber leer
-    }
-    
     // NAVI BUTTON LOGIC
     document.getElementById('btn-nav-start').addEventListener('click', () => {
         app.screens.nav.style.display = 'flex';
@@ -149,17 +143,12 @@ window.addEventListener('load', () => {
     });
 
     // START GUIDANCE BUTTON
-    const startGuideBtn = document.getElementById('btn-start-guidance');
-    if(startGuideBtn) {
-        startGuideBtn.addEventListener('click', () => {
-            // Verstecke die Routing Box (Eingabe)
+    const btnStartGuidance = document.getElementById('btn-start-guidance');
+    if (btnStartGuidance) {
+        btnStartGuidance.addEventListener('click', () => {
             const container = document.querySelector('.leaflet-routing-container');
             if(container) container.style.display = 'none';
-            
-            // Verstecke den Start Button
-            startGuideBtn.style.display = 'none';
-            
-            // Starte "Follow Mode" für Navi
+            btnStartGuidance.style.display = 'none';
             startNaviFollow();
         });
     }
