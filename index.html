@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 3.17.2 Navi Pro</title>
+    <title>DriverHub 3.17.3 Rescue</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,9 +13,9 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-    
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <link rel="stylesheet" href="style.css">
@@ -27,7 +27,7 @@
 </head>
 <body>
 
-    <div class="version-tag">v3.17.2 Navi Pro</div>
+    <div class="version-tag">v3.17.3 Rescue</div>
 
     <div id="auth-screen">
         <div class="auth-box">
@@ -62,7 +62,7 @@
                 <div class="spacer-flex"></div>
                 
                 <button id="btn-nav-start" class="btn-secondary" style="margin-bottom: 20px;">
-                    <i class="fa-solid fa-location-arrow"></i> Navigation
+                    <i class="fa-solid fa-location-arrow"></i> Start Navigation
                 </button>
                 
                 <button id="btn-start" class="btn-primary"><i class="fa-solid fa-road"></i> Start Drive</button>
@@ -192,8 +192,11 @@
                 <div class="stat-box"><span class="label">SPEED</span><span class="value" id="live-speed">0</span><span class="unit">km/h</span></div>
                 <div class="stat-box"><span class="label">TIME</span><span class="value" id="live-time">00:00</span></div>
             </div>
+            
             <div id="limit-sign" style="display:none;"><span id="limit-value">50</span></div>
+            
             <button id="btn-recenter" class="icon-btn-floating right-side" style="display:none;" onclick="triggerRecenter(event)"><i class="fa-solid fa-crosshairs"></i></button>
+            
             <div class="drive-overlay-bottom">
                 <div class="stat-row"><span id="live-dist">0.0 km</span></div>
                 <button id="btn-stop" class="btn-danger"><i class="fa-solid fa-stop"></i> End Drive</button>
@@ -209,6 +212,7 @@
                 <i class="fa-solid fa-play"></i> START ROUTE
             </button>
         </section>
+
         <section id="summary-screen" class="screen-overlay">
             <div class="content-center">
                 <h2>Drive Summary</h2>
@@ -238,7 +242,7 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     
     <script src="script.js"></script>
