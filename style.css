@@ -294,6 +294,7 @@ button { font-family: var(--font-stack); cursor: pointer; }
     top: 60px !important; /* Platz lassen für Close Button */
     max-height: 300px;
     overflow-y: auto;
+    z-index: 3000 !important;
 }
 
 /* Versteckt Copyright Footer der Route */
