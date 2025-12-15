@@ -25,7 +25,7 @@ let currentUserName = "";
 
 // MAP LOGIC VARS
 let isMapFollowing = true; 
-let lastLimitCheck = 0; // Für Tempolimit Abfrage
+let lastLimitCheck = 0; 
 
 // Social Vars
 let viewingUserUid = null; 
@@ -121,7 +121,6 @@ window.addEventListener('load', () => {
     renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
     setInterval(manualRefreshWeather, 60000); 
     
-    // RECENTER BUTTON LOGIC (FIXED)
     const recenterBtn = document.getElementById('btn-recenter');
     if(recenterBtn) {
         recenterBtn.addEventListener('click', (e) => {
@@ -405,51 +404,61 @@ document.getElementById('btn-start').addEventListener('click', () => { app.scree
 document.getElementById('btn-stop').addEventListener('click', () => { stopTracking(); app.screens.drive.style.display = 'none'; app.screens.summary.style.display = 'flex'; });
 document.getElementById('btn-save-drive').addEventListener('click', () => { saveDriveToStorage(); app.screens.summary.style.display = 'none'; app.nav.style.display = 'flex'; document.querySelectorAll('.nav-item')[4].click(); });
 
+// --- HARD RESET LOGIC FOR START TRACKING ---
 function startTracking() { 
     isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0; isMapFollowing = true; 
     document.getElementById('btn-recenter').style.display = 'none'; 
     
-    if (!map) { 
+    // NUKLEAR OPTION: Wenn Map schon da ist, töten.
+    if (map) { 
+        map.remove(); 
+        map = null;
+    }
+    
+    // Kleiner Timeout, damit der Container (div) sicher sichtbar ist, bevor Leaflet zeichnet
+    setTimeout(() => {
+        // Frische Karte erstellen
         map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map); 
         marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map); 
         
-        // DETECT MANUAL DRAG
         map.on('dragstart', () => {
             if(isDriving) {
                 isMapFollowing = false;
                 document.getElementById('btn-recenter').style.display = 'flex'; 
             }
         });
-    } 
-    // HIER IST DER FIX: IMMER AUSFÜHREN!
-    setTimeout(() => { map.invalidateSize(); }, 200); 
-    
-    intervalId = setInterval(updateTimer, 1000); 
-    if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
+
+        // Sofort Größe anpassen
+        map.invalidateSize();
+        
+        // Timer starten
+        intervalId = setInterval(updateTimer, 1000); 
+        if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
+    }, 300); // 300ms warten
 }
+// -------------------------------------------
 
 function updatePosition(position) { 
     const lat = position.coords.latitude; const lng = position.coords.longitude; 
     const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0); 
     if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh); 
     app.display.speed.innerText = speedKmh; 
-    const newLatLng = [lat, lng]; 
-    marker.setLatLng(newLatLng); 
     
-    // --- NEU: Speed Limit checken ---
+    const newLatLng = [lat, lng]; 
+    
+    if(marker) marker.setLatLng(newLatLng); 
+    
     if(isDriving) {
         checkSpeedLimit(lat, lng);
     }
-    // --------------------------------
 
-    if(isMapFollowing) {
+    if(isMapFollowing && map) {
         map.setView(newLatLng, 18); 
     }
 
-    if (path.length > 0) { currentDistance += map.distance(path[path.length - 1], newLatLng); app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; } 
+    if (path.length > 0 && map) { currentDistance += map.distance(path[path.length - 1], newLatLng); app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; } 
     path.push(newLatLng); 
-    // KEIN L.polyline MEHR HIER!
 }
 
 function updateTimer() { const diff = new Date() - startTime; app.display.time.innerText = new Date(diff).toISOString().substr(11, 8); }
@@ -464,13 +473,11 @@ function stopTracking() {
         watchId = null; 
     }
     
-    // --- MAP ZERSTÖREN (CLEANUP) ---
     if(map) {
-        map.remove(); // Entfernt Map und alle Event Listener
-        map = null;   // Setzt Variable zurück
+        map.remove(); 
+        map = null;   
         marker = null;
     }
-    // -------------------------------
 
     const diff = new Date() - startTime; 
     const distKm = currentDistance / 1000; 
