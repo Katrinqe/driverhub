@@ -120,21 +120,6 @@ window.addEventListener('load', () => {
 
     renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
     setInterval(manualRefreshWeather, 60000); 
-    
-    // RECENTER BUTTON LOGIC (FINAL FIX)
-    const recenterBtn = document.getElementById('btn-recenter');
-    if(recenterBtn) {
-        recenterBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); 
-            e.preventDefault();
-            isMapFollowing = true;
-            recenterBtn.style.display = 'none'; 
-            if(map && marker) {
-                map.setView(marker.getLatLng(), 18);
-            }
-        });
-        recenterBtn.addEventListener('touchstart', (e) => { e.stopPropagation(); });
-    }
 });
 
 // --- 5. SOCIAL LOGIC ---
@@ -410,10 +395,16 @@ function startTracking() {
     isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0; isMapFollowing = true; 
     document.getElementById('btn-recenter').style.display = 'none'; 
     
-    // WIR LASSEN DIE KARTE LEBEN! Aber wir fixen sie.
-    if (!map) { 
-        // Erster Start: Map erstellen
-        map = L.map('map', { zoomControl: false, dragging: true, tap: true }).setView([51.1657, 10.4515], 13); 
+    // NUKLEAR OPTION: Wenn Map schon da ist, töten.
+    if (map) { 
+        map.remove(); 
+        map = null;
+    }
+    
+    // WICHTIG: 500ms warten, damit das Fenster sicher offen ist!
+    setTimeout(() => {
+        // Frische Karte erstellen
+        map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map); 
         marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map); 
         
@@ -423,51 +414,59 @@ function startTracking() {
                 document.getElementById('btn-recenter').style.display = 'flex'; 
             }
         });
-    }
 
-    // WICHTIG: 100ms warten bis Fenster offen, dann Größe fixen
-    setTimeout(() => {
+        // Wichtig: Jetzt Größe neu berechnen
         map.invalidateSize();
-        // Falls wir schon GPS haben, sofort hinspringen
-        if(marker && marker.getLatLng().lat !== 0) {
-            map.setView(marker.getLatLng(), 18);
-        }
-    }, 100); 
-    
-    intervalId = setInterval(updateTimer, 1000); 
-    if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
+        
+        // Timer starten
+        intervalId = setInterval(updateTimer, 1000); 
+        if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
+    }, 500); // 500ms warten
 }
+// -------------------------------------------
 
 function updatePosition(position) { 
+    // Sicherheitscheck: Wenn Map noch nicht fertig geladen (wegen Timeout), nichts tun
+    if (!map) return; 
+
     const lat = position.coords.latitude; const lng = position.coords.longitude; 
     const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0); 
     if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh); 
     app.display.speed.innerText = speedKmh; 
     
     const newLatLng = [lat, lng]; 
+    
     if(marker) marker.setLatLng(newLatLng); 
     
     if(isDriving) {
         checkSpeedLimit(lat, lng);
     }
 
-    if(isMapFollowing && map) {
+    if(isMapFollowing) {
         map.setView(newLatLng, 18); 
     }
 
-    if (path.length > 0 && map) { currentDistance += map.distance(path[path.length - 1], newLatLng); app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; } 
+    if (path.length > 0) { currentDistance += map.distance(path[path.length - 1], newLatLng); app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; } 
     path.push(newLatLng); 
 }
 
 function updateTimer() { const diff = new Date() - startTime; app.display.time.innerText = new Date(diff).toISOString().substr(11, 8); }
 
+// --- STOP TRACKING ZERSTÖRT KARTE ---
 function stopTracking() { 
     isDriving = false; 
     clearInterval(intervalId); 
-    if(watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-
-    // WIR LÖSCHEN DIE KARTE NICHT MEHR!
-    // Wir lassen sie im Hintergrund, damit sie beim nächsten Mal sofort da ist.
+    
+    if(watchId) { 
+        navigator.geolocation.clearWatch(watchId); 
+        watchId = null; 
+    }
+    
+    if(map) {
+        map.remove(); 
+        map = null;   
+        marker = null;
+    }
 
     const diff = new Date() - startTime; 
     const distKm = currentDistance / 1000; 
@@ -478,6 +477,7 @@ function stopTracking() {
     app.display.sumAvg.innerText = avgSpeed; 
     app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); 
 }
+// ------------------------------------------------------------------
 
 function handleError(err) { console.warn(err); }
 function saveDriveToStorage() { const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; const newDrive = { id: Date.now(), date: startTime.toISOString(), distance: parseFloat(distKm.toFixed(2)), maxSpeed: currentMaxSpeed, avgSpeed: avgSpeed, duration: new Date(diff).toISOString().substr(11, 8), pathData: path }; let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; drives.unshift(newDrive); localStorage.setItem('dh_drives_v2', JSON.stringify(drives)); renderGarage(); }
@@ -546,6 +546,21 @@ function handleVoiceCommand(cmd) { let reply = "Kommando nicht erkannt."; if (cm
 function speak(text) { if (!synth) return; const utter = new SpeechSynthesisUtterance(text); synth.speak(utter); }
 
 document.querySelectorAll('.nav-item').forEach(btn => { btn.addEventListener('click', (e) => { const targetId = btn.getAttribute('data-target'); document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active')); btn.classList.add('active'); Object.values(app.screens).forEach(s => { if(s && !s.classList.contains('screen-overlay')) s.classList.remove('active'); }); if(app.screens[targetId.split('-')[0]]) { app.screens[targetId.split('-')[0]].classList.add('active'); } }); });
+
+// --- RECENTER TRIGGER CALLED BY HTML ---
+function triggerRecenter(e) {
+    if(e) {
+        e.stopPropagation();
+        e.preventDefault();
+    }
+    
+    isMapFollowing = true;
+    document.getElementById('btn-recenter').style.display = 'none';
+    
+    if(map && marker) {
+        map.setView(marker.getLatLng(), 18);
+    }
+}
 
 // --- SPEED LIMIT LOGIC (OVERPASS API) ---
 function checkSpeedLimit(lat, lon) {
