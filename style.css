@@ -620,3 +620,66 @@ function manualRefreshWeather() { app.locText.innerText = "Locating..."; app.tem
 
 // --- SPEED LIMIT LOGIC (OVERPASS API) ---
 function checkSpeedLimit(lat, lon) { const now = Date.now(); if (now - lastLimitCheck < 8000) return; lastLimitCheck = now; const query = `[out:json]; way(around:15, ${lat}, ${lon})["maxspeed"]; out tags;`; const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`; fetch(url).then(response => response.json()).then(data => { if (data.elements && data.elements.length > 0) { let speed = data.elements[0].tags.maxspeed; if(speed === "none") { document.getElementById('limit-sign').style.display = 'none'; } else { speed = parseInt(speed); if(!isNaN(speed)) { document.getElementById('limit-sign').style.display = 'flex'; document.getElementById('limit-value').innerText = speed; } } } else { document.getElementById('limit-sign').style.display = 'none'; } }).catch(err => console.log("Limit API Error:", err)); }
+
+/* --- NAVI SUCHE FIX (Ganz unten einfügen) --- */
+.leaflet-routing-container {
+    background-color: #1c1c1e !important;
+    color: white !important;
+    border: 1px solid #444 !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.8) !important;
+    top: 60px !important;
+    margin-right: 10px !important;
+    max-height: 60vh;
+    overflow-y: auto;
+    z-index: 3000 !important;
+}
+
+/* Suchfeld dunkel machen */
+.leaflet-routing-geocoders input {
+    background: #333 !important;
+    color: white !important;
+    border: 1px solid #555 !important;
+    padding: 10px !important;
+    border-radius: 8px !important;
+    font-size: 1rem !important;
+    width: 100% !important;
+    margin-bottom: 5px !important;
+}
+
+/* Suchergebnisse dunkel machen */
+.leaflet-routing-geocoder-result {
+    background-color: #222 !important;
+    color: white !important;
+    border-bottom: 1px solid #444 !important;
+    padding: 10px !important;
+    cursor: pointer;
+}
+.leaflet-routing-geocoder-result:hover {
+    background-color: #4a90e2 !important; /* Blau beim Drüberfahren */
+}
+
+/* Versteckt den Footer */
+.leaflet-routing-container .leaflet-routing-alt h2 {
+    display: none !important;
+}
+
+/* Der Start-Button */
+#btn-start-guidance {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 300px;
+    display: none; /* Erst unsichtbar */
+    z-index: 9999;
+    background: #30d158; /* Grün */
+    color: black;
+    font-weight: 800;
+    box-shadow: 0 0 20px rgba(48, 209, 88, 0.4);
+    border: none;
+    padding: 18px 32px;
+    border-radius: 30px;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
