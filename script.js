@@ -237,40 +237,72 @@ function stopTracking() { 
     app.display.sumDist.innerText = distKm.toFixed(2); app.display.sumSpeed.innerText = currentMaxSpeed; app.display.sumAvg.innerText = avgSpeed; app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); 
 }
 
-// --- NEW NAVI SANDBOX LOGIC (UPDATED 3.18.1) ---
+// --- NAVI LOGIC UPDATE (Ersetze die alte initNavMap Funktion hiermit) ---
 function initNavMap() {
-    // 500ms wait for transition
     setTimeout(() => {
+        // Aufräumen, falls Karte schon da war
         if(navMap) {
              navMap.remove();
              navMap = null;
         }
 
+        // 1. Karte initialisieren
         navMap = L.map('nav-map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(navMap);
         
-        // Add Routing Control with Geocoder enabled
+        // 2. Routing Engine starten
         routingControl = L.Routing.control({
-            waypoints: [ null, null ], // Start empty
-            router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+            // Wir starten ohne Waypoints, die kommen gleich per GPS und Eingabe
+            waypoints: [ null, null ], 
+            
+            // Der Routing-Service (OSRM) - Berechnet die Strecke
+            router: L.Routing.osrmv1({ 
+                serviceUrl: 'https://router.project-osrm.org/route/v1',
+                profile: 'driving'
+            }),
+            
+            // Design der Linie (Lila)
             lineOptions: { styles: [{color: '#bf5af2', opacity: 0.8, weight: 6}] },
-            geocoder: L.Control.Geocoder.nominatim(), // ENABLE ADDRESS SEARCH
-            routeWhileDragging: true,
+            
+            // Die Adress-Suche (Nominatim) verbinden
+            geocoder: L.Control.Geocoder.nominatim(),
+            
+            // Optionen für die Eingabebox
+            routeWhileDragging: false, // Performance schonen
             show: true,
             collapsible: true,
-            language: 'de' 
+            language: 'de',
+            
+            // WICHTIG: Damit er nicht sofort losrechnet bevor du fertig bist
+            autoRoute: true 
         }).addTo(navMap);
         
-        // NEU: Wenn Route gefunden -> Button zeigen
+        // 3. EVENT: Route wurde gefunden -> Grünen Button zeigen
         routingControl.on('routesfound', function(e) {
             const btn = document.getElementById('btn-start-guidance');
-            if(btn) btn.style.display = 'block'; 
+            const routes = e.routes;
+            // Nur anzeigen, wenn wirklich eine Route mit Distanz da ist
+            if(routes && routes.length > 0) {
+                if(btn) btn.style.display = 'block';
+                
+                // Info-Ausgabe (Optional für Debugging)
+                const summary = routes[0].summary;
+                console.log("Route gefunden: " + (summary.totalDistance / 1000).toFixed(1) + " km");
+            }
+        });
+        
+        // 4. EVENT: Fehler beim Routing (falls Server busy ist)
+        routingControl.on('routingerror', function(e) {
+            console.log("Routing Fehler:", e);
+            alert("Konnte Route nicht berechnen. Bitte Adresse prüfen.");
         });
 
-        // Try to locate user for start point
+        // 5. GPS orten und als START-Punkt setzen
         navMap.locate({setView: true, maxZoom: 16});
+        
         navMap.on('locationfound', function(e) {
-            // Set Start Point to User Location automatically
+            // Setzt deinen aktuellen Standort automatisch als ersten Wegpunkt (Start)
+            // Waypoint 0 = Start, Waypoint 1 = Ziel (leer, musst du eingeben)
             routingControl.spliceWaypoints(0, 1, e.latlng);
         });
 
@@ -386,3 +418,4 @@ document.querySelectorAll('.nav-item').forEach(btn => { btn.addEventListener('cl
 
 // --- SPEED LIMIT LOGIC (OVERPASS API) ---
 function checkSpeedLimit(lat, lon) { const now = Date.now(); if (now - lastLimitCheck < 8000) return; lastLimitCheck = now; const query = `[out:json]; way(around:15, ${lat}, ${lon})["maxspeed"]; out tags;`; const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`; fetch(url).then(response => response.json()).then(data => { if (data.elements && data.elements.length > 0) { let speed = data.elements[0].tags.maxspeed; if(speed === "none") { document.getElementById('limit-sign').style.display = 'none'; } else { speed = parseInt(speed); if(!isNaN(speed)) { document.getElementById('limit-sign').style.display = 'flex'; document.getElementById('limit-value').innerText = speed; } } } else { document.getElementById('limit-sign').style.display = 'none'; } }).catch(err => console.log("Limit API Error:", err)); }
+
