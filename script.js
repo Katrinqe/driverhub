@@ -23,12 +23,12 @@ let recognition = null; let isListening = false; let synth = window.speechSynthe
 let currentUser = null; 
 let currentUserName = ""; 
 
-// TRACKING & MAP VARS
+// MAP LOGIC VARS
 let isMapFollowing = true; 
-let lastLimitCheck = 0; 
-
-// NAVI VARS
-let navMap = null;
+let lastLimitCheck = 0;
+// NEU: Globale Variablen für sichere Position
+let currentLat = 0;
+let currentLng = 0;
 
 // Social Vars
 let viewingUserUid = null; 
@@ -54,8 +54,7 @@ const app = {
         community: document.getElementById('community-screen'),
         drive: document.getElementById('drive-screen'),
         summary: document.getElementById('summary-screen'),
-        detail: document.getElementById('detail-screen'),
-        nav: document.getElementById('nav-screen') // NEU
+        detail: document.getElementById('detail-screen')
     },
     display: {
         speed: document.getElementById('live-speed'),
@@ -125,33 +124,26 @@ window.addEventListener('load', () => {
     renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
     setInterval(manualRefreshWeather, 60000); 
     
+    // RECENTER BUTTON LOGIC (FIXED TOUCH)
     const recenterBtn = document.getElementById('btn-recenter');
     if(recenterBtn) {
-        recenterBtn.addEventListener('click', (e) => {
+        // Event Listener für "touchstart" (reagiert schneller/besser auf Mobile)
+        const doRecenter = (e) => {
             e.stopPropagation(); 
             e.preventDefault();
+            
             isMapFollowing = true;
             recenterBtn.style.display = 'none'; 
-            if(map && marker) {
-                map.setView(marker.getLatLng(), 18);
+            
+            // Nutze globale Koordinaten, falls Marker null ist
+            if(map && currentLat !== 0 && currentLng !== 0) {
+                map.setView([currentLat, currentLng], 18);
             }
-        });
-        recenterBtn.addEventListener('touchstart', (e) => { e.stopPropagation(); });
+        };
+
+        recenterBtn.addEventListener('touchstart', doRecenter);
+        recenterBtn.addEventListener('click', doRecenter);
     }
-    
-    // NAVI BUTTON LOGIC
-    document.getElementById('btn-nav-menu').addEventListener('click', () => {
-        app.screens.nav.style.display = 'flex';
-        initNavMap();
-    });
-    
-    document.getElementById('btn-close-nav').addEventListener('click', () => {
-        app.screens.nav.style.display = 'none';
-        if(navMap) {
-            navMap.remove();
-            navMap = null;
-        }
-    });
 });
 
 // --- 5. SOCIAL LOGIC ---
@@ -422,20 +414,11 @@ document.getElementById('btn-start').addEventListener('click', () => { app.scree
 document.getElementById('btn-stop').addEventListener('click', () => { stopTracking(); app.screens.drive.style.display = 'none'; app.screens.summary.style.display = 'flex'; });
 document.getElementById('btn-save-drive').addEventListener('click', () => { saveDriveToStorage(); app.screens.summary.style.display = 'none'; app.nav.style.display = 'flex'; document.querySelectorAll('.nav-item')[4].click(); });
 
-// --- SMART LAZY START (PRESERVED STABLE) ---
 function startTracking() { 
     isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0; isMapFollowing = true; 
     document.getElementById('btn-recenter').style.display = 'none'; 
     
-    // NUKLEAR OPTION: Wenn Map schon da ist, töten.
-    if (map) { 
-        map.remove(); 
-        map = null;
-    }
-    
-    // WICHTIG: 500ms warten bis Fenster offen, dann Größe fixen
-    setTimeout(() => {
-        // Frische Karte erstellen
+    if (!map) { 
         map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map); 
         marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map); 
@@ -446,27 +429,25 @@ function startTracking() {
                 document.getElementById('btn-recenter').style.display = 'flex'; 
             }
         });
-
-        // Wichtig: Jetzt Größe neu berechnen
-        map.invalidateSize();
-        
-        // Timer starten
-        intervalId = setInterval(updateTimer, 1000); 
-        if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
-    }, 500); // 500ms warten
+    }
+    setTimeout(() => { map.invalidateSize(); }, 200); 
+    
+    intervalId = setInterval(updateTimer, 1000); 
+    if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
 }
 
 function updatePosition(position) { 
-    // Sicherheitscheck: Wenn Map noch nicht fertig geladen (wegen Timeout), nichts tun
-    if (!map) return; 
-
     const lat = position.coords.latitude; const lng = position.coords.longitude; 
+    
+    // UPDATE GLOBAL COORDS (FIX)
+    currentLat = lat;
+    currentLng = lng;
+
     const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0); 
     if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh); 
     app.display.speed.innerText = speedKmh; 
     
     const newLatLng = [lat, lng]; 
-    
     if(marker) marker.setLatLng(newLatLng); 
     
     if(isDriving) {
@@ -477,66 +458,13 @@ function updatePosition(position) {
         map.setView(newLatLng, 18); 
     }
 
+    // LINE REMOVED HERE AS REQUESTED
     if (path.length > 0) { currentDistance += map.distance(path[path.length - 1], newLatLng); app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; } 
     path.push(newLatLng); 
 }
 
 function updateTimer() { const diff = new Date() - startTime; app.display.time.innerText = new Date(diff).toISOString().substr(11, 8); }
-
-function stopTracking() { 
-    isDriving = false; 
-    clearInterval(intervalId); 
-    if(watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-
-    const diff = new Date() - startTime; 
-    const distKm = currentDistance / 1000; 
-    const durationHours = diff / (1000 * 60 * 60); 
-    const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; 
-    app.display.sumDist.innerText = distKm.toFixed(2); 
-    app.display.sumSpeed.innerText = currentMaxSpeed; 
-    app.display.sumAvg.innerText = avgSpeed; 
-    app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); 
-}
-
-// --- NEW NAVI LOGIC ---
-function initNavMap() {
-    // 500ms wait for transition
-    setTimeout(() => {
-        if(!navMap) {
-            navMap = L.map('nav-map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(navMap);
-            
-            // Add Routing Control
-            L.Routing.control({
-                waypoints: [
-                    L.latLng(51.1657, 10.4515), // Start (wird später durch GPS ersetzt)
-                    L.latLng(52.5200, 13.4050)  // Ziel Demo (Berlin)
-                ],
-                router: L.Routing.osrmv1({
-                    serviceUrl: 'https://router.project-osrm.org/route/v1'
-                }),
-                lineOptions: {
-                    styles: [{color: '#bf5af2', opacity: 0.8, weight: 6}] // Lila Route
-                },
-                // Customize styles via CSS instead of JS options where possible to keep it clean
-                show: true,
-                addWaypoints: false,
-                draggableWaypoints: false,
-                fitSelectedRoutes: true,
-                showAlternatives: false
-            }).addTo(navMap);
-            
-            // Try to locate user for start point
-            navMap.locate({setView: true, maxZoom: 16});
-            navMap.on('locationfound', function(e) {
-                // Hier könnte man den Startpunkt setzen
-                // Routing Control API ist etwas komplexer, das machen wir im nächsten Schritt dynamisch
-            });
-        }
-        navMap.invalidateSize();
-    }, 500);
-}
-
+function stopTracking() { isDriving = false; clearInterval(intervalId); if(watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; } const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; app.display.sumDist.innerText = distKm.toFixed(2); app.display.sumSpeed.innerText = currentMaxSpeed; app.display.sumAvg.innerText = avgSpeed; app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); }
 function handleError(err) { console.warn(err); }
 function saveDriveToStorage() { const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; const newDrive = { id: Date.now(), date: startTime.toISOString(), distance: parseFloat(distKm.toFixed(2)), maxSpeed: currentMaxSpeed, avgSpeed: avgSpeed, duration: new Date(diff).toISOString().substr(11, 8), pathData: path }; let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; drives.unshift(newDrive); localStorage.setItem('dh_drives_v2', JSON.stringify(drives)); renderGarage(); }
 function renderGarage() { let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; let totalKm = 0; const list = document.getElementById('drives-list'); list.innerHTML = ''; drives.forEach(drive => { totalKm += drive.distance; const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h4>${dateStr} • ${drive.duration}</h4><span>Avg ${drive.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${drive.distance.toFixed(1)} km</span><span>Max ${drive.maxSpeed}</span></div>`; item.addEventListener('click', () => openDetailView(drive)); list.appendChild(item); }); document.getElementById('total-km').innerText = totalKm.toFixed(1); document.getElementById('total-drives').innerText = drives.length; }
