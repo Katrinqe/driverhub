@@ -127,11 +127,16 @@ window.addEventListener('load', () => {
     renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
     setInterval(manualRefreshWeather, 60000); 
     
-    // RECENTER BUTTON (Manuelle Logik über HTML onclick triggerRecenter)
-    // Wir lassen den Listener hier leer, da er im HTML definiert ist
+    // RECENTER BUTTON LOGIC (OLD TRACKING)
+    const recenterBtn = document.getElementById('btn-recenter');
+    if(recenterBtn) {
+        // ... (Logik von oben) ...
+    }
+    
+    // NAVI BUTTON LOGIC -> JETZT PER ONCLICK IM HTML GEREGELT (sicherer)
 });
 
-// --- 5. SOCIAL LOGIC ---
+// --- 5. SOCIAL LOGIC (Condensed) ---
 function escapeHtml(text) { if (!text) return ""; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 window.refreshSocial = function() { if(!currentUser) return; loadFriendsFeed(); loadChatInbox(); };
 window.switchSocialTab = function(tabName) { document.querySelectorAll('.social-tab').forEach(t => t.classList.remove('active')); event.target.classList.add('active'); document.getElementById('tab-feed').style.display = 'none'; document.getElementById('tab-friends').style.display = 'none'; document.getElementById('tab-chats').style.display = 'none'; if(tabName === 'feed') document.getElementById('tab-feed').style.display = 'block'; else if(tabName === 'friends') { document.getElementById('tab-friends').style.display = 'block'; loadFriendsList(); } else if(tabName === 'chats') { document.getElementById('tab-chats').style.display = 'block'; loadChatInbox(); } else if(tabName === 'profile') if(currentUser) openProfile(currentUser.uid); };
