@@ -25,7 +25,7 @@ let currentUserName = "";
 
 // MAP LOGIC VARS
 let isMapFollowing = true; 
-let lastLimitCheck = 0; // Für Tempolimit Abfrage
+let lastLimitCheck = 0; 
 
 // Social Vars
 let viewingUserUid = null; 
@@ -121,7 +121,6 @@ window.addEventListener('load', () => {
     renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
     setInterval(manualRefreshWeather, 60000); 
     
-    // RECENTER BUTTON LOGIC (FIXED)
     const recenterBtn = document.getElementById('btn-recenter');
     if(recenterBtn) {
         recenterBtn.addEventListener('click', (e) => {
@@ -405,7 +404,6 @@ document.getElementById('btn-start').addEventListener('click', () => { app.scree
 document.getElementById('btn-stop').addEventListener('click', () => { stopTracking(); app.screens.drive.style.display = 'none'; app.screens.summary.style.display = 'flex'; });
 document.getElementById('btn-save-drive').addEventListener('click', () => { saveDriveToStorage(); app.screens.summary.style.display = 'none'; app.nav.style.display = 'flex'; document.querySelectorAll('.nav-item')[4].click(); });
 
-// --- LAZY LOAD START TRACKING ---
 function startTracking() { 
     isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0; isMapFollowing = true; 
     document.getElementById('btn-recenter').style.display = 'none'; 
@@ -415,33 +413,45 @@ function startTracking() {
         map.remove(); 
         map = null;
     }
-    
-    // WICHTIG: 500ms warten, damit das Fenster sicher offen ist!
-    setTimeout(() => {
-        // Frische Karte erstellen
-        map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map); 
-        marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map); 
-        
-        map.on('dragstart', () => {
-            if(isDriving) {
-                isMapFollowing = false;
-                document.getElementById('btn-recenter').style.display = 'flex'; 
-            }
-        });
 
-        // Wichtig: Jetzt Größe neu berechnen, da das Fenster jetzt sicher offen ist
-        map.invalidateSize();
-        
-        // Timer starten
-        intervalId = setInterval(updateTimer, 1000); 
-        if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
+    // NUKLEAR OPTION 2: Container leeren
+    const mapContainer = document.getElementById('map');
+    if (mapContainer) {
+        mapContainer.innerHTML = ""; 
+        mapContainer._leaflet_id = null; // Leaflet ID entfernen
+    }
+    
+    // 500ms warten, damit das Fenster sicher offen ist!
+    setTimeout(() => {
+        try {
+             // Frische Karte erstellen
+            map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); 
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map); 
+            marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map); 
+            
+            map.on('dragstart', () => {
+                if(isDriving) {
+                    isMapFollowing = false;
+                    document.getElementById('btn-recenter').style.display = 'flex'; 
+                }
+            });
+
+            // Wichtig: Jetzt Größe neu berechnen
+            map.invalidateSize();
+            
+            // Timer starten
+            intervalId = setInterval(updateTimer, 1000); 
+            if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
+
+        } catch (e) {
+            console.error("Map Reset Error:", e);
+            // Fallback: Einfach nochmal versuchen
+            location.reload(); 
+        }
     }, 500); // 500ms warten
 }
-// -------------------------------------------
 
 function updatePosition(position) { 
-    // Sicherheitscheck: Wenn Map noch nicht fertig geladen (wegen Timeout), nichts tun
     if (!map) return; 
 
     const lat = position.coords.latitude; const lng = position.coords.longitude; 
@@ -467,7 +477,6 @@ function updatePosition(position) {
 
 function updateTimer() { const diff = new Date() - startTime; app.display.time.innerText = new Date(diff).toISOString().substr(11, 8); }
 
-// --- STOP TRACKING ZERSTÖRT KARTE ---
 function stopTracking() { 
     isDriving = false; 
     clearInterval(intervalId); 
@@ -492,7 +501,6 @@ function stopTracking() {
     app.display.sumAvg.innerText = avgSpeed; 
     app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); 
 }
-// ------------------------------------------------------------------
 
 function handleError(err) { console.warn(err); }
 function saveDriveToStorage() { const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; const newDrive = { id: Date.now(), date: startTime.toISOString(), distance: parseFloat(distKm.toFixed(2)), maxSpeed: currentMaxSpeed, avgSpeed: avgSpeed, duration: new Date(diff).toISOString().substr(11, 8), pathData: path }; let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; drives.unshift(newDrive); localStorage.setItem('dh_drives_v2', JSON.stringify(drives)); renderGarage(); }
