@@ -237,140 +237,157 @@ function stopTracking() { 
     app.display.sumDist.innerText = distKm.toFixed(2); app.display.sumSpeed.innerText = currentMaxSpeed; app.display.sumAvg.innerText = avgSpeed; app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); 
 }
 
-// --- NAVI LOGIC: HARDCORE FIX (Mit Namensauflösung) ---
-function initNavMap() {
-    // 1. Aufräumen
-    if(navMap) { navMap.remove(); navMap = null; }
+// --- NEUE NAVI LOGIC 3.18.4 (Setup-Screen) ---
 
+// Globale Variablen für die Route
+let navStartCoords = null; 
+let navDestCoords = null;
+let searchTimeout = null;
+
+// 1. Öffnet das Setup-Fenster und holt GPS
+function openNaviMode() {
+    // Navigations-Leiste unten ausblenden
+    app.nav.style.display = 'none'; 
+    
+    // Setup-Screen anzeigen
+    document.getElementById('nav-setup-screen').style.display = 'flex';
+    
+    // Text zurücksetzen
+    const startText = document.getElementById('nav-setup-start');
+    startText.innerText = "Suche GPS...";
+    startText.style.color = "#888";
+
+    // GPS holen
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+            navStartCoords = [pos.coords.latitude, pos.coords.longitude];
+            startText.innerText = "Standort gefunden ✅";
+            startText.style.color = "#30d158";
+        }, err => {
+            startText.innerText = "GPS Fehler - Prüfe Einstellungen";
+            startText.style.color = "#ff3b30";
+        }, { enableHighAccuracy: true });
+    } else {
+        startText.innerText = "Kein GPS Support";
+    }
+}
+
+// Schließt das Setup-Fenster wieder
+function closeNaviSetup() {
+    document.getElementById('nav-setup-screen').style.display = 'none';
+    app.nav.style.display = 'flex'; // Menü wieder da
+}
+
+// Schließt die laufende Navigation (Map)
+function closeNaviMode() {
+    app.screens.nav.style.display = 'none';
+    app.nav.style.display = 'flex';
+    if(navMap) { navMap.remove(); navMap = null; }
+}
+
+// 2. Die API-Suche (Reagiert auf Tippen)
+const navInput = document.getElementById('nav-setup-input');
+const resultsBox = document.getElementById('nav-api-results');
+
+if(navInput) {
+    navInput.addEventListener('input', function(e) {
+        const query = e.target.value;
+        
+        // Timeout löschen, damit wir nicht bei jedem Buchstaben die API rufen
+        clearTimeout(searchTimeout);
+        
+        if(query.length < 3) {
+            resultsBox.style.display = 'none';
+            return;
+        }
+
+        // Erst suchen, wenn 500ms nicht getippt wurde
+        searchTimeout = setTimeout(() => {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=de&limit=5`;
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    resultsBox.innerHTML = ""; // Liste leeren
+                    
+                    if(data.length > 0) {
+                        resultsBox.style.display = 'block';
+                        
+                        data.forEach(place => {
+                            // Element bauen
+                            const div = document.createElement('div');
+                            div.className = 'api-result-item';
+                            
+                            // Namen formatieren
+                            const parts = place.display_name.split(',');
+                            const mainName = parts[0];
+                            const subName = parts.slice(1).join(',').trim();
+
+                            div.innerHTML = `<span class="api-result-main">${mainName}</span><span class="api-result-sub">${subName}</span>`;
+                            
+                            // Klick Event: Ziel wählen
+                            div.onclick = () => selectDestination(place.lat, place.lon, mainName);
+                            
+                            resultsBox.appendChild(div);
+                        });
+                    }
+                })
+                .catch(err => console.log("API Fehler:", err));
+        }, 500);
+    });
+}
+
+// 3. Ziel speichern, wenn man draufklickt
+function selectDestination(lat, lon, name) {
+    navDestCoords = [parseFloat(lat), parseFloat(lon)];
+    
+    // Name ins Feld schreiben
+    navInput.value = name;
+    
+    // Liste verstecken
+    resultsBox.style.display = 'none';
+    
+    // Button anzeigen!
+    const btn = document.getElementById('btn-launch-route');
+    if(btn) btn.style.display = 'block';
+}
+
+// 4. Map starten (Wird vom Button geklickt)
+function launchMapNavigation() {
+    if(!navStartCoords || !navDestCoords) {
+        alert("Warte auf GPS oder Ziel...");
+        return;
+    }
+
+    // Setup zu, Map auf
+    document.getElementById('nav-setup-screen').style.display = 'none';
+    app.screens.nav.style.display = 'flex'; 
+
+    // Karte initialisieren
     setTimeout(() => {
-        // 2. Karte erstellen
-        navMap = L.map('nav-map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
+        if(navMap) { navMap.remove(); navMap = null; }
+        
+        navMap = L.map('nav-map', { zoomControl: false }).setView(navStartCoords, 15);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(navMap);
 
-        // 3. Erstmal GPS holen, BEVOR wir das Navi starten
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(async function(pos) {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-                
-                // Karte auf User zentrieren
-                navMap.setView([lat, lng], 16);
-
-                // TRICK: Wir suchen den Straßennamen selbst!
-                let startName = "Mein Standort"; // Fallback
-                try {
-                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-                    const data = await response.json();
-                    if(data && data.display_name) {
-                        // Wir nehmen den Straßennamen
-                        startName = data.address.road || data.display_name.split(',')[0] || "Mein Standort";
-                    }
-                } catch(e) {
-                    console.log("Konnte Adresse nicht laden", e);
-                }
-
-                // 4. Routing starten MIT dem Namen und Koordinaten
-                startRoutingMachine(lat, lng, startName);
-
-            }, function(err) {
-                alert("GPS nicht gefunden. Bitte Standort erlauben.");
-                // Trotzdem starten (ohne Startpunkt)
-                startRoutingMachine(null, null, null);
-            }, { enableHighAccuracy: true });
-        }
-    }, 300);
-}
-
-// Hilfsfunktion: Startet das Plugin erst, wenn wir Daten haben
-// Hilfsfunktion: Startet das Plugin (Updated)
-function startRoutingMachine(lat, lng, name) {
-    
-    // Startpunkte definieren
-    let waypoints = [null, null];
-    if(lat && lng) {
-        waypoints[0] = L.Routing.waypoint(L.latLng(lat, lng), name);
-    }
-
-    // Geocoder Instanz separat erstellen
-    const myGeocoder = L.Control.Geocoder.nominatim({
-        geocodingQueryParams: {
-            'accept-language': 'de', // Deutsche Ergebnisse bevorzugen
-            countrycodes: 'de'       // Optional: Begrenzt auf DE für bessere Treffer
-        }
-    });
-
-    routingControl = L.Routing.control({
-        waypoints: waypoints,
-        router: L.Routing.osrmv1({ 
-            serviceUrl: 'https://router.project-osrm.org/route/v1',
-            profile: 'driving'
-        }),
-        lineOptions: { styles: [{color: '#30d158', opacity: 0.8, weight: 6}] },
+        // Routing OHNE Suche (wir haben ja schon die Punkte)
+        routingControl = L.Routing.control({
+            waypoints: [
+                L.latLng(navStartCoords[0], navStartCoords[1]), // Start
+                L.latLng(navDestCoords[0], navDestCoords[1])    // Ziel
+            ],
+            router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+            lineOptions: { styles: [{color: '#30d158', opacity: 0.8, weight: 6}] }, // Grüne Route
+            createGeocoder: function() { return null; }, // Suchleiste auf Map deaktivieren
+            routeWhileDragging: false,
+            addWaypoints: false,
+            draggableWaypoints: false,
+            fitSelectedRoutes: true,
+            show: false // Info-Box ausblenden
+        }).addTo(navMap);
         
-        geocoder: myGeocoder, // Hier die konfigurierte Instanz nutzen
-        
-        routeWhileDragging: false,
-        show: true,
-        language: 'de',
-        autoRoute: true,
-        
-        // Versucht, Eingaben automatisch zu vervollständigen
-        geocoderPlaceholder: function(i, number) {
-            return i === 0 ? "Startpunkt" : "Ziel eingeben...";
-        }
-    }).addTo(navMap);
-
-    // Wenn Route gefunden -> Button zeigen
-    routingControl.on('routesfound', function(e) {
-        const btn = document.getElementById('btn-start-guidance');
-        if(btn) btn.style.display = 'block';
-        
-        // Debug
-        console.log("Route berechnet:", e.routes[0].summary.totalDistance + "m");
-    });
-    
-    routingControl.on('routingerror', function(e) {
-        console.log("Routing Error", e);
-    });
+    }, 500);
 }
-// NEU: Funktion für den Start-Button
-function startNaviFollow() {
-    // 1. Eingabefelder ausblenden
-    const container = document.querySelector('.leaflet-routing-container');
-    if(container) container.style.display = 'none';
-
-    // 2. Button ausblenden
-    document.getElementById('btn-start-guidance').style.display = 'none';
-
-    // 3. Karte auf Route zoomen
-    if(navMap && routingControl) {
-        const waypoints = routingControl.getWaypoints();
-        if(waypoints && waypoints[0].latLng) {
-            navMap.setView(waypoints[0].latLng, 18);
-        }
-    }
-    
-    // Kleines Feedback
-    alert("Navigation gestartet (Simulation).");
-}
-
-// --- OPEN / CLOSE NAVI FUNCTIONS (CALLED BY HTML) ---
-function openNaviMode() {
-    app.screens.nav.style.display = 'flex';
-    app.nav.style.display = 'none'; // Hide Bottom Nav
-    initNavMap();
-}
-
-function closeNaviMode() {
-    app.screens.nav.style.display = 'none';
-    app.nav.style.display = 'flex'; // Show Bottom Nav
-    if(navMap) {
-        navMap.remove();
-        navMap = null;
-    }
-    // Clean up
-}
-
 function handleError(err) { console.warn(err); }
 function saveDriveToStorage() { const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; const newDrive = { id: Date.now(), date: startTime.toISOString(), distance: parseFloat(distKm.toFixed(2)), maxSpeed: currentMaxSpeed, avgSpeed: avgSpeed, duration: new Date(diff).toISOString().substr(11, 8), pathData: path }; let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; drives.unshift(newDrive); localStorage.setItem('dh_drives_v2', JSON.stringify(drives)); renderGarage(); }
 function renderGarage() { let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; let totalKm = 0; const list = document.getElementById('drives-list'); list.innerHTML = ''; drives.forEach(drive => { totalKm += drive.distance; const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h5>${dateStr} • ${drive.duration}</h4><span>Avg ${drive.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${drive.distance.toFixed(1)} km</span><span>Max ${drive.maxSpeed}</span></div>`; item.addEventListener('click', () => openDetailView(drive)); list.appendChild(item); }); document.getElementById('total-km').innerText = totalKm.toFixed(1); document.getElementById('total-drives').innerText = drives.length; }
@@ -441,6 +458,7 @@ document.querySelectorAll('.nav-item').forEach(btn => { btn.addEventListener('cl
 
 // --- SPEED LIMIT LOGIC (OVERPASS API) ---
 function checkSpeedLimit(lat, lon) { const now = Date.now(); if (now - lastLimitCheck < 8000) return; lastLimitCheck = now; const query = `[out:json]; way(around:15, ${lat}, ${lon})["maxspeed"]; out tags;`; const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`; fetch(url).then(response => response.json()).then(data => { if (data.elements && data.elements.length > 0) { let speed = data.elements[0].tags.maxspeed; if(speed === "none") { document.getElementById('limit-sign').style.display = 'none'; } else { speed = parseInt(speed); if(!isNaN(speed)) { document.getElementById('limit-sign').style.display = 'flex'; document.getElementById('limit-value').innerText = speed; } } } else { document.getElementById('limit-sign').style.display = 'none'; } }).catch(err => console.log("Limit API Error:", err)); }
+
 
 
 
