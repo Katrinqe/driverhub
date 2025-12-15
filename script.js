@@ -23,9 +23,11 @@ let recognition = null; let isListening = false; let synth = window.speechSynthe
 let currentUser = null; 
 let currentUserName = ""; 
 
-// MAP LOGIC VARS
+// TRACKING & MAP VARS
 let isMapFollowing = true; 
 let lastLimitCheck = 0; 
+let lastLat = 0; 
+let lastLng = 0;
 
 // Social Vars
 let viewingUserUid = null; 
@@ -121,15 +123,16 @@ window.addEventListener('load', () => {
     renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
     setInterval(manualRefreshWeather, 60000); 
     
+    // RECENTER BUTTON CLICK: Ruft jetzt die "Neubau"-Funktion auf!
     const recenterBtn = document.getElementById('btn-recenter');
     if(recenterBtn) {
         recenterBtn.addEventListener('click', (e) => {
             e.stopPropagation(); 
             e.preventDefault();
-            isMapFollowing = true;
-            recenterBtn.style.display = 'none'; 
-            if(map && marker) {
-                map.setView(marker.getLatLng(), 18);
+            
+            // Wenn wir wissen wo wir sind, bau die Karte dort neu auf
+            if(lastLat !== 0 && lastLng !== 0) {
+                buildMap(lastLat, lastLng);
             }
         });
         recenterBtn.addEventListener('touchstart', (e) => { e.stopPropagation(); });
@@ -404,75 +407,94 @@ document.getElementById('btn-start').addEventListener('click', () => { app.scree
 document.getElementById('btn-stop').addEventListener('click', () => { stopTracking(); app.screens.drive.style.display = 'none'; app.screens.summary.style.display = 'flex'; });
 document.getElementById('btn-save-drive').addEventListener('click', () => { saveDriveToStorage(); app.screens.summary.style.display = 'none'; app.nav.style.display = 'flex'; document.querySelectorAll('.nav-item')[4].click(); });
 
+// --- BUILD MAP FUNCTION ---
+// Diese Funktion baut die Karte komplett neu auf.
+function buildMap(lat, lng) {
+    // 1. Zerstören falls vorhanden
+    if(map) {
+        map.remove();
+        map = null;
+    }
+    
+    // 2. Container reinigen
+    const mapContainer = document.getElementById('map');
+    if(mapContainer) {
+        mapContainer.innerHTML = "";
+        // Leaflet interne ID löschen, damit er denkt es ist ein neuer Div
+        mapContainer._leaflet_id = null;
+    }
+
+    // 3. Neu aufbauen (mit Delay)
+    setTimeout(() => {
+        map = L.map('map', { zoomControl: false }).setView([lat, lng], 18); 
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map); 
+        marker = L.marker([lat, lng], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map);
+        
+        // Drag Event wieder setzen
+        map.on('dragstart', () => {
+            if(isDriving) {
+                isMapFollowing = false;
+                document.getElementById('btn-recenter').style.display = 'flex'; 
+            }
+        });
+        
+        // Reset flags
+        isMapFollowing = true;
+        document.getElementById('btn-recenter').style.display = 'none';
+        map.invalidateSize();
+    }, 100);
+}
+
 function startTracking() { 
     isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0; isMapFollowing = true; 
     document.getElementById('btn-recenter').style.display = 'none'; 
     
-    // NUKLEAR OPTION: Wenn Map schon da ist, töten.
-    if (map) { 
-        map.remove(); 
-        map = null;
-    }
-
-    // NUKLEAR OPTION 2: Container leeren
-    const mapContainer = document.getElementById('map');
-    if (mapContainer) {
-        mapContainer.innerHTML = ""; 
-        mapContainer._leaflet_id = null; // Leaflet ID entfernen
-    }
+    // Wir starten noch keine Map hier. Wir warten auf das erste GPS Signal,
+    // damit wir die Map direkt an der richtigen Stelle bauen können.
     
-    // 500ms warten, damit das Fenster sicher offen ist!
-    setTimeout(() => {
-        try {
-             // Frische Karte erstellen
-            map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map); 
-            marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map); 
-            
-            map.on('dragstart', () => {
-                if(isDriving) {
-                    isMapFollowing = false;
-                    document.getElementById('btn-recenter').style.display = 'flex'; 
-                }
-            });
-
-            // Wichtig: Jetzt Größe neu berechnen
-            map.invalidateSize();
-            
-            // Timer starten
-            intervalId = setInterval(updateTimer, 1000); 
-            if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
-
-        } catch (e) {
-            console.error("Map Reset Error:", e);
-            // Fallback: Einfach nochmal versuchen
-            location.reload(); 
-        }
-    }, 500); // 500ms warten
+    intervalId = setInterval(updateTimer, 1000); 
+    if (navigator.geolocation) { 
+        watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); 
+    } 
 }
 
 function updatePosition(position) { 
-    if (!map) return; 
-
     const lat = position.coords.latitude; const lng = position.coords.longitude; 
+    
+    // Globale Position speichern für Re-Center
+    lastLat = lat;
+    lastLng = lng;
+
     const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0); 
     if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh); 
     app.display.speed.innerText = speedKmh; 
     
-    const newLatLng = [lat, lng]; 
-    
-    if(marker) marker.setLatLng(newLatLng); 
+    // WENN NOCH KEINE KARTE DA IST (Erster Start) -> BAUEN!
+    if (!map) {
+        buildMap(lat, lng);
+    } else {
+        // Karte ist da -> Nur Marker bewegen
+        const newLatLng = [lat, lng]; 
+        if(marker) marker.setLatLng(newLatLng); 
+        
+        if(isMapFollowing) {
+            map.setView(newLatLng, 18); 
+        }
+    }
     
     if(isDriving) {
         checkSpeedLimit(lat, lng);
     }
-
-    if(isMapFollowing) {
-        map.setView(newLatLng, 18); 
-    }
-
-    if (path.length > 0) { currentDistance += map.distance(path[path.length - 1], newLatLng); app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; } 
-    path.push(newLatLng); 
+    
+    if (path.length > 0) { 
+        // Distanz berechnen (ohne Leaflet Funktion, da map evtl. gerade neu lädt)
+        // Einfache Haversine Formel wäre besser, aber wir nutzen hier einfach die map funktion wenn da
+        if(map) {
+            currentDistance += map.distance(path[path.length - 1], [lat, lng]); 
+            app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; 
+        }
+    } 
+    path.push([lat, lng]); 
 }
 
 function updateTimer() { const diff = new Date() - startTime; app.display.time.innerText = new Date(diff).toISOString().substr(11, 8); }
@@ -486,6 +508,7 @@ function stopTracking() {
         watchId = null; 
     }
     
+    // Cleanup beim Beenden
     if(map) {
         map.remove(); 
         map = null;   
