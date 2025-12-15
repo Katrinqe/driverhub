@@ -127,9 +127,8 @@ window.addEventListener('load', () => {
     renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
     setInterval(manualRefreshWeather, 60000); 
     
-    // RECENTER BUTTON LOGIC (OLD TRACKING)
-    const recenterBtn = document.getElementById('btn-recenter');
-    // onclick ist im HTML, wir brauchen keinen Listener hier.
+    // RECENTER BUTTON (Manuelle Logik über HTML onclick triggerRecenter)
+    // Wir lassen den Listener hier leer, da er im HTML definiert ist
 });
 
 // --- 5. SOCIAL LOGIC ---
@@ -274,18 +273,22 @@ function initNavMap() {
 
 // --- OPEN / CLOSE NAVI FUNCTIONS (CALLED BY HTML) ---
 function openNaviMode() {
-    app.screens.nav.style.display = 'flex';
-    app.nav.style.display = 'none'; // Hide Bottom Nav
-    initNavMap();
+    app.screens.nav.style.display = 'flex';
+    app.nav.style.display = 'none'; // Hide Bottom Nav
+    initNavMap();
 }
 
 function closeNaviMode() {
-    app.screens.nav.style.display = 'none';
-    app.nav.style.display = 'flex'; // Show Bottom Nav
-    if(navMap) {
-        navMap.remove();
-        navMap = null;
-    }
+    app.screens.nav.style.display = 'none';
+    app.nav.style.display = 'flex'; // Show Bottom Nav
+    if(navMap) {
+        navMap.remove();
+        navMap = null;
+    }
+    if(navWatchId) {
+        navigator.geolocation.clearWatch(navWatchId);
+        navWatchId = null;
+    }
 }
 
 function handleError(err) { console.warn(err); }
