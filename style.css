@@ -232,3 +232,29 @@ button { font-family: var(--font-stack); cursor: pointer; }
     border-collapse: collapse;
 }
 
+/* --- NAVI SETUP STYLES --- */
+.api-result-item {
+    padding: 15px;
+    border-bottom: 1px solid #333;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.api-result-item:last-child {
+    border-bottom: none;
+}
+.api-result-item:hover {
+    background-color: #4a90e2; /* Blau beim Drüberfahren */
+    color: white;
+}
+.api-result-main {
+    font-weight: bold;
+    display: block;
+    font-size: 1rem;
+}
+.api-result-sub {
+    font-size: 0.8rem;
+    color: #aaa;
+}
+.api-result-item:hover .api-result-sub {
+    color: #ddd;
+}
