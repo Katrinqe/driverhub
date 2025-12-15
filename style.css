@@ -102,7 +102,7 @@ h1 {
 
 button { font-family: var(--font-stack); cursor: pointer; }
 .btn-primary { border: none; padding: 18px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; background: linear-gradient(135deg, var(--accent-blue), #2c5f9e); color: white; box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3); margin-bottom: 120px; }
-/* NEU: SECONDARY BUTTON LILA */
+/* NAVI BUTTON LILA */
 .btn-secondary { border: none; padding: 18px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; background: linear-gradient(135deg, var(--accent-purple), #5e1c8f); color: white; box-shadow: 0 4px 15px rgba(191, 90, 242, 0.3); }
 
 .btn-danger { border: 1px solid var(--accent-red); background: rgba(255, 59, 48, 0.15); color: var(--accent-red); padding: 16px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; backdrop-filter: blur(10px); }
@@ -113,7 +113,7 @@ button { font-family: var(--font-stack); cursor: pointer; }
     left: auto;
     right: 25px;
     top: auto;
-    bottom: 160px; /* Hoch genug über dem Panel */
+    bottom: 160px; 
     background: var(--accent-blue);
     box-shadow: 0 0 15px rgba(74, 144, 226, 0.4);
 }
@@ -185,7 +185,7 @@ button { font-family: var(--font-stack); cursor: pointer; }
     width: 100%; 
     z-index: 1; 
     background: #111;
-    touch-action: none; /* FIX FÜR ZWEI-FINGER PROBLEM */
+    touch-action: none; 
 }
 .drive-overlay-top { position: absolute; top: 50px; left: 20px; right: 20px; z-index: 999; display: flex; justify-content: space-between; }
 .drive-overlay-bottom { position: absolute; bottom: 40px; left: 0; right: 0; z-index: 999; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px;}
@@ -273,4 +273,6 @@ button { font-family: var(--font-stack); cursor: pointer; }
     border: 1px solid #555 !important;
     padding: 8px !important;
     border-radius: 5px !important;
+    font-size: 1rem !important;
+    width: 100% !important;
 }
