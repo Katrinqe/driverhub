@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 3.15.1 Final Logic</title>
+    <title>DriverHub 3.16.0 Navi Beta</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,6 +12,9 @@
     <meta name="theme-color" content="#000000">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <link rel="stylesheet" href="style.css">
@@ -23,7 +26,7 @@
 </head>
 <body>
 
-    <div class="version-tag">v3.15.1 Logic Fix</div>
+    <div class="version-tag">v3.16.0 Navi Beta</div>
 
     <div id="auth-screen">
         <div class="auth-box">
@@ -56,6 +59,11 @@
                 <h1 id="greeting-text">WELCOME</h1>
                 <p class="slogan" id="slogan-text">Tap Logo for Co-Pilot</p>
                 <div class="spacer-flex"></div>
+                
+                <button id="btn-nav-menu" class="btn-secondary" style="margin-bottom: 20px;">
+                    <i class="fa-solid fa-location-dot"></i> Start Navigate
+                </button>
+                
                 <button id="btn-start" class="btn-primary"><i class="fa-solid fa-road"></i> Start Drive</button>
             </div>
         </section>
@@ -65,21 +73,18 @@
                 <h2 id="comm-title">Community</h2>
                 <i class="fa-solid fa-rotate-right" onclick="refreshSocial()" style="font-size:1.2rem; cursor:pointer; color:#888;"></i>
             </div>
-            
             <div class="content-scroll">
                 <div id="social-main-view">
                     <div style="position:relative;">
                         <input type="text" id="user-search" class="user-search-bar" placeholder="Search Users...">
                         <div id="search-results"></div>
                     </div>
-
                     <div class="social-tabs">
                         <div class="social-tab active" onclick="switchSocialTab('feed')">Feed</div>
                         <div class="social-tab" onclick="switchSocialTab('friends')">Freunde</div>
                         <div class="social-tab" onclick="switchSocialTab('chats')">Chats</div>
                         <div class="social-tab" onclick="switchSocialTab('profile')">Profil</div>
                     </div>
-
                     <div id="tab-feed" class="tab-content-box">
                         <div class="create-post-box">
                             <input type="text" id="post-input" class="create-input" placeholder="Was gibt's neues?">
@@ -93,43 +98,26 @@
                             </div>
                         </div>
                     </div>
-
-                    <div id="tab-friends" class="tab-content-box" style="display:none;">
-                        <div id="friends-list-container">Lade Freunde...</div>
-                    </div>
-
-                    <div id="tab-chats" class="tab-content-box" style="display:none;">
-                        <div id="chats-list-container">Lade Chats...</div>
-                    </div>
+                    <div id="tab-friends" class="tab-content-box" style="display:none;"><div id="friends-list-container">Lade Freunde...</div></div>
+                    <div id="tab-chats" class="tab-content-box" style="display:none;"><div id="chats-list-container">Lade Chats...</div></div>
                 </div>
-
                 <div id="profile-view">
-                    <div class="profile-header-img" id="p-header-img">
-                         <div class="edit-badge" id="btn-edit-img"><i class="fa-solid fa-camera"></i></div>
-                    </div>
+                    <div class="profile-header-img" id="p-header-img"><div class="edit-badge" id="btn-edit-img"><i class="fa-solid fa-camera"></i></div></div>
                     <input type="file" id="profile-img-input" style="display:none;" accept="image/*">
-                    
                     <h2 class="profile-name" id="p-name">Loading...</h2>
                     <p class="profile-bio" id="p-bio">...</p>
                     <i class="fa-solid fa-pen" id="btn-edit-bio" style="font-size:0.8rem; color:#666; cursor:pointer; margin-bottom:15px; display:inline-block; padding:5px;"> Edit Bio</i>
-
                     <div class="profile-stats">
                         <div class="p-stat"><span id="p-followers">0</span><span>Followers</span></div>
                         <div class="p-stat"><span id="p-following">0</span><span>Following</span></div>
                     </div>
-
                     <div class="profile-actions-row">
                         <button id="btn-follow-action" class="btn-follow" style="display:none;">Follow</button>
                         <button id="btn-msg-action" class="btn-chat" style="display:none;"><i class="fa-regular fa-envelope"></i> Message</button>
                     </div>
-
-                    <div id="profile-post-section">
-                        <hr style="border:0; border-top:1px solid #222; margin:20px 0;">
-                        <div id="profile-posts-list"></div>
-                    </div>
+                    <div id="profile-post-section"><hr style="border:0; border-top:1px solid #222; margin:20px 0;"><div id="profile-posts-list"></div></div>
                     <button id="btn-back-feed" class="btn-text">Back</button>
                 </div>
-
                 <div id="chat-view">
                     <h3 id="chat-partner-name" style="margin-bottom:15px;">Chat</h3>
                     <div class="chat-container">
@@ -141,7 +129,6 @@
                     </div>
                     <button id="btn-close-chat" class="btn-text">Close Chat</button>
                 </div>
-
                 <div style="height: 100px;"></div>
             </div>
         </section>
@@ -200,24 +187,23 @@
 
         <section id="drive-screen" class="screen-overlay">
             <div id="map"></div>
-            
             <div class="drive-overlay-top">
                 <div class="stat-box"><span class="label">SPEED</span><span class="value" id="live-speed">0</span><span class="unit">km/h</span></div>
                 <div class="stat-box"><span class="label">TIME</span><span class="value" id="live-time">00:00</span></div>
             </div>
-
-            <div id="limit-sign" style="display:none;">
-                <span id="limit-value">50</span>
-            </div>
-            
+            <div id="limit-sign" style="display:none;"><span id="limit-value">50</span></div>
             <button id="btn-recenter" class="icon-btn-floating right-side" style="display:none;" onclick="triggerRecenter(event)"><i class="fa-solid fa-crosshairs"></i></button>
-
             <div class="drive-overlay-bottom">
                 <div class="stat-row"><span id="live-dist">0.0 km</span></div>
                 <button id="btn-stop" class="btn-danger"><i class="fa-solid fa-stop"></i> End Drive</button>
             </div>
         </section>
 
+        <section id="nav-screen" class="screen-overlay" style="z-index: 2100;">
+            <div id="nav-map" style="height:100%; width:100%; background:#111;"></div>
+            
+            <button id="btn-close-nav" class="icon-btn-floating" style="top:20px; left:20px;"><i class="fa-solid fa-arrow-left"></i></button>
+        </section>
         <section id="summary-screen" class="screen-overlay">
             <div class="content-center">
                 <h2>Drive Summary</h2>
@@ -247,6 +233,7 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
     
     <script src="script.js"></script>
 
