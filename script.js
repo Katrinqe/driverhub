@@ -447,14 +447,42 @@ function updatePosition(position) {
         map.setView(newLatLng, 18); 
     }
 
-    // --- HIER WURDE DIE ZEILE ENTFERNT ---
     if (path.length > 0) { currentDistance += map.distance(path[path.length - 1], newLatLng); app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; } 
     path.push(newLatLng); 
     // KEIN L.polyline MEHR HIER!
 }
 
 function updateTimer() { const diff = new Date() - startTime; app.display.time.innerText = new Date(diff).toISOString().substr(11, 8); }
-function stopTracking() { isDriving = false; clearInterval(intervalId); if(watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; } const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; app.display.sumDist.innerText = distKm.toFixed(2); app.display.sumSpeed.innerText = currentMaxSpeed; app.display.sumAvg.innerText = avgSpeed; app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); }
+
+// --- HIER WURDE GEÄNDERT: STOP TRACKING ZERSTÖRT JETZT DIE KARTE ---
+function stopTracking() { 
+    isDriving = false; 
+    clearInterval(intervalId); 
+    
+    if(watchId) { 
+        navigator.geolocation.clearWatch(watchId); 
+        watchId = null; 
+    }
+    
+    // --- MAP ZERSTÖREN (CLEANUP) ---
+    if(map) {
+        map.remove(); // Entfernt Map und alle Event Listener
+        map = null;   // Setzt Variable zurück
+        marker = null;
+    }
+    // -------------------------------
+
+    const diff = new Date() - startTime; 
+    const distKm = currentDistance / 1000; 
+    const durationHours = diff / (1000 * 60 * 60); 
+    const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; 
+    app.display.sumDist.innerText = distKm.toFixed(2); 
+    app.display.sumSpeed.innerText = currentMaxSpeed; 
+    app.display.sumAvg.innerText = avgSpeed; 
+    app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); 
+}
+// ------------------------------------------------------------------
+
 function handleError(err) { console.warn(err); }
 function saveDriveToStorage() { const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; const newDrive = { id: Date.now(), date: startTime.toISOString(), distance: parseFloat(distKm.toFixed(2)), maxSpeed: currentMaxSpeed, avgSpeed: avgSpeed, duration: new Date(diff).toISOString().substr(11, 8), pathData: path }; let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; drives.unshift(newDrive); localStorage.setItem('dh_drives_v2', JSON.stringify(drives)); renderGarage(); }
 function renderGarage() { let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; let totalKm = 0; const list = document.getElementById('drives-list'); list.innerHTML = ''; drives.forEach(drive => { totalKm += drive.distance; const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h4>${dateStr} • ${drive.duration}</h4><span>Avg ${drive.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${drive.distance.toFixed(1)} km</span><span>Max ${drive.maxSpeed}</span></div>`; item.addEventListener('click', () => openDetailView(drive)); list.appendChild(item); }); document.getElementById('total-km').innerText = totalKm.toFixed(1); document.getElementById('total-drives').innerText = drives.length; }
