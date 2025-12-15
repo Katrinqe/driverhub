@@ -282,33 +282,53 @@ function initNavMap() {
 }
 
 // Hilfsfunktion: Startet das Plugin erst, wenn wir Daten haben
+// Hilfsfunktion: Startet das Plugin (Updated)
 function startRoutingMachine(lat, lng, name) {
     
     // Startpunkte definieren
     let waypoints = [null, null];
     if(lat && lng) {
-        // Wir setzen Koordinaten UND Namen
         waypoints[0] = L.Routing.waypoint(L.latLng(lat, lng), name);
     }
 
+    // Geocoder Instanz separat erstellen
+    const myGeocoder = L.Control.Geocoder.nominatim({
+        geocodingQueryParams: {
+            'accept-language': 'de', // Deutsche Ergebnisse bevorzugen
+            countrycodes: 'de'       // Optional: Begrenzt auf DE für bessere Treffer
+        }
+    });
+
     routingControl = L.Routing.control({
-        waypoints: waypoints, // Hier übergeben wir den Startpunkt mit Namen!
-        router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+        waypoints: waypoints,
+        router: L.Routing.osrmv1({ 
+            serviceUrl: 'https://router.project-osrm.org/route/v1',
+            profile: 'driving'
+        }),
         lineOptions: { styles: [{color: '#30d158', opacity: 0.8, weight: 6}] },
-        geocoder: L.Control.Geocoder.nominatim(),
+        
+        geocoder: myGeocoder, // Hier die konfigurierte Instanz nutzen
+        
         routeWhileDragging: false,
         show: true,
         language: 'de',
-        autoRoute: true
+        autoRoute: true,
+        
+        // Versucht, Eingaben automatisch zu vervollständigen
+        geocoderPlaceholder: function(i, number) {
+            return i === 0 ? "Startpunkt" : "Ziel eingeben...";
+        }
     }).addTo(navMap);
 
-    // Event Listener für den Button
+    // Wenn Route gefunden -> Button zeigen
     routingControl.on('routesfound', function(e) {
         const btn = document.getElementById('btn-start-guidance');
         if(btn) btn.style.display = 'block';
+        
+        // Debug
+        console.log("Route berechnet:", e.routes[0].summary.totalDistance + "m");
     });
     
-    // Fehlerbehandlung
     routingControl.on('routingerror', function(e) {
         console.log("Routing Error", e);
     });
@@ -421,6 +441,7 @@ document.querySelectorAll('.nav-item').forEach(btn => { btn.addEventListener('cl
 
 // --- SPEED LIMIT LOGIC (OVERPASS API) ---
 function checkSpeedLimit(lat, lon) { const now = Date.now(); if (now - lastLimitCheck < 8000) return; lastLimitCheck = now; const query = `[out:json]; way(around:15, ${lat}, ${lon})["maxspeed"]; out tags;`; const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`; fetch(url).then(response => response.json()).then(data => { if (data.elements && data.elements.length > 0) { let speed = data.elements[0].tags.maxspeed; if(speed === "none") { document.getElementById('limit-sign').style.display = 'none'; } else { speed = parseInt(speed); if(!isNaN(speed)) { document.getElementById('limit-sign').style.display = 'flex'; document.getElementById('limit-value').innerText = speed; } } } else { document.getElementById('limit-sign').style.display = 'none'; } }).catch(err => console.log("Limit API Error:", err)); }
+
 
 
 
