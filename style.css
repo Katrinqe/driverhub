@@ -195,3 +195,40 @@ button { font-family: var(--font-stack); cursor: pointer; }
     border-bottom: none !important;
     background: transparent !important;
 }
+
+/* --- FIX: ZIEL-SUCHE DROPDOWN --- */
+
+/* Der Container für die Vorschläge */
+.leaflet-routing-geocoders > div {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 5px;
+    z-index: 10000 !important; /* MUSS höher sein als nav-screen (2200) */
+    position: relative !important;
+    background-color: #1c1c1e !important;
+    border: 1px solid #555 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8) !important;
+}
+
+/* Ein einzelner Vorschlag (Zeile) */
+.leaflet-routing-geocoder-result {
+    font-size: 1rem !important;
+    padding: 12px 15px !important;
+    color: white !important;
+    border-bottom: 1px solid #333 !important;
+    cursor: pointer !important;
+    display: block !important; /* Sicherstellen, dass es Platz einnimmt */
+}
+
+/* Hover-Effekt (Blau) */
+.leaflet-routing-geocoder-result:hover {
+    background-color: var(--accent-blue) !important;
+}
+
+/* Entfernt komische Abstände */
+.leaflet-routing-geocoders table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
