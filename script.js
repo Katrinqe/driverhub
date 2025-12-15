@@ -133,7 +133,27 @@ window.addEventListener('load', () => {
         // ... (Logik von oben) ...
     }
     
-    // NAVI BUTTON LOGIC -> JETZT PER ONCLICK IM HTML GEREGELT (sicherer)
+    // START GUIDANCE BUTTON
+    const btnStartGuidance = document.getElementById('btn-start-guidance');
+    if (btnStartGuidance) {
+        btnStartGuidance.addEventListener('click', () => {
+            // Verstecke die Routing Box (Eingabe)
+            const container = document.querySelector('.leaflet-routing-container');
+            if(container) container.style.display = 'none';
+            
+            // Verstecke den Start Button
+            btnStartGuidance.style.display = 'none';
+            
+            // Starte "Follow Mode" für Navi
+            // (Hier kommt später die Logik rein)
+            if(navMap && routingControl) {
+                 const waypoints = routingControl.getWaypoints();
+                 if(waypoints && waypoints[0].latLng) {
+                     navMap.setView(waypoints[0].latLng, 18);
+                 }
+            }
+        });
+    }
 });
 
 // --- 5. SOCIAL LOGIC (Condensed) ---
@@ -327,42 +347,6 @@ function savePerfRun() { const run = { id: Date.now(), date: new Date().toISOStr
 function renderPerfHistory() { let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; const list = app.perf.list; list.innerHTML = ''; runs.forEach(run => { const dateStr = new Date(run.date).toLocaleDateString('de-DE'); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h5>${dateStr}</h5><span>Max ${run.maxG} G</span></div><div class="right-side"><span style="color:#ff3b30; font-weight:bold;">0-100: ${run.res100}s</span><br><span style="font-size:0.75rem">0-50: ${run.res50}s</span></div>`; list.appendChild(item); }); }
 
 function manualRefreshWeather() { app.locText.innerText = "Locating..."; app.tempText.innerText = "--°"; if(navigator.geolocation) { navigator.geolocation.getCurrentPosition(initWeatherLoc, err => { console.log("GPS Fehler", err); app.locText.innerText = "No GPS"; }, {enableHighAccuracy:false, timeout:10000}); } else { app.locText.innerText = "Not Supported"; } }
-
-function updateTimeGreeting() { 
-    const h = new Date().getHours(); 
-    let txt = "WELCOME"; 
-    if (h >= 5 && h < 12) txt = "GOOD MORNING"; 
-    else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON"; 
-    else if (h >= 18 && h < 22) txt = "GOOD EVENING"; 
-    else txt = "NIGHT CRUISE"; 
-    
-    if (currentUserName) {
-        app.greet.innerHTML = `${txt}<span class="greeting-username">${escapeHtml(currentUserName).toUpperCase()}</span>`;
-    } else {
-        app.greet.innerText = txt; 
-    }
-}
-
-function initWeatherLoc(pos) { const lat = pos.coords.latitude; const lng = pos.coords.longitude; fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`).then(r => r.json()).then(d => { app.locText.innerText = d.address.city || d.address.town || "Location Found"; }); fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`).then(r => r.json()).then(d => { const t = Math.round(d.current_weather.temperature); const c = d.current_weather.weathercode; app.tempText.innerText = t + "°"; if(c <= 1) app.weatherIcon.className = "fa-solid fa-sun"; else if(c <= 3) app.weatherIcon.className = "fa-solid fa-cloud-sun"; else app.weatherIcon.className = "fa-solid fa-cloud"; }); }
-
-let db; const request = indexedDB.open("DriverHubDB", 1);
-request.onupgradeneeded = function(event) { db = event.target.result; db.createObjectStore("music", { keyPath: "id" }); };
-request.onsuccess = function(event) { db = event.target.result; loadMusicFromDB(); };
-function saveTrackToDB(track) { const transaction = db.transaction(["music"], "readwrite"); transaction.objectStore("music").add(track); }
-function loadMusicFromDB() { const transaction = db.transaction(["music"], "readonly"); const req = transaction.objectStore("music").getAll(); req.onsuccess = function() { if(req.result && req.result.length > 0) { req.result.forEach(t => playlist.push(t)); playlist.sort((a,b) => b.id - a.id); renderPlaylist(); if(playlist.length > 0) loadTrack(0, false); } }; }
-function initMusicPlayer() { app.music.playBtn.addEventListener('click', togglePlay); app.music.nextBtn.addEventListener('click', nextTrack); app.music.prevBtn.addEventListener('click', prevTrack); app.music.volSlider.addEventListener('input', (e) => { audioPlayer.volume = e.target.value; }); app.music.fileInput.addEventListener('change', function(e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { const audioData = e.target.result; const newTrack = { id: Date.now(), title: file.name.replace(/\.[^/.]+$/, ""), artist: "Local File", src: audioData }; saveTrackToDB(newTrack); playlist.unshift(newTrack); renderPlaylist(); loadTrack(0, true); }; reader.readAsDataURL(file); }); audioPlayer.addEventListener('error', (e) => { console.error("Audio Error", e); isPlaying = false; updatePlayBtn(); }); }
-function renderPlaylist() { app.music.list.innerHTML = ""; playlist.forEach((track, index) => { const div = document.createElement('div'); div.className = 'track-row'; if(index === currentTrackIdx) div.classList.add('active'); div.innerHTML = `<div><h5>${track.title}</h5><p>${track.artist}</p></div><i class="fa-solid fa-play" style="font-size:0.8rem"></i>`; div.addEventListener('click', () => loadTrack(index)); app.music.list.appendChild(div); }); }
-function loadTrack(index, autoPlay = true) { if(index < 0 || index >= playlist.length) return; currentTrackIdx = index; const track = playlist[index]; audioPlayer.src = track.src; app.music.title.innerText = track.title; app.music.artist.innerText = track.artist; renderPlaylist(); if(autoPlay) { audioPlayer.play().then(() => { isPlaying = true; updatePlayBtn(); }).catch(e => { isPlaying = false; updatePlayBtn(); }); } }
-function togglePlay() { if(playlist.length === 0) { alert("Bitte erst Musik laden!"); return; } if(isPlaying) { audioPlayer.pause(); isPlaying = false; } else { audioPlayer.play(); isPlaying = true; } updatePlayBtn(); }
-function updatePlayBtn() { if(isPlaying) { app.music.playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>'; app.music.aura.classList.add('playing'); } else { app.music.playBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; app.music.aura.classList.remove('playing'); } }
-function nextTrack() { let next = currentTrackIdx + 1; if(next >= playlist.length) next = 0; loadTrack(next); }
-function prevTrack() { let prev = currentTrackIdx - 1; if(prev < 0) prev = playlist.length - 1; loadTrack(prev); }
-
-function initCoPilot() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return; recognition = new SpeechRecognition(); recognition.lang = 'de-DE'; recognition.continuous = false; recognition.interimResults = false; recognition.onstart = () => { isListening = true; app.copilotTrigger.classList.add('listening'); app.slogan.innerText = "Ich höre zu..."; }; recognition.onend = () => { isListening = false; app.copilotTrigger.classList.remove('listening'); app.slogan.innerText = "Tap Logo for Co-Pilot"; }; recognition.onresult = (event) => { handleVoiceCommand(event.results[0][0].transcript.toLowerCase()); }; app.copilotTrigger.addEventListener('click', () => { if (isListening) { recognition.stop(); } else { speak("Hey da. DriverHub CoPilot hier, wie kann ich helfen?"); setTimeout(() => recognition.start(), 2200); } }); }
-function handleVoiceCommand(cmd) { let reply = "Kommando nicht erkannt."; if (cmd.includes("fahrt") || cmd.includes("start") || cmd.includes("drive")) { reply = "Starte Fahrt."; app.screens.drive.style.display = 'flex'; app.nav.style.display = 'none'; startTracking(); } else if (cmd.includes("musik") || cmd.includes("play")) { reply = "Musik wird gestartet."; togglePlay(); } else if (cmd.includes("pause")) { reply = "Pausiert."; if(isPlaying) togglePlay(); } else if (cmd.includes("wetter")) { reply = "Es sind aktuell " + app.tempText.innerText + " in " + app.locText.innerText; } else if (cmd.includes("garage")) { reply = "Öffne Garage."; document.querySelectorAll('.nav-item')[4].click(); } else if (cmd.includes("performance")) { reply = "Performance Modus aktiv."; document.querySelectorAll('.nav-item')[1].click(); } speak(reply); }
-function speak(text) { if (!synth) return; const utter = new SpeechSynthesisUtterance(text); synth.speak(utter); }
-
-document.querySelectorAll('.nav-item').forEach(btn => { btn.addEventListener('click', (e) => { const targetId = btn.getAttribute('data-target'); document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active')); btn.classList.add('active'); Object.values(app.screens).forEach(s => { if(s && !s.classList.contains('screen-overlay')) s.classList.remove('active'); }); if(app.screens[targetId.split('-')[0]]) { app.screens[targetId.split('-')[0]].classList.add('active'); } }); });
 
 // --- SPEED LIMIT LOGIC (OVERPASS API) ---
 function checkSpeedLimit(lat, lon) { const now = Date.now(); if (now - lastLimitCheck < 8000) return; lastLimitCheck = now; const query = `[out:json]; way(around:15, ${lat}, ${lon})["maxspeed"]; out tags;`; const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`; fetch(url).then(response => response.json()).then(data => { if (data.elements && data.elements.length > 0) { let speed = data.elements[0].tags.maxspeed; if(speed === "none") { document.getElementById('limit-sign').style.display = 'none'; } else { speed = parseInt(speed); if(!isNaN(speed)) { document.getElementById('limit-sign').style.display = 'flex'; document.getElementById('limit-value').innerText = speed; } } } else { document.getElementById('limit-sign').style.display = 'none'; } }).catch(err => console.log("Limit API Error:", err)); }
