@@ -1,4 +1,4 @@
-/* --- CORE CSS --- */
+/* --- CORE CSS (Unverändert) --- */
 :root {
     --bg-color: #000000;
     --accent-blue: #4a90e2;
@@ -102,7 +102,6 @@ h1 {
 
 button { font-family: var(--font-stack); cursor: pointer; }
 .btn-primary { border: none; padding: 18px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; background: linear-gradient(135deg, var(--accent-blue), #2c5f9e); color: white; box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3); margin-bottom: 120px; }
-/* NAVI BUTTON LILA */
 .btn-secondary { border: none; padding: 18px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; background: linear-gradient(135deg, var(--accent-purple), #5e1c8f); color: white; box-shadow: 0 4px 15px rgba(191, 90, 242, 0.3); }
 
 .btn-danger { border: 1px solid var(--accent-red); background: rgba(255, 59, 48, 0.15); color: var(--accent-red); padding: 16px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; backdrop-filter: blur(10px); }
@@ -148,7 +147,7 @@ button { font-family: var(--font-stack); cursor: pointer; }
 .action-btn.liked { color: var(--accent-red); }
 .action-btn i { font-size: 1.1rem; }
 
-/* LISTS (Friends & Chats) */
+/* LISTS */
 .list-item-row { display: flex; align-items: center; padding: 15px; background: #1c1c1e; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
 .list-info { margin-left: 10px; flex: 1; text-align: left; }
 .list-name { font-weight: 700; color: white; display: block; }
@@ -247,32 +246,44 @@ button { font-family: var(--font-stack); cursor: pointer; }
     100% { transform: scale(1); }
 }
 
-/* NEU: Styling für die Navi Boxen (Dark Mode) */
+/* NEU: Styling für die Navi Boxen (Dark Mode Overwrite) */
 .leaflet-routing-container {
-    background-color: rgba(20, 20, 20, 0.9) !important;
+    background-color: rgba(30, 30, 30, 0.95) !important;
     color: white !important;
-    border: 1px solid #333 !important;
+    border: 1px solid #444 !important;
     box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
-    margin-right: 20px !important;
+    border-radius: 12px !important;
+    top: 80px !important; /* Abstand von oben */
+    right: 20px !important;
+    width: 300px !important;
+    padding: 10px !important;
 }
-.leaflet-routing-alt {
-    max-height: 200px;
-    overflow-y: auto;
+
+/* Versteckt den hässlichen "Leaflet Routing Machine" Footer */
+.leaflet-routing-container .leaflet-routing-alt h2 {
+    display: none !important;
 }
-.leaflet-routing-container h2 {
-    font-size: 1.1rem !important;
-    color: var(--accent-purple) !important;
-}
-.leaflet-routing-container h3 {
-    font-size: 1rem !important;
-    color: #ccc !important;
-}
+
 .leaflet-routing-geocoders input {
-    background: #333 !important;
+    background: #1c1c1e !important;
     color: white !important;
-    border: 1px solid #555 !important;
-    padding: 8px !important;
-    border-radius: 5px !important;
+    border: 1px solid #444 !important;
+    padding: 12px !important;
+    border-radius: 8px !important;
     font-size: 1rem !important;
     width: 100% !important;
+    margin-bottom: 5px !important;
+    font-family: inherit !important;
+}
+/* Placeholder Farbe */
+.leaflet-routing-geocoders input::placeholder {
+    color: #888 !important;
+}
+
+.leaflet-routing-geocoders button {
+    background: var(--accent-blue) !important;
+    border: none !important;
+    color: white !important;
+    border-radius: 4px !important;
+    margin-left: 5px !important;
 }
