@@ -237,74 +237,58 @@ function stopTracking() { 
     app.display.sumDist.innerText = distKm.toFixed(2); app.display.sumSpeed.innerText = currentMaxSpeed; app.display.sumAvg.innerText = avgSpeed; app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); 
 }
 
-// --- NAVI LOGIC UPDATE (Ersetze die alte initNavMap Funktion hiermit) ---
+// --- NAVI LOGIC FIX (GPS Zwang & Routing) ---
 function initNavMap() {
     setTimeout(() => {
-        // Aufräumen, falls Karte schon da war
+        // 1. Alte Karte löschen, falls vorhanden
         if(navMap) {
              navMap.remove();
              navMap = null;
         }
 
-        // 1. Karte initialisieren
+        // 2. Karte neu erstellen (Startansicht Deutschland mitte, wird gleich korrigiert)
         navMap = L.map('nav-map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(navMap);
         
-        // 2. Routing Engine starten
+        // 3. Routing-Control erstellen (noch ohne Punkte)
         routingControl = L.Routing.control({
-            // Wir starten ohne Waypoints, die kommen gleich per GPS und Eingabe
-            waypoints: [ null, null ], 
-            
-            // Der Routing-Service (OSRM) - Berechnet die Strecke
-            router: L.Routing.osrmv1({ 
-                serviceUrl: 'https://router.project-osrm.org/route/v1',
-                profile: 'driving'
-            }),
-            
-            // Design der Linie (Lila)
+            router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
             lineOptions: { styles: [{color: '#bf5af2', opacity: 0.8, weight: 6}] },
-            
-            // Die Adress-Suche (Nominatim) verbinden
-            geocoder: L.Control.Geocoder.nominatim(),
-            
-            // Optionen für die Eingabebox
-            routeWhileDragging: false, // Performance schonen
+            geocoder: L.Control.Geocoder.nominatim(), // Suchfunktion
+            routeWhileDragging: false,
             show: true,
-            collapsible: true,
             language: 'de',
-            
-            // WICHTIG: Damit er nicht sofort losrechnet bevor du fertig bist
-            autoRoute: true 
+            // WICHTIG: Erlaubt, dass Start leer ist, bis wir GPS haben
+            waypoints: [null, null] 
         }).addTo(navMap);
         
-        // 3. EVENT: Route wurde gefunden -> Grünen Button zeigen
+        // 4. Button-Logik: Sobald eine Route berechnet wurde -> Button zeigen
         routingControl.on('routesfound', function(e) {
             const btn = document.getElementById('btn-start-guidance');
-            const routes = e.routes;
-            // Nur anzeigen, wenn wirklich eine Route mit Distanz da ist
-            if(routes && routes.length > 0) {
-                if(btn) btn.style.display = 'block';
-                
-                // Info-Ausgabe (Optional für Debugging)
-                const summary = routes[0].summary;
-                console.log("Route gefunden: " + (summary.totalDistance / 1000).toFixed(1) + " km");
+            if(e.routes && e.routes.length > 0) {
+                if(btn) btn.style.display = 'block'; // Jetzt sichtbar machen!
             }
         });
-        
-        // 4. EVENT: Fehler beim Routing (falls Server busy ist)
-        routingControl.on('routingerror', function(e) {
-            console.log("Routing Fehler:", e);
-            alert("Konnte Route nicht berechnen. Bitte Adresse prüfen.");
-        });
 
-        // 5. GPS orten und als START-Punkt setzen
-        navMap.locate({setView: true, maxZoom: 16});
-        
-        navMap.on('locationfound', function(e) {
-            // Setzt deinen aktuellen Standort automatisch als ersten Wegpunkt (Start)
-            // Waypoint 0 = Start, Waypoint 1 = Ziel (leer, musst du eingeben)
-            routingControl.spliceWaypoints(0, 1, e.latlng);
-        });
+        // 5. GPS DIREKT ABFRAGEN (Zuverlässiger als map.locate)
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const userLatLng = L.latLng(lat, lng);
+
+                // Karte auf Nutzer zentrieren
+                navMap.setView(userLatLng, 16);
+
+                // HIER PASSIERT ES: Startpunkt (Index 0) hart setzen!
+                // Das erste Feld im Navi wird jetzt automatisch gefüllt.
+                routingControl.spliceWaypoints(0, 1, userLatLng);
+                
+            }, function(err) {
+                console.warn("Navi GPS Fehler:", err);
+                alert("Bitte GPS aktivieren für Navigation.");
+            }, { enableHighAccuracy: true });
+        }
 
         navMap.invalidateSize();
     }, 500);
@@ -418,4 +402,5 @@ document.querySelectorAll('.nav-item').forEach(btn => { btn.addEventListener('cl
 
 // --- SPEED LIMIT LOGIC (OVERPASS API) ---
 function checkSpeedLimit(lat, lon) { const now = Date.now(); if (now - lastLimitCheck < 8000) return; lastLimitCheck = now; const query = `[out:json]; way(around:15, ${lat}, ${lon})["maxspeed"]; out tags;`; const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`; fetch(url).then(response => response.json()).then(data => { if (data.elements && data.elements.length > 0) { let speed = data.elements[0].tags.maxspeed; if(speed === "none") { document.getElementById('limit-sign').style.display = 'none'; } else { speed = parseInt(speed); if(!isNaN(speed)) { document.getElementById('limit-sign').style.display = 'flex'; document.getElementById('limit-value').innerText = speed; } } } else { document.getElementById('limit-sign').style.display = 'none'; } }).catch(err => console.log("Limit API Error:", err)); }
+
 
