@@ -67,8 +67,26 @@ body {
 .logo-container.listening .dh-logo { filter: drop-shadow(0 0 30px rgba(255, 59, 48, 0.8)); animation: pulse-listen 1.5s infinite; }
 @keyframes pulse-listen { 0% { filter: drop-shadow(0 0 20px rgba(255, 59, 48, 0.6)); transform: scale(1); } 50% { filter: drop-shadow(0 0 50px rgba(255, 59, 48, 1)); transform: scale(1.02); } 100% { filter: drop-shadow(0 0 20px rgba(255, 59, 48, 0.6)); transform: scale(1); } }
 
-h1 { font-size: 2.6rem; font-weight: 900; letter-spacing: 1px; margin-bottom: 2px; color: #ffffff; text-transform: uppercase; line-height: 1; }
-.greeting-username { display: block; font-size: 1.1rem; color: var(--accent-blue); font-weight: 700; letter-spacing: 1.5px; margin-bottom: 20px; text-transform: uppercase; }
+h1 { 
+    font-size: 2.6rem; 
+    font-weight: 900; 
+    letter-spacing: 1px; 
+    margin-bottom: 2px; 
+    color: #ffffff; 
+    text-transform: uppercase; 
+    line-height: 1;
+}
+
+.greeting-username {
+    display: block;
+    font-size: 1.1rem;
+    color: var(--accent-blue);
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+}
+
 .slogan { color: var(--text-grey); font-size: 0.9rem; margin-bottom: 20px; letter-spacing: 1px; text-transform: uppercase; }
 
 .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; opacity: 0; transition: opacity 0.3s ease; }
@@ -90,7 +108,14 @@ button { font-family: var(--font-stack); cursor: pointer; }
 .icon-btn-floating { position: absolute; top: 40px; left: 20px; width: 45px; height: 45px; background: var(--glass-bg); border-radius: 50%; border: none; color: white; z-index: 3000; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; pointer-events: auto; cursor: pointer; }
 .btn-text { background: transparent; color: #555; font-size: 0.9rem; margin-top: 40px; width: 100%; border: none; }
 
-.icon-btn-floating.right-side { left: auto; right: 25px; top: auto; bottom: 160px; background: var(--accent-blue); box-shadow: 0 0 15px rgba(74, 144, 226, 0.4); }
+.icon-btn-floating.right-side {
+    left: auto;
+    right: 25px;
+    top: auto;
+    bottom: 160px; 
+    background: var(--accent-blue);
+    box-shadow: 0 0 15px rgba(74, 144, 226, 0.4);
+}
 
 /* --- SOCIAL CSS --- */
 .user-search-bar { width: 100%; padding: 12px; border-radius: 12px; background: #1c1c1e; border: 1px solid #333; color: white; margin-bottom: 15px; outline: none; }
@@ -215,44 +240,65 @@ button { font-family: var(--font-stack); cursor: pointer; }
     100% { transform: scale(1); }
 }
 
-/* NEU: Styling für die Navi Boxen (Dark Mode Overwrite) */
+/* NAVI PRO DESIGN (DARK MODE OVERRIDE) */
 .leaflet-routing-container {
     background-color: rgba(30, 30, 30, 0.95) !important;
     color: white !important;
     border: 1px solid #444 !important;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
-    border-radius: 12px !important;
-    top: 80px !important; /* Abstand von oben */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8) !important;
+    border-radius: 16px !important;
+    top: 20px !important;
     right: 20px !important;
-    width: 300px !important;
-    padding: 10px !important;
+    width: 320px !important;
+    padding: 20px !important;
 }
 
-/* Versteckt den hässlichen "Leaflet Routing Machine" Footer */
-.leaflet-routing-container .leaflet-routing-alt h2 {
-    display: none !important;
+.leaflet-routing-container h2 {
+    font-size: 1.2rem !important;
+    color: var(--accent-purple) !important;
+    margin-bottom: 10px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase;
 }
 
+.leaflet-routing-container h3 {
+    font-size: 0.9rem !important;
+    color: #888 !important;
+    font-weight: 400 !important;
+}
+
+/* INPUT FELDER */
 .leaflet-routing-geocoders input {
     background: #1c1c1e !important;
     color: white !important;
     border: 1px solid #444 !important;
-    padding: 12px !important;
-    border-radius: 8px !important;
+    padding: 15px !important;
+    border-radius: 12px !important;
     font-size: 1rem !important;
     width: 100% !important;
-    margin-bottom: 5px !important;
-    font-family: inherit !important;
-}
-/* Placeholder Farbe */
-.leaflet-routing-geocoders input::placeholder {
-    color: #888 !important;
+    margin-bottom: 10px !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
 }
 
-.leaflet-routing-geocoders button {
-    background: var(--accent-blue) !important;
-    border: none !important;
+.leaflet-routing-geocoders input::placeholder {
+    color: #666 !important;
+}
+
+/* ADD BUTTON (+) */
+.leaflet-routing-add-waypoint {
+    display: none !important; /* Brauchen wir nicht */
+}
+
+/* SEARCH RESULTS */
+.leaflet-routing-geocoder-result {
+    background-color: #222 !important;
     color: white !important;
-    border-radius: 4px !important;
-    margin-left: 5px !important;
+    border: 1px solid #444 !important;
+    border-radius: 8px !important;
+    margin-top: 5px !important;
+}
+
+.leaflet-routing-geocoder-result tr:hover {
+    background-color: var(--accent-purple) !important;
+    color: white !important;
 }
