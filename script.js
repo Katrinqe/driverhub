@@ -31,6 +31,7 @@ let currentLat = 0, currentLng = 0;
 // NAVI VARS
 let navMap = null;
 let routingControl = null;
+let navWatchId = null;
 
 // Social Vars
 let viewingUserUid = null; 
@@ -127,36 +128,13 @@ window.addEventListener('load', () => {
     renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
     setInterval(manualRefreshWeather, 60000); 
     
-    // RECENTER BUTTON LOGIC (OLD TRACKING)
+    // RECENTER BUTTON (Manuelle Logik über HTML onclick triggerRecenter)
     const recenterBtn = document.getElementById('btn-recenter');
-    if(recenterBtn) {
-        // ... (Logik von oben) ...
-    }
-    
-    // START GUIDANCE BUTTON
-    const btnStartGuidance = document.getElementById('btn-start-guidance');
-    if (btnStartGuidance) {
-        btnStartGuidance.addEventListener('click', () => {
-            // Verstecke die Routing Box (Eingabe)
-            const container = document.querySelector('.leaflet-routing-container');
-            if(container) container.style.display = 'none';
-            
-            // Verstecke den Start Button
-            btnStartGuidance.style.display = 'none';
-            
-            // Starte "Follow Mode" für Navi
-            // (Hier kommt später die Logik rein)
-            if(navMap && routingControl) {
-                 const waypoints = routingControl.getWaypoints();
-                 if(waypoints && waypoints[0].latLng) {
-                     navMap.setView(waypoints[0].latLng, 18);
-                 }
-            }
-        });
-    }
+    // Wir lassen den Listener hier leer, da er im HTML definiert ist, 
+    // aber wir stellen sicher, dass er existiert.
 });
 
-// --- 5. SOCIAL LOGIC (Condensed) ---
+// --- 5. SOCIAL LOGIC ---
 function escapeHtml(text) { if (!text) return ""; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 window.refreshSocial = function() { if(!currentUser) return; loadFriendsFeed(); loadChatInbox(); };
 window.switchSocialTab = function(tabName) { document.querySelectorAll('.social-tab').forEach(t => t.classList.remove('active')); event.target.classList.add('active'); document.getElementById('tab-feed').style.display = 'none'; document.getElementById('tab-friends').style.display = 'none'; document.getElementById('tab-chats').style.display = 'none'; if(tabName === 'feed') document.getElementById('tab-feed').style.display = 'block'; else if(tabName === 'friends') { document.getElementById('tab-friends').style.display = 'block'; loadFriendsList(); } else if(tabName === 'chats') { document.getElementById('tab-chats').style.display = 'block'; loadChatInbox(); } else if(tabName === 'profile') if(currentUser) openProfile(currentUser.uid); };
@@ -194,109 +172,77 @@ document.getElementById('btn-start').addEventListener('click', () => { app.scree
 document.getElementById('btn-stop').addEventListener('click', () => { stopTracking(); app.screens.drive.style.display = 'none'; app.screens.summary.style.display = 'flex'; });
 document.getElementById('btn-save-drive').addEventListener('click', () => { saveDriveToStorage(); app.screens.summary.style.display = 'none'; app.nav.style.display = 'flex'; document.querySelectorAll('.nav-item')[4].click(); });
 
-// --- TRACKING LOGIC (RESTORED TO STABLE 3.13.2+3.15.3 MIX) ---
-function startTracking() { 
-    isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0; isMapFollowing = true; 
-    document.getElementById('btn-recenter').style.display = 'none'; 
-    
-    if (map) { map.remove(); map = null; }
-    // NUKLEAR OPTION 2: Container leeren
-    const mapContainer = document.getElementById('map');
-    if (mapContainer) { mapContainer.innerHTML = ""; mapContainer._leaflet_id = null; }
+// --- TRACKING LOGIC ---
+function startTracking() { 
+    isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0; isMapFollowing = true; 
+    document.getElementById('btn-recenter').style.display = 'none'; 
+    
+    // Alte Map entfernen
+    if (map) { map.remove(); map = null; }
+    
+    // Container leeren (Hard Reset)
+    const mapContainer = document.getElementById('map');
+    if (mapContainer) { mapContainer.innerHTML = ""; mapContainer._leaflet_id = null; }
 
-    setTimeout(() => {
-        map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map); 
-        marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map); 
-        
-        map.on('dragstart', () => {
-            if(isDriving) {
-                isMapFollowing = false;
-                document.getElementById('btn-recenter').style.display = 'flex'; 
-            }
-        });
-        
-        map.invalidateSize();
-        intervalId = setInterval(updateTimer, 1000); 
-        if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
-    }, 500); 
+    setTimeout(() => {
+        map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); 
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map); 
+        marker = L.marker([0, 0], {icon: L.divIcon({className: 'c', html: "<div style='background-color:#4a90e2; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #4a90e2;'></div>", iconSize: [20, 20]})}).addTo(map); 
+        
+        map.on('dragstart', () => {
+            if(isDriving) {
+                isMapFollowing = false;
+                document.getElementById('btn-recenter').style.display = 'flex'; 
+            }
+        });
+        
+        map.invalidateSize();
+        intervalId = setInterval(updateTimer, 1000); 
+        if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
+    }, 500); 
 }
 
-// --- RECENTER FUNCTION CALLED BY HTML ONCLICK ---
+// --- RECENTER FUNCTION (CALLED BY HTML) ---
 function triggerRecenter(e) {
-    if(e) { e.stopPropagation(); e.preventDefault(); }
-    isMapFollowing = true;
-    document.getElementById('btn-recenter').style.display = 'none';
-    if(map && currentLat !== 0 && currentLng !== 0) { map.setView([currentLat, currentLng], 18); }
+    if(e) { e.stopPropagation(); e.preventDefault(); }
+    isMapFollowing = true;
+    document.getElementById('btn-recenter').style.display = 'none';
+    if(map && currentLat !== 0 && currentLng !== 0) { map.setView([currentLat, currentLng], 18); }
 }
 
-function updatePosition(position) { 
-    if (!map) return; 
-    const lat = position.coords.latitude; const lng = position.coords.longitude; 
-    currentLat = lat; currentLng = lng;
+function updatePosition(position) { 
+    if (!map) return; 
+    const lat = position.coords.latitude; const lng = position.coords.longitude; 
+    currentLat = lat; currentLng = lng;
 
-    const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0); 
-    if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh); 
-    app.display.speed.innerText = speedKmh; 
-    
-    const newLatLng = [lat, lng]; 
-    if(marker) marker.setLatLng(newLatLng); 
-    
-    if(isDriving) { checkSpeedLimit(lat, lng); }
-    if(isMapFollowing) { map.setView(newLatLng, 18); }
-    // path.push(newLatLng); // DISABLED LIVE LINE
-    path.push(newLatLng);
+    const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0); 
+    if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh); 
+    app.display.speed.innerText = speedKmh; 
+    
+    const newLatLng = [lat, lng]; 
+    if(marker) marker.setLatLng(newLatLng); 
+    
+    if(isDriving) { checkSpeedLimit(lat, lng); }
+    if(isMapFollowing) { map.setView(newLatLng, 18); }
+    // path.push(newLatLng); 
+    path.push(newLatLng);
 }
 
 function updateTimer() { const diff = new Date() - startTime; app.display.time.innerText = new Date(diff).toISOString().substr(11, 8); }
 
-function stopTracking() { 
-    isDriving = false; clearInterval(intervalId); 
-    if(watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-    if(map) { map.remove(); map = null; marker = null; }
+function stopTracking() { 
+    isDriving = false; clearInterval(intervalId); 
+    if(watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    if(map) { map.remove(); map = null; marker = null; }
 
-    const diff = new Date() - startTime; 
-    const distKm = currentDistance / 1000; 
-    const durationHours = diff / (1000 * 60 * 60); 
-    const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; 
-    app.display.sumDist.innerText = distKm.toFixed(2); app.display.sumSpeed.innerText = currentMaxSpeed; app.display.sumAvg.innerText = avgSpeed; app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); 
+    const diff = new Date() - startTime; 
+    const distKm = currentDistance / 1000; 
+    const durationHours = diff / (1000 * 60 * 60); 
+    const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; 
+    app.display.sumDist.innerText = distKm.toFixed(2); app.display.sumSpeed.innerText = currentMaxSpeed; app.display.sumAvg.innerText = avgSpeed; app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); 
 }
 
-// --- NEW NAVI SANDBOX LOGIC ---
-function initNavMap() {
-    // 500ms wait for transition
-    setTimeout(() => {
-        if(navMap) {
-             navMap.remove();
-             navMap = null;
-        }
-
-        navMap = L.map('nav-map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(navMap);
-        
-        // Add Routing Control with Geocoder enabled
-        routingControl = L.Routing.control({
-            waypoints: [ null, null ], // Start empty
-            router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
-            lineOptions: { styles: [{color: '#bf5af2', opacity: 0.8, weight: 6}] },
-            geocoder: L.Control.Geocoder.nominatim(), // ENABLE ADDRESS SEARCH
-            routeWhileDragging: true,
-            show: true,
-            collapsible: true
-        }).addTo(navMap);
-        
-        // Try to locate user for start point
-        navMap.locate({setView: true, maxZoom: 16});
-        navMap.on('locationfound', function(e) {
-            // Set Start Point to User Location automatically
-            routingControl.spliceWaypoints(0, 1, e.latlng);
-        });
-
-        navMap.invalidateSize();
-    }, 500);
-}
-
-// --- OPEN / CLOSE NAVI FUNCTIONS (CALLED BY HTML) ---
+// --- NAVI FUNCTIONS (CALLED BY HTML) ---
 function openNaviMode() {
     app.screens.nav.style.display = 'flex';
     app.nav.style.display = 'none'; // Hide Bottom Nav
@@ -310,29 +256,55 @@ function closeNaviMode() {
         navMap.remove();
         navMap = null;
     }
-    if(navWatchId) {
-        navigator.geolocation.clearWatch(navWatchId);
-        navWatchId = null;
-    }
+}
+
+function initNavMap() {
+    setTimeout(() => {
+        if(navMap) {
+             navMap.remove();
+             navMap = null;
+        }
+
+        navMap = L.map('nav-map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(navMap);
+        
+        routingControl = L.Routing.control({
+            waypoints: [ null, null ], 
+            router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+            lineOptions: { styles: [{color: '#bf5af2', opacity: 0.8, weight: 6}] },
+            geocoder: L.Control.Geocoder.nominatim(),
+            routeWhileDragging: true,
+            show: true,
+            collapsible: true
+        }).addTo(navMap);
+        
+        // Locate User for Start Point
+        navMap.locate({setView: true, maxZoom: 16});
+        navMap.on('locationfound', function(e) {
+            routingControl.spliceWaypoints(0, 1, e.latlng);
+        });
+
+        navMap.invalidateSize();
+    }, 500);
 }
 
 function handleError(err) { console.warn(err); }
 function saveDriveToStorage() { const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; const newDrive = { id: Date.now(), date: startTime.toISOString(), distance: parseFloat(distKm.toFixed(2)), maxSpeed: currentMaxSpeed, avgSpeed: avgSpeed, duration: new Date(diff).toISOString().substr(11, 8), pathData: path }; let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; drives.unshift(newDrive); localStorage.setItem('dh_drives_v2', JSON.stringify(drives)); renderGarage(); }
-function renderGarage() { let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; let totalKm = 0; const list = document.getElementById('drives-list'); list.innerHTML = ''; drives.forEach(drive => { totalKm += drive.distance; const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h4>${dateStr} • ${drive.duration}</h4><span>Avg ${drive.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${drive.distance.toFixed(1)} km</span><span>Max ${drive.maxSpeed}</span></div>`; item.addEventListener('click', () => openDetailView(drive)); list.appendChild(item); }); document.getElementById('total-km').innerText = totalKm.toFixed(1); document.getElementById('total-drives').innerText = drives.length; }
+function renderGarage() { let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; let totalKm = 0; const list = document.getElementById('drives-list'); list.innerHTML = ''; drives.forEach(drive => { totalKm += drive.distance; const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h5>${dateStr} • ${drive.duration}</h4><span>Avg ${drive.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${drive.distance.toFixed(1)} km</span><span>Max ${drive.maxSpeed}</span></div>`; item.addEventListener('click', () => openDetailView(drive)); list.appendChild(item); }); document.getElementById('total-km').innerText = totalKm.toFixed(1); document.getElementById('total-drives').innerText = drives.length; }
 
-function openDetailView(drive) { 
-    app.screens.detail.style.display = 'block'; 
-    document.getElementById('detail-dist').innerText = drive.distance.toFixed(1); 
-    document.getElementById('detail-max').innerText = drive.maxSpeed; 
-    document.getElementById('detail-avg').innerText = drive.avgSpeed; 
-    setTimeout(() => { 
-        if(!detailMap) { 
-            detailMap = L.map('detail-map', { zoomControl: false }); 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(detailMap); 
-        } 
-        detailMap.eachLayer((layer) => { if (!!layer.toGeoJSON) { detailMap.removeLayer(layer); } }); 
-        if(drive.pathData && drive.pathData.length > 0) { const polyline = L.polyline(drive.pathData, {color: '#4a90e2', weight: 5}).addTo(detailMap); detailMap.fitBounds(polyline.getBounds(), {padding: [50, 50]}); } 
-    }, 100); 
+function openDetailView(drive) { 
+    app.screens.detail.style.display = 'block'; 
+    document.getElementById('detail-dist').innerText = drive.distance.toFixed(1); 
+    document.getElementById('detail-max').innerText = drive.maxSpeed; 
+    document.getElementById('detail-avg').innerText = drive.avgSpeed; 
+    setTimeout(() => { 
+        if(!detailMap) { 
+            detailMap = L.map('detail-map', { zoomControl: false }); 
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(detailMap); 
+        } 
+        detailMap.eachLayer((layer) => { if (!!layer.toGeoJSON) { detailMap.removeLayer(layer); } }); 
+        if(drive.pathData && drive.pathData.length > 0) { const polyline = L.polyline(drive.pathData, {color: '#4a90e2', weight: 5}).addTo(detailMap); detailMap.fitBounds(polyline.getBounds(), {padding: [50, 50]}); } 
+    }, 100); 
 }
 
 document.getElementById('btn-close-detail').addEventListener('click', () => { app.screens.detail.style.display = 'none'; if(detailMap) { detailMap.remove(); detailMap = null; } });
