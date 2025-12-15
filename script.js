@@ -14,23 +14,25 @@ const db_fire = firebase.firestore();
 const storage = firebase.storage();
 
 // --- 2. GLOBAL VARIABLES ---
-// TRACKING VARS
 let map, marker, watchId, intervalId, detailMap;
 let startTime, path = [], currentDistance = 0, currentMaxSpeed = 0, isDriving = false;
-let isMapFollowing = true; 
-let lastLimitCheck = 0; 
-let currentLat = 0, currentLng = 0;
-
-// NAVI VARS (Separate Instanz)
-let navMap = null;
-
-// OTHER VARS
 let perfWatchId = null, perfState = 'idle', perfStartTime = 0;
 let result50 = null, result100 = null, maxG = 0;
 const playlist = []; let currentTrackIdx = 0; const audioPlayer = new Audio(); let isPlaying = false;
 let recognition = null; let isListening = false; let synth = window.speechSynthesis;
 let currentUser = null; 
 let currentUserName = ""; 
+
+// TRACKING & MAP VARS
+let isMapFollowing = true; 
+let lastLimitCheck = 0; 
+let currentLat = 0, currentLng = 0;
+
+// NAVI VARS
+let navMap = null;
+let routingControl = null;
+
+// Social Vars
 let viewingUserUid = null; 
 let activeChatId = null;
 let feedUnsubscribe = null;
@@ -125,17 +127,22 @@ window.addEventListener('load', () => {
     renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
     setInterval(manualRefreshWeather, 60000); 
     
+    // RECENTER BUTTON LOGIC (OLD TRACKING)
+    const recenterBtn = document.getElementById('btn-recenter');
+    if(recenterBtn) {
+        // ... (Logik von oben) ...
+    }
+    
     // NAVI BUTTON LOGIC
     document.getElementById('btn-nav-start').addEventListener('click', () => {
         app.screens.nav.style.display = 'flex';
-        app.nav.style.display = 'none'; // Hide bottom nav
+        app.nav.style.display = 'none'; 
         initNavMap();
     });
     
     document.getElementById('btn-close-nav').addEventListener('click', () => {
         app.screens.nav.style.display = 'none';
-        app.nav.style.display = 'flex'; // Show bottom nav
-        // Kill Nav Map to save memory
+        app.nav.style.display = 'flex'; 
         if(navMap) {
             navMap.remove();
             navMap = null;
@@ -143,7 +150,7 @@ window.addEventListener('load', () => {
     });
 });
 
-// --- 5. SOCIAL LOGIC (Shortened for brevity, same as stable) ---
+// --- 5. SOCIAL LOGIC (Condensed) ---
 function escapeHtml(text) { if (!text) return ""; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 window.refreshSocial = function() { if(!currentUser) return; loadFriendsFeed(); loadChatInbox(); };
 window.switchSocialTab = function(tabName) { document.querySelectorAll('.social-tab').forEach(t => t.classList.remove('active')); event.target.classList.add('active'); document.getElementById('tab-feed').style.display = 'none'; document.getElementById('tab-friends').style.display = 'none'; document.getElementById('tab-chats').style.display = 'none'; if(tabName === 'feed') document.getElementById('tab-feed').style.display = 'block'; else if(tabName === 'friends') { document.getElementById('tab-friends').style.display = 'block'; loadFriendsList(); } else if(tabName === 'chats') { document.getElementById('tab-chats').style.display = 'block'; loadChatInbox(); } else if(tabName === 'profile') if(currentUser) openProfile(currentUser.uid); };
@@ -171,7 +178,7 @@ function startChat(partnerUid, partnerName) { const ids = [currentUser.uid, part
 function loadMessages() { const msgBox = document.getElementById('chat-messages'); msgBox.innerHTML = ""; db_fire.collection('chats').doc(activeChatId).collection('messages').orderBy('timestamp').onSnapshot(snap => { msgBox.innerHTML = ""; snap.forEach(doc => { const m = doc.data(); const bubble = document.createElement('div'); bubble.className = `chat-bubble ${m.senderId === currentUser.uid ? 'me' : 'them'}`; bubble.innerText = m.text; msgBox.appendChild(bubble); }); msgBox.scrollTop = msgBox.scrollHeight; }); }
 function sendChatMessage() { const input = document.getElementById('chat-input'); const txt = input.value; if(!txt || !activeChatId) return; db_fire.collection('chats').doc(activeChatId).collection('messages').add({ text: txt, senderId: currentUser.uid, timestamp: firebase.firestore.FieldValue.serverTimestamp() }); input.value = ""; }
 
-// --- ORIGINAL MODULE LOGIC (AUTH, MUSIC, PERF, ETC.) ---
+// --- ORIGINAL MODULES (AUTH, MUSIC, PERF, ETC.) ---
 document.getElementById('auth-switch-btn').addEventListener('click', () => { isSignup = !isSignup; if(isSignup) { document.getElementById('btn-login-email').style.display='none'; document.getElementById('btn-signup-email').style.display='block'; } else { document.getElementById('btn-login-email').style.display='block'; document.getElementById('btn-signup-email').style.display='none'; } });
 document.getElementById('btn-login-email').addEventListener('click', () => auth.signInWithEmailAndPassword(document.getElementById('auth-email').value, document.getElementById('auth-pass').value).catch(err => alert(err.message)));
 document.getElementById('btn-signup-email').addEventListener('click', () => { const e = document.getElementById('auth-email').value; const p = document.getElementById('auth-pass').value; auth.createUserWithEmailAndPassword(e, p).then(cred => { db_fire.collection('users').doc(cred.user.uid).set({ email: e, username: e.split('@')[0], searchKey: e.split('@')[0].toLowerCase(), joined: new Date() }); }).catch(err => alert(err.message)); });
@@ -186,8 +193,10 @@ function startTracking() {
     isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0; isMapFollowing = true; 
     document.getElementById('btn-recenter').style.display = 'none'; 
     
-    // NUKLEAR OPTION für Tracking: Map komplett neu bauen
     if (map) { map.remove(); map = null; }
+    // NUKLEAR OPTION 2: Container leeren
+    const mapContainer = document.getElementById('map');
+    if (mapContainer) { mapContainer.innerHTML = ""; mapContainer._leaflet_id = null; }
 
     setTimeout(() => {
         map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); 
@@ -212,18 +221,12 @@ function triggerRecenter(e) {
     if(e) { e.stopPropagation(); e.preventDefault(); }
     isMapFollowing = true;
     document.getElementById('btn-recenter').style.display = 'none';
-    
-    // Wir nutzen hier die globalen Koordinaten, um sicher zu gehen
-    if(map && currentLat !== 0 && currentLng !== 0) {
-        map.setView([currentLat, currentLng], 18);
-    }
+    if(map && currentLat !== 0 && currentLng !== 0) { map.setView([currentLat, currentLng], 18); }
 }
 
 function updatePosition(position) { 
     if (!map) return; 
-
     const lat = position.coords.latitude; const lng = position.coords.longitude; 
-    // Globale Variablen updaten für Re-Center
     currentLat = lat; currentLng = lng;
 
     const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0); 
@@ -234,11 +237,9 @@ function updatePosition(position) {
     if(marker) marker.setLatLng(newLatLng); 
     
     if(isDriving) { checkSpeedLimit(lat, lng); }
-
     if(isMapFollowing) { map.setView(newLatLng, 18); }
-    
-    // Keine Linie zeichnen (wie gewünscht)
-    path.push(newLatLng); 
+    // path.push(newLatLng); // DISABLED LIVE LINE
+    path.push(newLatLng);
 }
 
 function updateTimer() { const diff = new Date() - startTime; app.display.time.innerText = new Date(diff).toISOString().substr(11, 8); }
@@ -246,8 +247,6 @@ function updateTimer() { const diff = new Date() - startTime; app.display.time.i
 function stopTracking() { 
     isDriving = false; clearInterval(intervalId); 
     if(watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-    
-    // Map zerstören um Clean zu bleiben
     if(map) { map.remove(); map = null; marker = null; }
 
     const diff = new Date() - startTime; 
@@ -257,14 +256,62 @@ function stopTracking() {
     app.display.sumDist.innerText = distKm.toFixed(2); app.display.sumSpeed.innerText = currentMaxSpeed; app.display.sumAvg.innerText = avgSpeed; app.display.sumTime.innerText = new Date(diff).toISOString().substr(11, 8); 
 }
 
+// --- NEW NAVI SANDBOX LOGIC ---
+function initNavMap() {
+    // 500ms wait for transition
+    setTimeout(() => {
+        if(navMap) {
+             navMap.remove();
+             navMap = null;
+        }
+
+        navMap = L.map('nav-map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(navMap);
+        
+        // Add Routing Control with Geocoder enabled
+        routingControl = L.Routing.control({
+            waypoints: [ null, null ], // Start empty
+            router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+            lineOptions: { styles: [{color: '#bf5af2', opacity: 0.8, weight: 6}] },
+            geocoder: L.Control.Geocoder.nominatim(), // ENABLE ADDRESS SEARCH
+            routeWhileDragging: true,
+            show: true,
+            collapsible: true
+        }).addTo(navMap);
+        
+        // Try to locate user for start point
+        navMap.locate({setView: true, maxZoom: 16});
+        navMap.on('locationfound', function(e) {
+            // Set Start Point to User Location automatically
+            routingControl.spliceWaypoints(0, 1, e.latlng);
+        });
+
+        navMap.invalidateSize();
+    }, 500);
+}
+
 function handleError(err) { console.warn(err); }
 function saveDriveToStorage() { const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; const newDrive = { id: Date.now(), date: startTime.toISOString(), distance: parseFloat(distKm.toFixed(2)), maxSpeed: currentMaxSpeed, avgSpeed: avgSpeed, duration: new Date(diff).toISOString().substr(11, 8), pathData: path }; let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; drives.unshift(newDrive); localStorage.setItem('dh_drives_v2', JSON.stringify(drives)); renderGarage(); }
 function renderGarage() { let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; let totalKm = 0; const list = document.getElementById('drives-list'); list.innerHTML = ''; drives.forEach(drive => { totalKm += drive.distance; const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h4>${dateStr} • ${drive.duration}</h4><span>Avg ${drive.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${drive.distance.toFixed(1)} km</span><span>Max ${drive.maxSpeed}</span></div>`; item.addEventListener('click', () => openDetailView(drive)); list.appendChild(item); }); document.getElementById('total-km').innerText = totalKm.toFixed(1); document.getElementById('total-drives').innerText = drives.length; }
-function openDetailView(drive) { app.screens.detail.style.display = 'block'; document.getElementById('detail-dist').innerText = drive.distance.toFixed(1); document.getElementById('detail-max').innerText = drive.maxSpeed; document.getElementById('detail-avg').innerText = drive.avgSpeed; setTimeout(() => { if(!detailMap) { detailMap = L.map('detail-map', { zoomControl: false }); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(detailMap); } detailMap.eachLayer((layer) => { if (!!layer.toGeoJSON) { detailMap.removeLayer(layer); } }); if(drive.pathData && drive.pathData.length > 0) { const polyline = L.polyline(drive.pathData, {color: '#4a90e2', weight: 5}).addTo(detailMap); detailMap.fitBounds(polyline.getBounds(), {padding: [50, 50]}); } }, 100); }
+
+function openDetailView(drive) { 
+    app.screens.detail.style.display = 'block'; 
+    document.getElementById('detail-dist').innerText = drive.distance.toFixed(1); 
+    document.getElementById('detail-max').innerText = drive.maxSpeed; 
+    document.getElementById('detail-avg').innerText = drive.avgSpeed; 
+    setTimeout(() => { 
+        if(!detailMap) { 
+            detailMap = L.map('detail-map', { zoomControl: false }); 
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(detailMap); 
+        } 
+        detailMap.eachLayer((layer) => { if (!!layer.toGeoJSON) { detailMap.removeLayer(layer); } }); 
+        if(drive.pathData && drive.pathData.length > 0) { const polyline = L.polyline(drive.pathData, {color: '#4a90e2', weight: 5}).addTo(detailMap); detailMap.fitBounds(polyline.getBounds(), {padding: [50, 50]}); } 
+    }, 100); 
+}
+
 document.getElementById('btn-close-detail').addEventListener('click', () => { app.screens.detail.style.display = 'none'; if(detailMap) { detailMap.remove(); detailMap = null; } });
 document.getElementById('btn-reset-data').addEventListener('click', () => { if(confirm("Alles löschen?")) { localStorage.removeItem('dh_drives_v2'); renderGarage(); } });
 
-// --- PERF, MUSIC, COPILOT (Unverändert) ---
 app.perf.btn.addEventListener('click', () => { if(perfState === 'idle' || perfState === 'finished') { perfState = 'armed'; app.perf.btn.innerText = "READY"; app.perf.btn.classList.add('armed'); app.perf.status.innerText = "Launch when ready!"; app.perf.val50.innerText = "--.- s"; app.perf.val100.innerText = "--.- s"; app.perf.box50.classList.remove('active'); app.perf.box100.classList.remove('active'); maxG = 0; result50 = null; result100 = null; if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') { DeviceMotionEvent.requestPermission().then(s => { if (s === 'granted') startPerfSensors(); }).catch(console.error); } else { startPerfSensors(); } if (navigator.geolocation) { perfWatchId = navigator.geolocation.watchPosition(updatePerfLogic, handleError, {enableHighAccuracy: true}); } } else { resetPerfMode(); } });
 function startPerfSensors() { window.addEventListener('devicemotion', handleMotion); }
 function handleMotion(event) { if(perfState !== 'running') return; const x = event.acceleration.x || 0; const y = event.acceleration.y || 0; const z = event.acceleration.z || 0; const totalAccel = Math.sqrt(x*x + y*y + z*z); const currentG = totalAccel / 9.81; if(currentG > maxG) { maxG = currentG; app.perf.gVal.innerText = maxG.toFixed(2) + " G"; } }
@@ -272,9 +319,26 @@ function updatePerfLogic(position) { const speedKmh = (position.coords.speed || 
 function resetPerfMode() { perfState = 'idle'; app.perf.btn.innerText = "ARM"; app.perf.btn.classList.remove('armed'); app.perf.status.innerText = "Tap to arm, then launch."; if(perfWatchId) navigator.geolocation.clearWatch(perfWatchId); window.removeEventListener('devicemotion', handleMotion); app.perf.speed.innerText = "0"; }
 function savePerfRun() { const run = { id: Date.now(), date: new Date().toISOString(), res50: result50, res100: result100, maxG: maxG.toFixed(2) }; let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; runs.unshift(run); localStorage.setItem('dh_perf_v1', JSON.stringify(runs)); renderPerfHistory(); }
 function renderPerfHistory() { let runs = JSON.parse(localStorage.getItem('dh_perf_v1')) || []; const list = app.perf.list; list.innerHTML = ''; runs.forEach(run => { const dateStr = new Date(run.date).toLocaleDateString('de-DE'); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h5>${dateStr}</h5><span>Max ${run.maxG} G</span></div><div class="right-side"><span style="color:#ff3b30; font-weight:bold;">0-100: ${run.res100}s</span><br><span style="font-size:0.75rem">0-50: ${run.res50}s</span></div>`; list.appendChild(item); }); }
+
 function manualRefreshWeather() { app.locText.innerText = "Locating..."; app.tempText.innerText = "--°"; if(navigator.geolocation) { navigator.geolocation.getCurrentPosition(initWeatherLoc, err => { console.log("GPS Fehler", err); app.locText.innerText = "No GPS"; }, {enableHighAccuracy:false, timeout:10000}); } else { app.locText.innerText = "Not Supported"; } }
-function updateTimeGreeting() { const h = new Date().getHours(); let txt = "WELCOME"; if (h >= 5 && h < 12) txt = "GOOD MORNING"; else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON"; else if (h >= 18 && h < 22) txt = "GOOD EVENING"; else txt = "NIGHT CRUISE"; if (currentUserName) { app.greet.innerHTML = `${txt}<span class="greeting-username">${escapeHtml(currentUserName).toUpperCase()}</span>`; } else { app.greet.innerText = txt; } }
+
+function updateTimeGreeting() { 
+    const h = new Date().getHours(); 
+    let txt = "WELCOME"; 
+    if (h >= 5 && h < 12) txt = "GOOD MORNING"; 
+    else if (h >= 12 && h < 18) txt = "GOOD AFTERNOON"; 
+    else if (h >= 18 && h < 22) txt = "GOOD EVENING"; 
+    else txt = "NIGHT CRUISE"; 
+    
+    if (currentUserName) {
+        app.greet.innerHTML = `${txt}<span class="greeting-username">${escapeHtml(currentUserName).toUpperCase()}</span>`;
+    } else {
+        app.greet.innerText = txt; 
+    }
+}
+
 function initWeatherLoc(pos) { const lat = pos.coords.latitude; const lng = pos.coords.longitude; fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`).then(r => r.json()).then(d => { app.locText.innerText = d.address.city || d.address.town || "Location Found"; }); fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`).then(r => r.json()).then(d => { const t = Math.round(d.current_weather.temperature); const c = d.current_weather.weathercode; app.tempText.innerText = t + "°"; if(c <= 1) app.weatherIcon.className = "fa-solid fa-sun"; else if(c <= 3) app.weatherIcon.className = "fa-solid fa-cloud-sun"; else app.weatherIcon.className = "fa-solid fa-cloud"; }); }
+
 let db; const request = indexedDB.open("DriverHubDB", 1);
 request.onupgradeneeded = function(event) { db = event.target.result; db.createObjectStore("music", { keyPath: "id" }); };
 request.onsuccess = function(event) { db = event.target.result; loadMusicFromDB(); };
@@ -287,38 +351,12 @@ function togglePlay() { if(playlist.length === 0) { alert("Bitte erst Musik lade
 function updatePlayBtn() { if(isPlaying) { app.music.playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>'; app.music.aura.classList.add('playing'); } else { app.music.playBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; app.music.aura.classList.remove('playing'); } }
 function nextTrack() { let next = currentTrackIdx + 1; if(next >= playlist.length) next = 0; loadTrack(next); }
 function prevTrack() { let prev = currentTrackIdx - 1; if(prev < 0) prev = playlist.length - 1; loadTrack(prev); }
+
 function initCoPilot() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return; recognition = new SpeechRecognition(); recognition.lang = 'de-DE'; recognition.continuous = false; recognition.interimResults = false; recognition.onstart = () => { isListening = true; app.copilotTrigger.classList.add('listening'); app.slogan.innerText = "Ich höre zu..."; }; recognition.onend = () => { isListening = false; app.copilotTrigger.classList.remove('listening'); app.slogan.innerText = "Tap Logo for Co-Pilot"; }; recognition.onresult = (event) => { handleVoiceCommand(event.results[0][0].transcript.toLowerCase()); }; app.copilotTrigger.addEventListener('click', () => { if (isListening) { recognition.stop(); } else { speak("Hey da. DriverHub CoPilot hier, wie kann ich helfen?"); setTimeout(() => recognition.start(), 2200); } }); }
 function handleVoiceCommand(cmd) { let reply = "Kommando nicht erkannt."; if (cmd.includes("fahrt") || cmd.includes("start") || cmd.includes("drive")) { reply = "Starte Fahrt."; app.screens.drive.style.display = 'flex'; app.nav.style.display = 'none'; startTracking(); } else if (cmd.includes("musik") || cmd.includes("play")) { reply = "Musik wird gestartet."; togglePlay(); } else if (cmd.includes("pause")) { reply = "Pausiert."; if(isPlaying) togglePlay(); } else if (cmd.includes("wetter")) { reply = "Es sind aktuell " + app.tempText.innerText + " in " + app.locText.innerText; } else if (cmd.includes("garage")) { reply = "Öffne Garage."; document.querySelectorAll('.nav-item')[4].click(); } else if (cmd.includes("performance")) { reply = "Performance Modus aktiv."; document.querySelectorAll('.nav-item')[1].click(); } speak(reply); }
 function speak(text) { if (!synth) return; const utter = new SpeechSynthesisUtterance(text); synth.speak(utter); }
+
 document.querySelectorAll('.nav-item').forEach(btn => { btn.addEventListener('click', (e) => { const targetId = btn.getAttribute('data-target'); document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active')); btn.classList.add('active'); Object.values(app.screens).forEach(s => { if(s && !s.classList.contains('screen-overlay')) s.classList.remove('active'); }); if(app.screens[targetId.split('-')[0]]) { app.screens[targetId.split('-')[0]].classList.add('active'); } }); });
 
-// --- SPEED LIMIT LOGIC ---
+// --- SPEED LIMIT LOGIC (OVERPASS API) ---
 function checkSpeedLimit(lat, lon) { const now = Date.now(); if (now - lastLimitCheck < 8000) return; lastLimitCheck = now; const query = `[out:json]; way(around:15, ${lat}, ${lon})["maxspeed"]; out tags;`; const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`; fetch(url).then(response => response.json()).then(data => { if (data.elements && data.elements.length > 0) { let speed = data.elements[0].tags.maxspeed; if(speed === "none") { document.getElementById('limit-sign').style.display = 'none'; } else { speed = parseInt(speed); if(!isNaN(speed)) { document.getElementById('limit-sign').style.display = 'flex'; document.getElementById('limit-value').innerText = speed; } } } else { document.getElementById('limit-sign').style.display = 'none'; } }).catch(err => console.log("Limit API Error:", err)); }
-
-// --- NAVI SANDBOX LOGIC ---
-function initNavMap() {
-    setTimeout(() => {
-        if(!navMap) {
-            navMap = L.map('nav-map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(navMap);
-            
-            L.Routing.control({
-                waypoints: [
-                    L.latLng(51.1657, 10.4515), // Placeholder Start
-                    L.latLng(52.5200, 13.4050)  // Placeholder Ziel
-                ],
-                router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
-                lineOptions: { styles: [{color: '#bf5af2', opacity: 0.8, weight: 6}] },
-                show: true,
-                addWaypoints: false,
-                draggableWaypoints: false,
-                fitSelectedRoutes: true,
-                showAlternatives: false,
-                collapsible: true // Macht die Box einklappbar
-            }).addTo(navMap);
-
-            navMap.locate({setView: true, maxZoom: 16});
-        }
-        navMap.invalidateSize();
-    }, 500);
-}
