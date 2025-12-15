@@ -31,7 +31,7 @@ let currentLat = 0, currentLng = 0;
 // NAVI VARS
 let navMap = null;
 let routingControl = null;
-let navWatchId = null; // Variable hinzugefügt für sauberes Closing
+let navWatchId = null;
 
 // Social Vars
 let viewingUserUid = null; 
@@ -239,42 +239,43 @@ function stopTracking() { 
 
 // --- NEW NAVI SANDBOX LOGIC (UPDATED 3.18.1) ---
 function initNavMap() {
-    setTimeout(() => {
-        if(navMap) {
-             navMap.remove();
-             navMap = null;
-        }
+    // 500ms wait for transition
+    setTimeout(() => {
+        if(navMap) {
+             navMap.remove();
+             navMap = null;
+        }
 
-        navMap = L.map('nav-map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(navMap);
-        
-        // Add Routing Control with Geocoder enabled
-        routingControl = L.Routing.control({
-            waypoints: [ null, null ], // Start empty
-            router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
-            lineOptions: { styles: [{color: '#bf5af2', opacity: 0.8, weight: 6}] },
-            geocoder: L.Control.Geocoder.nominatim(), // ENABLE ADDRESS SEARCH
-            routeWhileDragging: true,
-            show: true,
-            collapsible: true,
-            language: 'de'
-        }).addTo(navMap);
-        
-        // NEU: Wenn Route gefunden -> Button zeigen
-        routingControl.on('routesfound', function(e) {
+        navMap = L.map('nav-map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(navMap);
+        
+        // Add Routing Control with Geocoder enabled
+        routingControl = L.Routing.control({
+            waypoints: [ null, null ], // Start empty
+            router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+            lineOptions: { styles: [{color: '#bf5af2', opacity: 0.8, weight: 6}] },
+            geocoder: L.Control.Geocoder.nominatim(), // ENABLE ADDRESS SEARCH
+            routeWhileDragging: true,
+            show: true,
+            collapsible: true,
+            language: 'de' 
+        }).addTo(navMap);
+        
+        // NEU: Wenn Route gefunden -> Button zeigen
+        routingControl.on('routesfound', function(e) {
             const btn = document.getElementById('btn-start-guidance');
             if(btn) btn.style.display = 'block'; 
-        });
+        });
 
-        // Try to locate user for start point
-        navMap.locate({setView: true, maxZoom: 16});
-        navMap.on('locationfound', function(e) {
-            // Set Start Point to User Location automatically
-            routingControl.spliceWaypoints(0, 1, e.latlng);
-        });
+        // Try to locate user for start point
+        navMap.locate({setView: true, maxZoom: 16});
+        navMap.on('locationfound', function(e) {
+            // Set Start Point to User Location automatically
+            routingControl.spliceWaypoints(0, 1, e.latlng);
+        });
 
-        navMap.invalidateSize();
-    }, 500);
+        navMap.invalidateSize();
+    }, 500);
 }
 
 // NEU: Funktion für den Start-Button
@@ -317,7 +318,7 @@ function closeNaviMode() {
 
 function handleError(err) { console.warn(err); }
 function saveDriveToStorage() { const diff = new Date() - startTime; const distKm = currentDistance / 1000; const durationHours = diff / (1000 * 60 * 60); const avgSpeed = (durationHours > 0) ? (distKm / durationHours).toFixed(1) : 0; const newDrive = { id: Date.now(), date: startTime.toISOString(), distance: parseFloat(distKm.toFixed(2)), maxSpeed: currentMaxSpeed, avgSpeed: avgSpeed, duration: new Date(diff).toISOString().substr(11, 8), pathData: path }; let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; drives.unshift(newDrive); localStorage.setItem('dh_drives_v2', JSON.stringify(drives)); renderGarage(); }
-function renderGarage() { let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; let totalKm = 0; const list = document.getElementById('drives-list'); list.innerHTML = ''; drives.forEach(drive => { totalKm += drive.distance; const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h4>${dateStr} • ${drive.duration}</h4><span>Avg ${drive.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${drive.distance.toFixed(1)} km</span><span>Max ${drive.maxSpeed}</span></div>`; item.addEventListener('click', () => openDetailView(drive)); list.appendChild(item); }); document.getElementById('total-km').innerText = totalKm.toFixed(1); document.getElementById('total-drives').innerText = drives.length; }
+function renderGarage() { let drives = JSON.parse(localStorage.getItem('dh_drives_v2')) || []; let totalKm = 0; const list = document.getElementById('drives-list'); list.innerHTML = ''; drives.forEach(drive => { totalKm += drive.distance; const dateStr = new Date(drive.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }); const item = document.createElement('div'); item.className = 'drive-item'; item.innerHTML = `<div><h5>${dateStr} • ${drive.duration}</h4><span>Avg ${drive.avgSpeed} km/h</span></div><div class="right-side"><span class="dist">${drive.distance.toFixed(1)} km</span><span>Max ${drive.maxSpeed}</span></div>`; item.addEventListener('click', () => openDetailView(drive)); list.appendChild(item); }); document.getElementById('total-km').innerText = totalKm.toFixed(1); document.getElementById('total-drives').innerText = drives.length; }
 
 function openDetailView(drive) { 
     app.screens.detail.style.display = 'block'; 
