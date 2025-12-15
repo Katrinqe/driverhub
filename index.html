@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 3.15.0 Smooth</title>
+    <title>DriverHub 3.15.1 Final Logic</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -23,7 +23,7 @@
 </head>
 <body>
 
-    <div class="version-tag">v3.15.0 Smooth</div>
+    <div class="version-tag">v3.15.1 Logic Fix</div>
 
     <div id="auth-screen">
         <div class="auth-box">
@@ -210,7 +210,7 @@
                 <span id="limit-value">50</span>
             </div>
             
-            <button id="btn-recenter" class="icon-btn-floating right-side" style="display:none;"><i class="fa-solid fa-crosshairs"></i></button>
+            <button id="btn-recenter" class="icon-btn-floating right-side" style="display:none;" onclick="triggerRecenter(event)"><i class="fa-solid fa-crosshairs"></i></button>
 
             <div class="drive-overlay-bottom">
                 <div class="stat-row"><span id="live-dist">0.0 km</span></div>
