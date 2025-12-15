@@ -181,6 +181,43 @@
                 <button id="btn-stop" class="btn-danger"><i class="fa-solid fa-stop"></i> End Drive</button>
             </div>
         </section>
+
+        <div id="nav-setup-screen" class="screen-overlay" style="z-index: 3000; background: #000; padding: 20px; display:none;">
+    
+    <button class="icon-btn-floating" style="top:20px; left:20px;" onclick="closeNaviSetup()"><i class="fa-solid fa-xmark"></i></button>
+    
+    <div style="margin-top: 80px; width: 100%; max-width: 400px; margin-left: auto; margin-right: auto;">
+        <h2 style="margin-bottom: 20px; text-align: center;">Route planen</h2>
+        
+        <div style="background: #1c1c1e; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333;">
+            <p style="font-size: 0.7rem; color: #888; margin-bottom: 5px;">START</p>
+            <div style="display:flex; align-items:center; gap: 10px;">
+                <i class="fa-solid fa-location-crosshairs" style="color: #4a90e2;"></i>
+                <span id="nav-setup-start" style="font-weight: bold;">Ortung läuft...</span>
+            </div>
+        </div>
+
+        <div style="background: #1c1c1e; padding: 15px; border-radius: 12px; margin-bottom: 5px; border: 1px solid #333;">
+            <p style="font-size: 0.7rem; color: #888; margin-bottom: 5px;">ZIEL</p>
+            <div style="display:flex; align-items:center; gap: 10px;">
+                <i class="fa-solid fa-flag-checkered" style="color: #bf5af2;"></i>
+                <input type="text" id="nav-setup-input" placeholder="Stadt, Straße..." style="background:transparent; border:none; color:white; font-size:1rem; width:100%; outline:none;">
+            </div>
+        </div>
+
+        <div id="nav-api-results" style="background: #222; border-radius: 0 0 12px 12px; overflow: hidden; display: none;"></div>
+
+        <button id="btn-launch-route" class="btn-primary" style="margin-top: 30px; display: none; background: #30d158; color: black;" onclick="launchMapNavigation()">
+            <i class="fa-solid fa-route"></i> LOS GEHT'S
+        </button>
+    </div>
+</div>
+
+<section id="nav-screen" class="screen-overlay" style="z-index: 2200; background: #111;">
+    <div id="nav-map" style="height: 100%; width: 100%;"></div>
+    <button id="btn-close-nav" class="icon-btn-floating" style="top:20px; left:20px;" onclick="closeNaviMode()"><i class="fa-solid fa-arrow-left"></i></button>
+</section>
+
         
         <section id="nav-screen" class="screen-overlay" style="z-index: 2200; background: #111;">
             <div id="nav-map" style="height: 100%; width: 100%;"></div>
@@ -221,3 +258,4 @@
     <script src="script.js"></script>
 </body>
 </html>
+
