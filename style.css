@@ -246,40 +246,40 @@ button { font-family: var(--font-stack); cursor: pointer; }
     100% { transform: scale(1); }
 }
 
-/* NEU: WICHTIG FÜR NAVI SUCHE - DARK MODE STYLING */
+/* NEU: Styling für die Navi Boxen (Dark Mode Overwrite) */
 .leaflet-routing-container {
     background-color: rgba(30, 30, 30, 0.95) !important;
     color: white !important;
     border: 1px solid #444 !important;
     box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
     margin-right: 20px !important;
-    top: 20px !important;
-    padding: 10px;
-    border-radius: 12px;
 }
 
-.leaflet-routing-alt {
-    max-height: 200px;
-    overflow-y: auto;
-}
-
-.leaflet-routing-container h2 {
-    font-size: 1.1rem !important;
-    color: var(--accent-purple) !important;
-}
-
-.leaflet-routing-container h3 {
-    font-size: 1rem !important;
-    color: #ccc !important;
+/* Versteckt den hässlichen "Leaflet Routing Machine" Footer */
+.leaflet-routing-container .leaflet-routing-alt h2 {
+    display: none !important;
 }
 
 .leaflet-routing-geocoders input {
     background: #1c1c1e !important;
     color: white !important;
-    border: 1px solid #555 !important;
+    border: 1px solid #444 !important;
     padding: 12px !important;
     border-radius: 8px !important;
     font-size: 1rem !important;
     width: 100% !important;
-    margin-bottom: 5px;
+    margin-bottom: 5px !important;
+    font-family: inherit !important;
+}
+/* Placeholder Farbe */
+.leaflet-routing-geocoders input::placeholder {
+    color: #888 !important;
+}
+
+.leaflet-routing-geocoders button {
+    background: var(--accent-blue) !important;
+    border: none !important;
+    color: white !important;
+    border-radius: 4px !important;
+    margin-left: 5px !important;
 }
