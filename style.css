@@ -568,22 +568,22 @@ function initNavMap() {
 
 // --- OPEN / CLOSE NAVI FUNCTIONS (CALLED BY HTML) ---
 function openNaviMode() {
-    app.screens.nav.style.display = 'flex';
-    app.nav.style.display = 'none'; // Hide Bottom Nav
-    initNavMap();
+    app.screens.nav.style.display = 'flex';
+    app.nav.style.display = 'none'; // Hide Bottom Nav
+    initNavMap();
 }
 
 function closeNaviMode() {
-    app.screens.nav.style.display = 'none';
-    app.nav.style.display = 'flex'; // Show Bottom Nav
-    if(navMap) {
-        navMap.remove();
-        navMap = null;
-    }
-    if(navWatchId) {
-        navigator.geolocation.clearWatch(navWatchId);
-        navWatchId = null;
-    }
+    app.screens.nav.style.display = 'none';
+    app.nav.style.display = 'flex'; // Show Bottom Nav
+    if(navMap) {
+        navMap.remove();
+        navMap = null;
+    }
+    if(navWatchId) {
+        navigator.geolocation.clearWatch(navWatchId);
+        navWatchId = null;
+    }
 }
 
 function handleError(err) { console.warn(err); }
