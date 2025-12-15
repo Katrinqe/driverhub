@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 3.17.1 Navi Setup</title>
+    <title>DriverHub 3.18.0 Navi Fix</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -27,7 +27,7 @@
 </head>
 <body>
 
-    <div class="version-tag">v3.17.1 Navi Setup</div>
+    <div class="version-tag">v3.18.0 Navi Fix</div>
 
     <div id="auth-screen">
         <div class="auth-box">
@@ -61,7 +61,7 @@
                 <p class="slogan" id="slogan-text">Tap Logo for Co-Pilot</p>
                 <div class="spacer-flex"></div>
                 
-                <button id="btn-nav-start" class="btn-secondary" style="margin-bottom: 20px;">
+                <button id="btn-nav-start" class="btn-secondary" style="margin-bottom: 20px;" onclick="openNaviMode()">
                     <i class="fa-solid fa-location-arrow"></i> Start Navigation
                 </button>
                 
@@ -203,8 +203,9 @@
         <section id="nav-screen" class="screen-overlay" style="z-index: 2200; background: #111;">
             <div id="nav-map" style="height: 100%; width: 100%;"></div>
             
-            <button id="btn-close-nav" class="icon-btn-floating" style="top:20px; left:20px;"><i class="fa-solid fa-arrow-left"></i></button>
+            <button id="btn-close-nav" class="icon-btn-floating" style="top:20px; left:20px;" onclick="closeNaviMode()"><i class="fa-solid fa-arrow-left"></i></button>
         </section>
+
         <section id="summary-screen" class="screen-overlay">
             <div class="content-center">
                 <h2>Drive Summary</h2>
@@ -234,7 +235,6 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
     <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     
