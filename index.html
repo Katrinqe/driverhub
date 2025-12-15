@@ -206,6 +206,16 @@
             <button id="btn-close-nav" class="icon-btn-floating" style="top:20px; left:20px;" onclick="closeNaviMode()"><i class="fa-solid fa-arrow-left"></i></button>
         </section>
 
+<section id="nav-screen" class="screen-overlay" style="z-index: 2200; background: #111;">
+    <div id="nav-map" style="height: 100%; width: 100%;"></div>
+    
+    <button id="btn-close-nav" class="icon-btn-floating" style="top:20px; left:20px;" onclick="closeNaviMode()"><i class="fa-solid fa-arrow-left"></i></button>
+    
+    <button id="btn-start-guidance" onclick="startNaviFollow()">
+        <i class="fa-solid fa-play"></i> ROUTE STARTEN
+    </button>
+</section>
+        
         <section id="summary-screen" class="screen-overlay">
             <div class="content-center">
                 <h2>Drive Summary</h2>
@@ -242,3 +252,4 @@
 
 </body>
 </html>
+
