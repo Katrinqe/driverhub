@@ -21,7 +21,6 @@ body {
 
 .version-tag { position: fixed; bottom: 2px; right: 5px; opacity: 0.3; font-size: 0.6rem; z-index: 9999; pointer-events: none; font-family: monospace; }
 
-/* INTRO */
 #splash-screen {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background-color: #000000; z-index: 9999;
@@ -35,7 +34,6 @@ body {
     100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 0px var(--accent-blue)); }
 }
 
-/* AUTH SCREEN */
 #auth-screen {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background-color: #000000; z-index: 5000;
@@ -50,14 +48,12 @@ body {
 .btn-google { background: white; color: black; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .auth-switch { color: var(--accent-blue); font-size: 0.9rem; margin-top: 20px; cursor: pointer; }
 
-/* BG */
 .aurora-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; overflow: hidden; }
 .blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.25; animation: float 15s infinite ease-in-out; }
 .b1 { top: -10%; left: -10%; width: 80vw; height: 80vw; background: #1c3d6e; }
 .b2 { bottom: -10%; right: -10%; width: 80vw; height: 80vw; background: #2c5f9e; animation-delay: -5s; }
 @keyframes float { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(20px, -20px); } }
 
-/* UI */
 .status-pill { background: rgba(30,30,30,0.6); backdrop-filter: blur(15px); padding: 8px 18px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); align-items: center; gap: 12px; font-size: 0.9rem; font-weight: 600; margin-bottom: 30px; cursor: pointer; }
 .loc-icon, #weather-icon { color: var(--accent-blue); }
 .divider { opacity: 0.3; }
@@ -67,26 +63,8 @@ body {
 .logo-container.listening .dh-logo { filter: drop-shadow(0 0 30px rgba(255, 59, 48, 0.8)); animation: pulse-listen 1.5s infinite; }
 @keyframes pulse-listen { 0% { filter: drop-shadow(0 0 20px rgba(255, 59, 48, 0.6)); transform: scale(1); } 50% { filter: drop-shadow(0 0 50px rgba(255, 59, 48, 1)); transform: scale(1.02); } 100% { filter: drop-shadow(0 0 20px rgba(255, 59, 48, 0.6)); transform: scale(1); } }
 
-h1 { 
-    font-size: 2.6rem; 
-    font-weight: 900; 
-    letter-spacing: 1px; 
-    margin-bottom: 2px; 
-    color: #ffffff; 
-    text-transform: uppercase; 
-    line-height: 1;
-}
-
-.greeting-username {
-    display: block;
-    font-size: 1.1rem;
-    color: var(--accent-blue);
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    margin-bottom: 20px;
-    text-transform: uppercase;
-}
-
+h1 { font-size: 2.6rem; font-weight: 900; letter-spacing: 1px; margin-bottom: 2px; color: #ffffff; text-transform: uppercase; line-height: 1; }
+.greeting-username { display: block; font-size: 1.1rem; color: var(--accent-blue); font-weight: 700; letter-spacing: 1.5px; margin-bottom: 20px; text-transform: uppercase; }
 .slogan { color: var(--text-grey); font-size: 0.9rem; margin-bottom: 20px; letter-spacing: 1px; text-transform: uppercase; }
 
 .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; opacity: 0; transition: opacity 0.3s ease; }
@@ -103,33 +81,21 @@ h1 {
 button { font-family: var(--font-stack); cursor: pointer; }
 .btn-primary { border: none; padding: 18px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; background: linear-gradient(135deg, var(--accent-blue), #2c5f9e); color: white; box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3); margin-bottom: 120px; }
 .btn-secondary { border: none; padding: 18px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; background: linear-gradient(135deg, var(--accent-purple), #5e1c8f); color: white; box-shadow: 0 4px 15px rgba(191, 90, 242, 0.3); }
-
 .btn-danger { border: 1px solid var(--accent-red); background: rgba(255, 59, 48, 0.15); color: var(--accent-red); padding: 16px 32px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; width: 100%; max-width: 280px; backdrop-filter: blur(10px); }
 .icon-btn-floating { position: absolute; top: 40px; left: 20px; width: 45px; height: 45px; background: var(--glass-bg); border-radius: 50%; border: none; color: white; z-index: 3000; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; pointer-events: auto; cursor: pointer; }
 .btn-text { background: transparent; color: #555; font-size: 0.9rem; margin-top: 40px; width: 100%; border: none; }
+.icon-btn-floating.right-side { left: auto; right: 25px; top: auto; bottom: 160px; background: var(--accent-blue); box-shadow: 0 0 15px rgba(74, 144, 226, 0.4); }
 
-.icon-btn-floating.right-side {
-    left: auto;
-    right: 25px;
-    top: auto;
-    bottom: 160px; 
-    background: var(--accent-blue);
-    box-shadow: 0 0 15px rgba(74, 144, 226, 0.4);
-}
-
-/* --- SOCIAL CSS --- */
 .user-search-bar { width: 100%; padding: 12px; border-radius: 12px; background: #1c1c1e; border: 1px solid #333; color: white; margin-bottom: 15px; outline: none; }
 #search-results { background: #111; border-radius: 0 0 12px 12px; max-height: 200px; overflow-y: auto; display: none; position: absolute; width: calc(100% - 40px); z-index: 50; top: 135px; border: 1px solid #333; }
 .search-item { padding: 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #222; cursor: pointer; }
 .search-item:hover { background: #222; }
 .s-avatar { width: 30px; height: 30px; border-radius: 50%; background: #333; background-size: cover; background-position: center; }
 
-/* TABS */
 .social-tabs { display: flex; gap: 10px; margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 5px; border-radius: 15px; }
 .social-tab { flex: 1; text-align: center; padding: 10px; font-size: 0.9rem; font-weight: 600; color: #888; border-radius: 12px; cursor: pointer; }
 .social-tab.active { background: #333; color: white; }
 
-/* FEED */
 .post-card { background: #1c1c1e; border-radius: 16px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); position: relative; }
 .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; cursor: pointer; }
 .post-avatar { width: 35px; height: 35px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem; background-size: cover; background-position: center; border: 1px solid #444; }
@@ -141,19 +107,16 @@ button { font-family: var(--font-stack); cursor: pointer; }
 .create-post-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 16px; margin-bottom: 25px; display: flex; gap: 10px; align-items: center; }
 .create-input { flex: 1; background: transparent; border: none; color: white; font-size: 1rem; outline: none; }
 .btn-send-post { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-green); border: none; color: white; font-size: 1rem; cursor: pointer; }
-
 .post-actions { border-top: 1px solid #333; padding-top: 10px; margin-top: 10px; display: flex; gap: 20px; }
 .action-btn { font-size: 0.9rem; color: #888; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 .action-btn.liked { color: var(--accent-red); }
 .action-btn i { font-size: 1.1rem; }
 
-/* LISTS */
 .list-item-row { display: flex; align-items: center; padding: 15px; background: #1c1c1e; border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
 .list-info { margin-left: 10px; flex: 1; text-align: left; }
 .list-name { font-weight: 700; color: white; display: block; }
 .list-sub { font-size: 0.8rem; color: #888; }
 
-/* PROFILE */
 #profile-view, #chat-view { display: none; width: 100%; max-width: 360px; margin: 0 auto; text-align: center; }
 .profile-header-img { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--accent-blue); margin: 0 auto 15px auto; background: #222; background-size: cover; background-position: center; position: relative; }
 .profile-header-img .edit-badge { position: absolute; bottom: 0; right: 0; background: var(--accent-blue); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; border: 2px solid black; cursor: pointer; }
@@ -166,7 +129,6 @@ button { font-family: var(--font-stack); cursor: pointer; }
 .btn-follow.following { background: transparent; border: 1px solid #444; color: #888; }
 .btn-chat { background: #333; border: none; color: white; padding: 8px 25px; border-radius: 20px; font-weight: 700; cursor: pointer; }
 
-/* CHAT */
 .chat-container { height: 400px; display: flex; flex-direction: column; background: #111; border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
 .chat-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
 .chat-bubble { padding: 10px 15px; border-radius: 15px; max-width: 80%; word-wrap: break-word; font-size: 0.9rem; }
@@ -178,14 +140,7 @@ button { font-family: var(--font-stack); cursor: pointer; }
 .no-friends-box { text-align: center; padding: 40px 20px; color: #666; display: none; }
 .no-friends-box i { font-size: 3rem; margin-bottom: 15px; opacity: 0.5; }
 
-/* CORE MODULES */
-#map, #detail-map, #nav-map { 
-    height: 100%; 
-    width: 100%; 
-    z-index: 1; 
-    background: #111;
-    touch-action: none; 
-}
+#map, #detail-map, #nav-map { height: 100%; width: 100%; z-index: 1; background: #111; touch-action: none; }
 .drive-overlay-top { position: absolute; top: 50px; left: 20px; right: 20px; z-index: 999; display: flex; justify-content: space-between; }
 .drive-overlay-bottom { position: absolute; bottom: 40px; left: 0; right: 0; z-index: 999; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px;}
 .stat-box { background: var(--glass-bg); backdrop-filter: blur(15px); padding: 15px 20px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.1); min-width: 100px; } .stat-box .value { font-size: 1.8rem; font-weight: 700; } .stat-box .label { font-size: 0.7rem; color: var(--text-grey); font-weight: 700; } .stat-box .unit { font-size: 0.8rem; color: var(--accent-blue); }
@@ -205,7 +160,6 @@ button { font-family: var(--font-stack); cursor: pointer; }
 .btn-load-file { background: rgba(255,255,255,0.1); color: var(--accent-purple); border: 1px solid var(--accent-purple); padding: 10px 20px; border-radius: 20px; font-size: 0.9rem; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
 .playlist { width: 100%; text-align: left; } .track-row { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer; display: flex; align-items: center; justify-content: space-between; } .track-row.active { color: var(--accent-purple); } .track-row h5 { font-size: 1rem; margin-bottom: 2px; } .track-row p { font-size: 0.8rem; opacity: 0.6; }
 
-/* NAV */
 .bottom-nav { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 98%; max-width: 400px; height: 70px; background: rgba(30, 30, 30, 0.8); backdrop-filter: blur(20px); border-radius: 35px; display: flex; justify-content: space-around; align-items: center; border: 1px solid rgba(255,255,255,0.1); z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
 .nav-item { background: none; border: none; color: #666; font-size: 0.75rem; display: flex; flex-direction: column; align-items: center; gap: 5px; width: auto; padding: 0; min-width: 50px; }
 .nav-item i { font-size: 1.1rem; }
@@ -214,127 +168,14 @@ button { font-family: var(--font-stack); cursor: pointer; }
 .nav-item.active[data-target="music-screen"] { color: var(--accent-purple); }
 .nav-item.active[data-target="community-screen"] { color: var(--accent-green); }
 
-/* --- SPEED LIMIT SIGN --- */
-#limit-sign {
-    position: absolute;
-    top: 140px; /* Unter den Stats */
-    left: 20px;
-    width: 60px;
-    height: 60px;
-    background-color: white;
-    border: 6px solid #cc0000; /* Verkehrsrot */
-    border-radius: 50%; /* Macht es kreisrund */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 999;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    animation: popIn 0.3s ease-out;
-}
+#limit-sign { position: absolute; top: 140px; left: 20px; width: 60px; height: 60px; background-color: white; border: 6px solid #cc0000; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 999; box-shadow: 0 4px 10px rgba(0,0,0,0.5); animation: popIn 0.3s ease-out; }
+#limit-value { color: black; font-family: 'DIN Alternate', 'Arial', sans-serif; font-weight: 700; font-size: 1.4rem; letter-spacing: -1px; }
+@keyframes popIn { 0% { transform: scale(0); opacity: 0; } 80% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
 
-#limit-value {
-    color: black;
-    font-family: 'DIN Alternate', 'Arial', sans-serif; /* Deutsche Straßenschrift ähnlich */
-    font-weight: 700;
-    font-size: 1.4rem;
-    letter-spacing: -1px;
-}
-
-@keyframes popIn {
-    0% { transform: scale(0); opacity: 0; }
-    80% { transform: scale(1.1); opacity: 1; }
-    100% { transform: scale(1); }
-}
-
-/* NEU: Styling für die Navi Boxen (Dark Mode Overwrite) */
-.leaflet-routing-container {
-    background-color: rgba(30, 30, 30, 0.95) !important;
-    color: white !important;
-    border: 1px solid #444 !important;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
-    margin-right: 20px !important;
-}
-
-/* Versteckt den hässlichen "Leaflet Routing Machine" Footer */
-.leaflet-routing-container .leaflet-routing-alt h2 {
-    display: none !important;
-}
-
-.leaflet-routing-geocoders input {
-    background: #1c1c1e !important;
-    color: white !important;
-    border: 1px solid #444 !important;
-    padding: 12px !important;
-    border-radius: 8px !important;
-    font-size: 1rem !important;
-    width: 100% !important;
-    margin-bottom: 5px !important;
-    font-family: inherit !important;
-}
-/* Placeholder Farbe */
-.leaflet-routing-geocoders input::placeholder {
-    color: #888 !important;
-}
-
-.leaflet-routing-geocoders button {
-    background: var(--accent-blue) !important;
-    border: none !important;
-    color: white !important;
-    border-radius: 4px !important;
-    margin-left: 5px !important;
-}
-
-/* --- NAVI ERWEITERUNG (Suche & Start-Button) --- */
-/* Macht die weiße Box dunkel und sichtbar */
-.leaflet-routing-container {
-    background-color: #1c1c1e !important;
-    color: white !important;
-    border: 1px solid #444 !important;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.8) !important;
-    top: 60px !important; /* Platz lassen für Close Button */
-    max-height: 300px;
-    overflow-y: auto;
-    z-index: 3000 !important;
-}
-
-/* Versteckt Copyright Footer der Route */
-.leaflet-routing-container .leaflet-routing-alt h2 {
-    display: none !important;
-}
-
-/* Styling der Eingabefelder */
-.leaflet-routing-geocoders input {
-    background: #333 !important;
-    color: white !important;
-    border: 1px solid #555 !important;
-    padding: 10px !important;
-    border-radius: 8px !important;
-    font-size: 1rem !important;
-    width: 100% !important;
-    margin-bottom: 5px !important;
-}
-
-/* Dropdown Ergebnisse */
-.leaflet-routing-geocoder-result {
-    font-size: 0.9rem;
-    padding: 10px;
-    border-bottom: 1px solid #333;
-    cursor: pointer;
-}
-.leaflet-routing-geocoder-result:hover {
-    background-color: var(--accent-blue);
-    color: white;
-}
-
-/* Der grüne Start Button */
-#btn-start-guidance {
-    background: #30d158 !important; /* Wichtig: Grün erzwingen */
-    color: black !important;
-    font-weight: 800;
-    box-shadow: 0 0 30px rgba(48, 209, 88, 0.4);
-    border: none;
-    padding: 18px 32px;
-    border-radius: 30px;
-    font-size: 1.1rem;
-    cursor: pointer;
-}
+/* --- NAVI SPEZIFISCH --- */
+.leaflet-routing-container { background-color: #1c1c1e !important; color: white !important; border: 1px solid #444 !important; box-shadow: 0 4px 20px rgba(0,0,0,0.8) !important; top: 60px !important; margin-right: 10px !important; max-height: 60vh; overflow-y: auto; z-index: 3000 !important; }
+.leaflet-routing-geocoders input { background: #333 !important; color: white !important; border: 1px solid #555 !important; padding: 10px !important; border-radius: 8px !important; font-size: 1rem !important; width: 100% !important; margin-bottom: 5px !important; }
+.leaflet-routing-geocoder-result { background-color: #222 !important; color: white !important; border-bottom: 1px solid #444 !important; padding: 10px !important; cursor: pointer; }
+.leaflet-routing-geocoder-result:hover { background-color: #4a90e2 !important; }
+.leaflet-routing-container .leaflet-routing-alt h2 { display: none !important; }
+#btn-start-guidance { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 300px; display: none; z-index: 9999; background: #30d158; color: black; font-weight: 800; box-shadow: 0 0 20px rgba(48, 209, 88, 0.4); border: none; padding: 18px 32px; border-radius: 30px; font-size: 1.1rem; cursor: pointer; }
