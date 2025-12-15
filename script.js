@@ -25,7 +25,7 @@ let currentUserName = "";
 
 // MAP LOGIC VARS
 let isMapFollowing = true; 
-let lastLimitCheck = 0; 
+let lastLimitCheck = 0; // Für Tempolimit Abfrage
 
 // Social Vars
 let viewingUserUid = null; 
@@ -121,6 +121,7 @@ window.addEventListener('load', () => {
     renderGarage(); renderPerfHistory(); initMusicPlayer(); updateTimeGreeting(); initCoPilot(); loadMusicFromDB();
     setInterval(manualRefreshWeather, 60000); 
     
+    // RECENTER BUTTON LOGIC (FIXED)
     const recenterBtn = document.getElementById('btn-recenter');
     if(recenterBtn) {
         recenterBtn.addEventListener('click', (e) => {
@@ -404,7 +405,7 @@ document.getElementById('btn-start').addEventListener('click', () => { app.scree
 document.getElementById('btn-stop').addEventListener('click', () => { stopTracking(); app.screens.drive.style.display = 'none'; app.screens.summary.style.display = 'flex'; });
 document.getElementById('btn-save-drive').addEventListener('click', () => { saveDriveToStorage(); app.screens.summary.style.display = 'none'; app.nav.style.display = 'flex'; document.querySelectorAll('.nav-item')[4].click(); });
 
-// --- HARD RESET LOGIC FOR START TRACKING ---
+// --- LAZY LOAD START TRACKING ---
 function startTracking() { 
     isDriving = true; startTime = new Date(); path = []; currentDistance = 0; currentMaxSpeed = 0; isMapFollowing = true; 
     document.getElementById('btn-recenter').style.display = 'none'; 
@@ -415,7 +416,7 @@ function startTracking() {
         map = null;
     }
     
-    // Kleiner Timeout, damit der Container (div) sicher sichtbar ist, bevor Leaflet zeichnet
+    // WICHTIG: 500ms warten, damit das Fenster sicher offen ist!
     setTimeout(() => {
         // Frische Karte erstellen
         map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 13); 
@@ -429,17 +430,20 @@ function startTracking() {
             }
         });
 
-        // Sofort Größe anpassen
+        // Wichtig: Jetzt Größe neu berechnen, da das Fenster jetzt sicher offen ist
         map.invalidateSize();
         
         // Timer starten
         intervalId = setInterval(updateTimer, 1000); 
         if (navigator.geolocation) { watchId = navigator.geolocation.watchPosition(updatePosition, handleError, {enableHighAccuracy: true}); } 
-    }, 300); // 300ms warten
+    }, 500); // 500ms warten
 }
 // -------------------------------------------
 
 function updatePosition(position) { 
+    // Sicherheitscheck: Wenn Map noch nicht fertig geladen (wegen Timeout), nichts tun
+    if (!map) return; 
+
     const lat = position.coords.latitude; const lng = position.coords.longitude; 
     const speedKmh = Math.max(0, (position.coords.speed || 0) * 3.6).toFixed(0); 
     if (parseFloat(speedKmh) > currentMaxSpeed) currentMaxSpeed = parseFloat(speedKmh); 
@@ -453,17 +457,17 @@ function updatePosition(position) {
         checkSpeedLimit(lat, lng);
     }
 
-    if(isMapFollowing && map) {
+    if(isMapFollowing) {
         map.setView(newLatLng, 18); 
     }
 
-    if (path.length > 0 && map) { currentDistance += map.distance(path[path.length - 1], newLatLng); app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; } 
+    if (path.length > 0) { currentDistance += map.distance(path[path.length - 1], newLatLng); app.display.dist.innerText = (currentDistance / 1000).toFixed(2) + " km"; } 
     path.push(newLatLng); 
 }
 
 function updateTimer() { const diff = new Date() - startTime; app.display.time.innerText = new Date(diff).toISOString().substr(11, 8); }
 
-// --- HIER WURDE GEÄNDERT: STOP TRACKING ZERSTÖRT JETZT DIE KARTE ---
+// --- STOP TRACKING ZERSTÖRT KARTE ---
 function stopTracking() { 
     isDriving = false; 
     clearInterval(intervalId); 
