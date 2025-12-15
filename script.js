@@ -488,19 +488,59 @@ function stopTracking() {
 
 // --- NEW NAVI SANDBOX LOGIC ---
 
+// Diese Funktion suchen und ERSETZEN:
 function initNavMap() {
-
-    // 500ms wait for transition
-
     setTimeout(() => {
+        if(navMap) { navMap.remove(); navMap = null; }
 
-        if(navMap) {
+        navMap = L.map('nav-map', { zoomControl: false }).setView([51.1657, 10.4515], 13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(navMap);
+        
+        // Routing Control mit SUCHE (Geocoder) aktivieren
+        routingControl = L.Routing.control({
+            waypoints: [ null, null ],
+            router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+            lineOptions: { styles: [{color: '#bf5af2', opacity: 0.8, weight: 6}] },
+            geocoder: L.Control.Geocoder.nominatim(), // DAS IST WICHTIG
+            routeWhileDragging: true,
+            show: true,
+            collapsible: true,
+            language: 'de'
+        }).addTo(navMap);
+        
+        // Wenn Route gefunden -> Button zeigen
+        routingControl.on('routesfound', function(e) {
+            const btn = document.getElementById('btn-start-guidance');
+            if(btn) btn.style.display = 'block';
+        });
 
-             navMap.remove();
+        // Standort suchen
+        navMap.locate({setView: true, maxZoom: 16});
+        navMap.on('locationfound', function(e) {
+            routingControl.spliceWaypoints(0, 1, e.latlng); // GPS als Start
+        });
 
-             navMap = null;
+        navMap.invalidateSize();
+    }, 500);
+}
 
+// Diese Funktion einfach DARUNTER EINFÜGEN:
+function startNaviFollow() {
+    const container = document.querySelector('.leaflet-routing-container');
+    if(container) container.style.display = 'none'; // Eingabe ausblenden
+
+    const btn = document.getElementById('btn-start-guidance');
+    if(btn) btn.style.display = 'none'; // Button ausblenden
+
+    // Auf Route zoomen
+    if(navMap && routingControl) {
+        const waypoints = routingControl.getWaypoints();
+        if(waypoints && waypoints[0].latLng) {
+            navMap.setView(waypoints[0].latLng, 18);
         }
+    }
+    alert("Navigation gestartet!");
+}
 
 
 
@@ -733,3 +773,4 @@ document.querySelectorAll('.nav-item').forEach(btn => { btn.addEventListener('cl
 // --- SPEED LIMIT LOGIC (OVERPASS API) ---
 
 function checkSpeedLimit(lat, lon) { const now = Date.now(); if (now - lastLimitCheck < 8000) return; lastLimitCheck = now; const query = `[out:json]; way(around:15, ${lat}, ${lon})["maxspeed"]; out tags;`; const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`; fetch(url).then(response => response.json()).then(data => { if (data.elements && data.elements.length > 0) { let speed = data.elements[0].tags.maxspeed; if(speed === "none") { document.getElementById('limit-sign').style.display = 'none'; } else { speed = parseInt(speed); if(!isNaN(speed)) { document.getElementById('limit-sign').style.display = 'flex'; document.getElementById('limit-value').innerText = speed; } } } else { document.getElementById('limit-sign').style.display = 'none'; } }).catch(err => console.log("Limit API Error:", err)); }
+
