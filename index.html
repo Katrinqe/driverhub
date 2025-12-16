@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DriverHub 4.0 Modular</title>
+    <title>DriverHub Final</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,39 +14,35 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="navi.css">
-
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <link rel="stylesheet" href="style.css"> <link rel="stylesheet" href="navi.css">  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 </head>
 <body>
 
-    <div class="aurora-bg">
-        <div class="blob b1"></div>
-        <div class="blob b2"></div>
-    </div>
+    <div class="aurora-bg"></div>
 
     <div id="splash-screen">
         <img src="logo.png" alt="DH" class="splash-logo" onerror="this.style.display='none'; document.getElementById('splash-text').style.display='block';">
-        <h1 id="splash-text" style="display:none; font-size: 2rem; color:white;">DH</h1>
+        <h1 id="splash-text" style="display:none; font-size: 3rem; font-weight:900; color:white;">DH</h1>
     </div>
 
     <div id="auth-screen">
         <div class="auth-box">
-            <h2 style="margin-bottom:10px;">DriverHub Login</h2>
-            <p style="color:#888; margin-bottom:30px;">Join the Car Community.</p>
+            <h2 style="margin-bottom:10px; font-weight:800;">DriverHub</h2>
+            <p style="color:#888; margin-bottom:30px;">Welcome back.</p>
+            
             <div id="email-login-form">
                 <input type="email" id="auth-email" class="auth-input" placeholder="Email">
                 <input type="password" id="auth-pass" class="auth-input" placeholder="Password">
-                <button class="btn-auth btn-login" id="btn-login-email">Log In</button>
-                <button class="btn-auth btn-login" id="btn-signup-email" style="background:#333; display:none;">Sign Up</button>
+                <button class="btn-login" id="btn-login-email">Log In</button>
+                <button class="btn-login" id="btn-signup-email" style="background:#333; display:none;">Sign Up</button>
             </div>
-            <p style="margin:15px 0; color:#555;">- OR -</p>
-            <button class="btn-auth btn-google" id="btn-login-google"><i class="fa-brands fa-google"></i> Google Login</button>
-            <p class="auth-switch" id="auth-switch-btn">No account? Sign Up</p>
+            
+            <p style="margin:20px 0; color:#555; font-size:0.8rem;">ODER</p>
+            <button class="btn-google" id="btn-login-google"><i class="fa-brands fa-google"></i> Google Login</button>
+            <p class="auth-switch" id="auth-switch-btn">Noch keinen Account? Sign Up</p>
         </div>
     </div>
 
@@ -55,12 +51,14 @@
         <section id="home-screen" class="screen active">
             <div class="content-home-layout">
                 <div id="status-widget" class="status-pill" onclick="manualRefreshWeather()">
-                    <i class="fa-solid fa-location-arrow loc-icon"></i><span id="loc-text">Locating...</span>
+                    <i class="fa-solid fa-location-arrow loc-icon"></i>
+                    <span id="loc-text">Locating...</span>
                     <span class="divider">|</span>
-                    <i id="weather-icon" class="fa-solid fa-cloud"></i><span id="weather-temp">--°</span>
+                    <i id="weather-icon" class="fa-solid fa-cloud"></i>
+                    <span id="weather-temp" style="margin-left:5px;">--°</span>
                 </div>
                 
-                <div class="logo-container" id="copilot-trigger">
+                <div class="logo-container" id="copilot-trigger" style="margin-top:auto;">
                     <img src="logo.png" alt="Logo" class="dh-logo" onerror="this.style.display='none';">
                 </div>
                 
@@ -69,25 +67,25 @@
                 
                 <div class="spacer-flex"></div>
                 
-                <button id="btn-nav-start" class="btn-secondary" style="margin-bottom: 20px;" onclick="openNaviMode()">
-                    <i class="fa-solid fa-location-arrow"></i> Start Navigation
+                <button id="btn-nav-start" class="btn-secondary" style="margin-bottom: 15px;" onclick="openNaviMode()">
+                    <i class="fa-solid fa-location-arrow"></i> Navigation
                 </button>
-                <button id="btn-start" class="btn-primary"><i class="fa-solid fa-road"></i> Start Drive</button>
+                <button id="btn-start" class="btn-primary">
+                    <i class="fa-solid fa-road"></i> Start Drive
+                </button>
             </div>
         </section>
 
         <section id="community-screen" class="screen">
-            <div class="header-bar">
+            <div class="header-bar" style="padding: 20px 20px 0;">
                 <h2 id="comm-title">Community</h2>
                 <i class="fa-solid fa-rotate-right" onclick="refreshSocial()" style="cursor:pointer; color:#888;"></i>
             </div>
+            
             <div class="content-scroll">
-                
                 <div id="social-main-view">
-                    <div style="position:relative;">
-                        <input type="text" id="user-search" class="user-search-bar" placeholder="Search Users...">
-                        <div id="search-results"></div>
-                    </div>
+                    <input type="text" id="user-search" class="user-search-bar" placeholder="User suchen...">
+                    <div id="search-results" style="display:none; margin-bottom:20px;"></div>
                     
                     <div class="social-tabs">
                         <div class="social-tab active" onclick="switchSocialTab('feed')">Feed</div>
@@ -97,26 +95,28 @@
                     </div>
                     
                     <div id="tab-feed" class="tab-content-box">
-                        <div class="create-post-box">
+                        <div class="create-post-box" style="display:flex; gap:10px; margin-bottom:20px;">
                             <input type="text" id="post-input" class="create-input" placeholder="Was gibt's neues?">
                             <button class="btn-send-post" id="btn-post"><i class="fa-solid fa-paper-plane"></i></button>
                         </div>
                         <div id="friends-only-feed"></div>
-                        <div class="no-friends-box" id="no-friends-msg" style="display:none;">
+                        <div class="no-friends-box" id="no-friends-msg" style="display:none; text-align:center; color:#666; margin-top:50px;">
+                            <i class="fa-solid fa-user-group" style="font-size:2rem; margin-bottom:10px;"></i>
                             <p>Dein Feed ist leer.</p>
                         </div>
                     </div>
                     
-                    <div id="tab-friends" class="tab-content-box" style="display:none;"><div id="friends-list-container">Lade Freunde...</div></div>
-                    <div id="tab-chats" class="tab-content-box" style="display:none;"><div id="chats-list-container">Lade Chats...</div></div>
+                    <div id="tab-friends" style="display:none;"><div id="friends-list-container">Lade Freunde...</div></div>
+                    <div id="tab-chats" style="display:none;"><div id="chats-list-container">Lade Chats...</div></div>
                 </div>
 
                 <div id="profile-view" style="display:none;">
                     <div class="profile-header-img" id="p-header-img"><div class="edit-badge" id="btn-edit-img"><i class="fa-solid fa-camera"></i></div></div>
                     <input type="file" id="profile-img-input" style="display:none;" accept="image/*">
+                    
                     <h2 class="profile-name" id="p-name">Loading...</h2>
                     <p class="profile-bio" id="p-bio">...</p>
-                    <i class="fa-solid fa-pen" id="btn-edit-bio" style="font-size:0.8rem; color:#666; cursor:pointer; margin-bottom:15px; padding:5px;"> Edit Bio</i>
+                    <div style="text-align:center;"><i class="fa-solid fa-pen" id="btn-edit-bio" style="font-size:0.8rem; color:#666; cursor:pointer; padding:10px;"> Edit Bio</i></div>
                     
                     <div class="profile-stats">
                         <div class="p-stat"><span id="p-followers">0</span><span>Followers</span></div>
@@ -128,12 +128,12 @@
                         <button id="btn-msg-action" class="btn-chat" style="display:none;">Message</button>
                     </div>
                     
-                    <div id="profile-post-section"><div id="profile-posts-list"></div></div>
-                    <button id="btn-back-feed" class="btn-text" style="margin-top:20px;">Zurück zum Feed</button>
+                    <div id="profile-posts-list" style="margin-top:20px;"></div>
+                    <button id="btn-back-feed" class="btn-text">Zurück</button>
                 </div>
 
                 <div id="chat-view" style="display:none;">
-                    <h3 id="chat-partner-name" style="margin-bottom:15px;">Chat</h3>
+                    <h3 id="chat-partner-name" style="margin-bottom:15px; padding-left:10px;">Chat</h3>
                     <div class="chat-container">
                         <div id="chat-messages" class="chat-messages"></div>
                         <div class="chat-input-area">
@@ -141,112 +141,133 @@
                             <button id="chat-send" class="btn-send-post"><i class="fa-solid fa-paper-plane"></i></button>
                         </div>
                     </div>
-                    <button id="btn-close-chat" class="btn-text">Chat schließen</button>
+                    <button id="btn-close-chat" class="btn-text">Schließen</button>
                 </div>
-
-                <div style="height: 100px;"></div>
             </div>
         </section>
 
         <section id="music-screen" class="screen">
-            <div class="header-bar"><h2>Music</h2></div>
+            <div class="header-bar" style="padding: 20px 20px 0;"><h2>Music</h2></div>
             <div class="content-scroll">
                 <div class="music-player-container">
                     <div class="album-art-wrapper">
                         <div class="music-aura" id="music-aura"></div>
                         <div class="album-art"><i class="fa-solid fa-music music-icon-big"></i></div>
                     </div>
+                    
                     <div class="song-info">
-                        <span class="song-title" id="track-title">Select Music</span>
-                        <span class="song-artist" id="track-artist">Local File</span>
+                        <span class="song-title" id="track-title" style="display:block; font-weight:bold; font-size:1.2rem;">Wähle Musik</span>
+                        <span class="song-artist" id="track-artist" style="color:#007aff;">Lokal</span>
                     </div>
+
                     <input type="file" id="file-input" accept="audio/*" style="display:none">
                     <button class="btn-load-file" onclick="document.getElementById('file-input').click()">
-                        <i class="fa-solid fa-folder-open"></i> MP3 Laden
+                        <i class="fa-solid fa-folder-open"></i> Import MP3
                     </button>
+
                     <div class="controls">
                         <button class="btn-ctrl" id="btn-prev"><i class="fa-solid fa-backward-step"></i></button>
                         <button class="btn-ctrl btn-play" id="btn-play-pause"><i class="fa-solid fa-play"></i></button>
                         <button class="btn-ctrl" id="btn-next"><i class="fa-solid fa-forward-step"></i></button>
                     </div>
+                    
                     <div class="volume-container">
                         <input type="range" min="0" max="1" step="0.1" value="0.8" class="vol-slider" id="vol-slider">
                     </div>
-                    <div class="playlist" id="playlist-container"></div>
+
+                    <div class="playlist" id="playlist-container" style="margin-top:30px;"></div>
                 </div>
-                <div style="height: 100px;"></div>
             </div>
         </section>
 
         <section id="garage-screen" class="screen">
-            <div class="header-bar"><h2>Garage</h2></div>
+            <div class="header-bar" style="padding: 20px 20px 0;"><h2>Garage</h2></div>
             <div class="content-scroll">
-                <div class="stats-card profile-card">
+                <div class="stats-card">
                     <div class="stat-row-final">
-                        <div><span class="label">TOTAL KM</span><span class="final-value" id="total-km">0</span></div>
-                        <div><span class="label">DRIVES</span><span class="final-value" id="total-drives">0</span></div>
+                        <div><span class="label">GESAMT KM</span><span class="final-value" id="total-km">0.0</span></div>
+                        <div><span class="label">FAHRTEN</span><span class="final-value" id="total-drives">0</span></div>
                     </div>
                 </div>
-                <h3>Letzte Fahrten</h3>
+                
+                <h3 style="margin:20px 0 10px;">Verlauf</h3>
                 <div id="drives-list" class="drives-list"></div>
-                <button id="btn-reset-data" class="btn-text">Reset Data</button>
-                <div style="height: 100px;"></div>
+                
+                <button id="btn-reset-data" class="btn-text">Daten löschen</button>
             </div>
         </section>
 
         <section id="perf-screen" class="screen">
-            <div class="header-bar"><h2>Performance</h2></div>
+            <div class="header-bar" style="padding: 20px 20px 0;"><h2>Performance</h2></div>
             <div class="content-scroll">
-                <div class="perf-display"><span id="perf-live-speed" class="perf-speed">0</span><span class="perf-unit">KM/H</span></div>
+                <div class="perf-display">
+                    <span id="perf-live-speed" class="perf-speed">0</span>
+                    <span class="perf-unit">KM/H</span>
+                </div>
+                
                 <div class="perf-grid">
-                    <div class="perf-box" id="box-0-50"><span class="perf-lbl">0 - 50</span><span class="perf-val" id="val-0-50">--.- s</span></div>
-                    <div class="perf-box" id="box-0-100"><span class="perf-lbl">0 - 100</span><span class="perf-val" id="val-0-100">--.- s</span></div>
+                    <div class="perf-box" id="box-0-50">
+                        <span class="perf-lbl">0 - 50</span>
+                        <span class="perf-val" id="val-0-50">--.- s</span>
+                    </div>
+                    <div class="perf-box" id="box-0-100">
+                        <span class="perf-lbl">0 - 100</span>
+                        <span class="perf-val" id="val-0-100">--.- s</span>
+                    </div>
                 </div>
-                <div class="g-force-container"><span class="perf-lbl">MAX G-FORCE</span><span class="g-val" id="max-g-val">0.00 G</span></div>
-                <div style="text-align: center; margin-bottom: 30px;">
+                
+                <div class="g-force-container">
+                    <span class="perf-lbl">MAX G-FORCE</span>
+                    <span class="g-val" id="max-g-val">0.00 G</span>
+                </div>
+                
+                <div style="text-align: center; margin-bottom: 40px;">
                     <button id="btn-arm-perf" class="btn-arm">ARM</button>
-                    <p style="margin-top:15px; color:#666; font-size:0.8rem;" id="perf-status-text">Tap to arm, then launch.</p>
+                    <p style="margin-top:20px; color:#666; font-size:0.9rem;" id="perf-status-text">Tap to arm, then launch.</p>
                 </div>
+                
                 <h3>History</h3>
                 <div id="perf-history-list" class="drives-list"></div>
-                <div style="height: 100px;"></div>
             </div>
         </section>
 
         <section id="drive-screen" class="screen-overlay">
             <div id="map"></div>
+            
             <div class="drive-overlay-top">
                 <div class="stat-box"><span class="label">SPEED</span><span class="value" id="live-speed">0</span></div>
                 <div class="stat-box"><span class="label">TIME</span><span class="value" id="live-time">00:00</span></div>
             </div>
+            
             <div id="limit-sign" style="display:none;"><span id="limit-value">50</span></div>
             <button id="btn-recenter" class="icon-btn-floating right-side" style="display:none;" onclick="triggerRecenter(event)"><i class="fa-solid fa-crosshairs"></i></button>
+            
             <div class="drive-overlay-bottom">
                 <div class="stat-row"><span id="live-dist">0.0 km</span></div>
-                <button id="btn-stop" class="btn-danger"><i class="fa-solid fa-stop"></i> End Drive</button>
+                <button id="btn-stop" class="btn-danger"><i class="fa-solid fa-stop"></i> Fahrt beenden</button>
             </div>
         </section>
 
         <section id="summary-screen" class="screen-overlay">
-    <div class="content-center">
-        <h2 style="margin-bottom:30px; font-size:2rem;">Drive Summary</h2>
-        
-        <div class="stats-card">
-            <div class="stat-row-final">
-                <div><span class="label">DISTANCE</span><span class="final-value" id="sum-dist">0.0</span> <span class="unit">km</span></div>
-                <div><span class="label">MAX SPEED</span><span class="final-value" id="sum-speed">0</span> <span class="unit">km/h</span></div>
-            </div>
-            <div style="margin-top:20px;" class="stat-row-final">
-                <div><span class="label">AVG SPEED</span><span class="final-value" id="sum-avg">0</span> <span class="unit">km/h</span></div>
-                <div><span class="label">DURATION</span><span class="final-value" id="sum-time">00:00</span></div>
-            </div>
-        </div>
+            <div class="content-center">
+                <h2 style="margin-bottom:30px; font-size:2rem; font-weight:800;">Drive Summary</h2>
+                
+                <div class="stats-card">
+                    <div class="stat-row-final">
+                        <div><span class="label">DISTANCE</span><span class="final-value" id="sum-dist">0.0</span> <span class="unit">km</span></div>
+                        <div><span class="label">MAX SPEED</span><span class="final-value" id="sum-speed">0</span> <span class="unit">km/h</span></div>
+                    </div>
+                    <div style="margin-top:20px;" class="stat-row-final">
+                        <div><span class="label">AVG SPEED</span><span class="final-value" id="sum-avg">0</span> <span class="unit">km/h</span></div>
+                        <div><span class="label">DURATION</span><span class="final-value" id="sum-time">00:00</span></div>
+                    </div>
+                </div>
 
-        <button id="btn-save-drive" class="btn-primary" style="margin-top:30px;">
-            Save to Garage
-        </button>
-    </div>
-</section>
+                <button id="btn-save-drive" class="btn-primary" style="margin-top:30px;">
+                    Save to Garage
+                </button>
+            </div>
+        </section>
 
         <section id="detail-screen" class="screen-overlay">
             <button id="btn-close-detail" class="icon-btn-floating"><i class="fa-solid fa-arrow-left"></i></button>
@@ -260,27 +281,31 @@
             </div>
         </section>
 
-        <div id="nav-setup-screen" class="screen-overlay" style="z-index: 3000; background: rgba(0, 0, 0, 0.3); padding: 20px; display:none; align-items: flex-start; justify-content: center;">
-            <div class="glass-panel" style="margin-top: 60px; width: 100%; max-width: 380px; padding: 25px; border-radius: 24px;">
+        <div id="nav-setup-screen" class="screen-overlay" style="z-index: 3000; background: rgba(0, 0, 0, 0.4); padding: 20px; display:none; align-items: flex-start; justify-content: center;">
+            <div class="glass-panel" style="margin-top: 80px; width: 100%; max-width: 380px; padding: 25px; border-radius: 24px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;">
-                    <h2 style="margin:0; font-size:1.5rem;">Route Planen</h2>
+                    <h2 style="margin:0; font-size:1.5rem; font-weight:700;">Route Planen</h2>
                     <button onclick="closeNaviSetup()" style="background:transparent; border:none; color:#888; font-size:1.2rem;"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <div class="glass-input-row" style="padding: 12px 15px; border-radius: 12px; margin-bottom: 10px; display:flex; align-items:center; gap: 12px;">
-                    <i class="fa-solid fa-location-crosshairs" style="color: #007aff;"></i>
+                
+                <div class="glass-input-row" style="padding: 15px; border-radius: 12px; margin-bottom: 10px; display:flex; align-items:center; gap: 12px;">
+                    <i class="fa-solid fa-location-crosshairs" style="color: #007aff; font-size:1.2rem;"></i>
                     <div style="flex:1;">
                         <span style="display:block; font-size:0.65rem; color:#888; font-weight:bold; margin-bottom:2px;">DEIN STANDORT</span>
-                        <span id="nav-setup-start" style="font-size:0.95rem; font-weight:500;">Ortung läuft...</span>
+                        <span id="nav-setup-start" style="font-size:0.95rem; font-weight:600;">Ortung läuft...</span>
                     </div>
                 </div>
-                <div class="glass-input-row" style="padding: 12px 15px; border-radius: 12px; margin-bottom: 5px; display:flex; align-items:center; gap: 12px;">
-                    <i class="fa-solid fa-flag-checkered" style="color: #30d158;"></i>
+                
+                <div class="glass-input-row" style="padding: 15px; border-radius: 12px; margin-bottom: 5px; display:flex; align-items:center; gap: 12px;">
+                    <i class="fa-solid fa-flag-checkered" style="color: #30d158; font-size:1.2rem;"></i>
                     <div style="flex:1;">
                         <span style="display:block; font-size:0.65rem; color:#888; font-weight:bold; margin-bottom:2px;">ZIEL</span>
                         <input type="text" id="nav-setup-input" placeholder="Stadt, Adresse..." style="background:transparent; border:none; color:white; font-size:1rem; width:100%; outline:none; padding:0;">
                     </div>
                 </div>
+                
                 <div id="nav-api-results" style="background: rgba(30,30,30,0.95); border-radius: 0 0 12px 12px; overflow: hidden; display: none; margin-top:5px; border:1px solid #444;"></div>
+                
                 <button id="btn-launch-route" class="btn-primary" style="margin-top: 25px; display: none; background: #30d158; color: black; border-radius: 16px; font-weight: 800;" onclick="launchMapNavigation()">
                     START NAVIGATION
                 </button>
@@ -290,25 +315,25 @@
         <div id="nav-active-ui" class="screen-overlay" style="z-index: 4000; background: transparent; pointer-events: none; display: none; flex-direction: column; justify-content: space-between; padding: 20px;">
             <div class="nav-limit-sign" id="nav-limit-sign"><span id="nav-limit-value">50</span></div>
             
-            <div style="background: rgba(20, 20, 20, 0.9); backdrop-filter: blur(15px); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); margin-top: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto; display: flex; align-items: center; gap: 15px;">
+            <div style="background: rgba(20, 20, 20, 0.9); backdrop-filter: blur(20px); padding: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); margin-top: 50px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto; display: flex; align-items: center; gap: 20px;">
                 <div id="nav-turn-icon" style="font-size: 2.5rem; color: #30d158; min-width: 50px; text-align: center;"><i class="fa-solid fa-arrow-up"></i></div>
                 <div>
-                    <span id="nav-dist-text" style="font-size: 1.5rem; font-weight: 800; color: white; display: none;">0 m</span>
-                    <span id="nav-instruction-text" style="font-size: 1rem; color: #ccc;">Route folgen...</span>
+                    <span id="nav-dist-text" style="font-size: 1.6rem; font-weight: 800; color: white; display: none;">0 m</span>
+                    <span id="nav-instruction-text" style="font-size: 1.1rem; color: #eee; font-weight:500;">Route berechnen...</span>
                 </div>
             </div>
 
-            <div style="background: rgba(20, 20, 20, 0.9); backdrop-filter: blur(15px); padding: 15px 25px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto; display: flex; align-items: center; justify-content: space-between;">
+            <div style="background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(20px); padding: 15px 25px; border-radius: 40px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); pointer-events: auto; display: flex; align-items: center; justify-content: space-between;">
                 <div style="text-align: center;">
                     <span style="font-size: 0.7rem; color: #888; display: block; font-weight: bold;">RESTZEIT</span>
-                    <span id="nav-time-remaining" style="font-size: 1.2rem; font-weight: 800; color: white;">-- min</span>
+                    <span id="nav-time-remaining" style="font-size: 1.3rem; font-weight: 800; color: white;">--</span>
                 </div>
                 <div style="width: 1px; height: 30px; background: #444;"></div>
                 <div style="text-align: center;">
                     <span style="font-size: 0.7rem; color: #888; display: block; font-weight: bold;">STRECKE</span>
-                    <span id="nav-dist-remaining" style="font-size: 1.2rem; font-weight: 800; color: white;">-- km</span>
+                    <span id="nav-dist-remaining" style="font-size: 1.3rem; font-weight: 800; color: white;">--</span>
                 </div>
-                <button onclick="closeNaviMode()" style="background: rgba(255, 59, 48, 0.2); border: 1px solid #ff3b30; color: #ff3b30; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-left: 15px;">
+                <button onclick="closeNaviMode()" style="background: rgba(255, 59, 48, 0.15); border: 1px solid #ff3b30; color: #ff3b30; width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-left: 20px;">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -316,10 +341,9 @@
 
         <section id="nav-screen" class="screen-overlay" style="z-index: 2200; background: #111;">
             <div id="nav-map"></div>
-            <button id="btn-close-nav" class="icon-btn-floating" style="top:20px; left:20px; background:rgba(0,0,0,0.6);" onclick="closeNaviMode()"><i class="fa-solid fa-arrow-left"></i></button>
+            <button id="btn-close-nav" class="icon-btn-floating" style="top:50px; left:20px;" onclick="closeNaviMode()"><i class="fa-solid fa-arrow-left"></i></button>
             <button id="btn-nav-recenter" class="btn-recenter-nav" onclick="recenterNavMap()"><i class="fa-solid fa-location-arrow"></i></button>
         </section>
-
 
         <nav class="bottom-nav" id="main-nav">
             <button class="nav-item active" data-target="home-screen"><i class="fa-solid fa-house"></i><span>Home</span></button>
@@ -334,12 +358,5 @@
     <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     
-    <script src="script.js"></script> 
-    <script src="music.js"></script>
-    <script src="social.js"></script>
-    <script src="garage.js"></script>
-    <script src="perf.js"></script>
-    <script src="navi.js"></script>
-</body>
+    <script src="script.js"></script> <script src="music.js"></script>  <script src="social.js"></script> <script src="garage.js"></script> <script src="perf.js"></script>   <script src="navi.js"></script>   </body>
 </html>
-
