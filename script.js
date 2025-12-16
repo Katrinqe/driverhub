@@ -138,3 +138,54 @@ function updateTimeGreeting() {
     else { app.greet.innerText = txt; } 
 }
 function initWeatherLoc(pos) { const lat = pos.coords.latitude; const lng = pos.coords.longitude; fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`).then(r => r.json()).then(d => { app.locText.innerText = d.address.city || d.address.town || "Location Found"; }); fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`).then(r => r.json()).then(d => { const t = Math.round(d.current_weather.temperature); const c = d.current_weather.weathercode; app.tempText.innerText = t + "°"; if(c <= 1) app.weatherIcon.className = "fa-solid fa-sun"; else if(c <= 3) app.weatherIcon.className = "fa-solid fa-cloud-sun"; else app.weatherIcon.className = "fa-solid fa-cloud"; }); }
+
+// --- CO-PILOT RESTORE ---
+function initCoPilot() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    // Globale Variablen nutzen
+    window.recognition = new SpeechRecognition();
+    window.recognition.lang = 'de-DE';
+    window.recognition.continuous = false;
+
+    window.recognition.onstart = () => {
+        app.copilotTrigger.classList.add('listening');
+        document.getElementById('slogan-text').innerText = "Ich höre zu...";
+    };
+
+    window.recognition.onend = () => {
+        app.copilotTrigger.classList.remove('listening');
+        document.getElementById('slogan-text').innerText = "Tap Logo for Co-Pilot";
+    };
+
+    window.recognition.onresult = (event) => {
+        const cmd = event.results[0][0].transcript.toLowerCase();
+        handleVoiceCommand(cmd);
+    };
+
+    // WICHTIG: Click Listener neu setzen
+    if(app.copilotTrigger) {
+        // Alten Listener entfernen (um doppelte zu vermeiden)
+        const newEl = app.copilotTrigger.cloneNode(true);
+        app.copilotTrigger.parentNode.replaceChild(newEl, app.copilotTrigger);
+        app.copilotTrigger = newEl; // Referenz updaten
+
+        app.copilotTrigger.addEventListener('click', () => {
+             speak("Co-Pilot hört.");
+             setTimeout(() => window.recognition.start(), 1000);
+        });
+    }
+}
+
+function handleVoiceCommand(cmd) {
+    if(cmd.includes('start')) { document.getElementById('btn-start').click(); speak("Gute Fahrt."); }
+    else if(cmd.includes('navi')) { openNaviMode(); speak("Navi Modus."); }
+    else if(cmd.includes('musik')) { document.querySelector('.nav-item[data-target="music-screen"]').click(); speak("Musik geöffnet."); }
+    else { speak("Nicht verstanden."); }
+}
+
+function speak(text) {
+    const utter = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.speak(utter);
+}
