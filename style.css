@@ -1,150 +1,154 @@
-/* --- GLOBAL VARIABLES --- */
-:root {
-    --bg-color: #000000;
-    --card-bg: #1c1c1e;
-    --primary-color: #007aff; /* DriverHub Blue */
-    --accent-green: #30d158;
-    --accent-red: #ff3b30;
-    --text-main: #ffffff;
-    --text-muted: #8e8e93;
-    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
-/* --- RESET & BASE --- */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body, html {
-    margin: 0; padding: 0;
-    height: 100%; width: 100%;
-    background-color: var(--bg-color);
-    color: var(--text-main);
-    font-family: var(--font-family);
-    overflow: hidden; /* App-Feeling */
-    user-select: none;
-}
+body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background-color: #000; color: #fff; overflow: hidden; width: 100vw; height: 100vh; }
 
-/* --- APP CONTAINER & SCREENS --- */
-#app-container {
-    width: 100%; height: 100%;
-    position: relative;
-    overflow: hidden;
-}
-
-.screen {
-    position: absolute; top: 0; left: 0;
-    width: 100%; height: 100%;
-    display: none; /* JS schaltet auf flex/block */
-    flex-direction: column;
-    padding: 20px;
-    padding-bottom: 90px; /* Platz für Nav */
-    overflow-y: auto; /* Scrollbar für Inhalt */
-}
-.screen.active { display: flex; }
-
-.screen-overlay {
-    position: fixed; top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: var(--bg-color);
-    z-index: 2000;
-    display: none;
-    flex-direction: column;
-}
-
-/* --- HEADER & TITLES --- */
-.header-bar {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 20px; padding-top: 10px;
-}
-h1 { font-size: 2rem; font-weight: 800; margin: 0; letter-spacing: -1px; }
-h2 { font-size: 1.8rem; font-weight: 700; margin: 0; }
-h3 { font-size: 1.2rem; font-weight: 600; margin: 15px 0 10px 0; color: var(--text-muted); }
-
-/* --- BUTTONS GLOBAL --- */
-button { cursor: pointer; border: none; outline: none; transition: 0.2s; font-family: inherit; }
-button:active { transform: scale(0.96); }
-
-.btn-primary {
-    background: var(--primary-color); color: white;
-    width: 100%; padding: 16px; border-radius: 14px;
-    font-size: 1.1rem; font-weight: 600;
-    box-shadow: 0 4px 15px rgba(0, 122, 255, 0.4);
-}
-.btn-secondary {
-    background: var(--card-bg); color: var(--primary-color);
-    width: 100%; padding: 14px; border-radius: 14px;
-    font-size: 1rem; font-weight: 600;
-}
-.btn-text {
-    background: transparent; color: var(--text-muted);
-    width: 100%; padding: 15px; font-size: 0.9rem;
-}
-.icon-btn-floating {
-    position: absolute;
-    width: 45px; height: 45px;
-    border-radius: 50%;
-    background: rgba(30, 30, 30, 0.8);
-    backdrop-filter: blur(10px);
-    color: white;
-    display: flex; align-items: center; justify-content: center;
-    z-index: 2100;
-    font-size: 1.2rem;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-
-/* --- BOTTOM NAVIGATION --- */
-.bottom-nav {
-    position: fixed; bottom: 0; left: 0; width: 100%;
-    height: 85px;
-    background: rgba(20, 20, 20, 0.95);
-    backdrop-filter: blur(20px);
-    display: flex; justify-content: space-around; align-items: center;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    z-index: 1000;
-    padding-bottom: 20px; /* iPhone Home Bar Safe Area */
-}
-.nav-item {
-    background: transparent; color: #555;
-    display: flex; flex-direction: column; align-items: center;
-    gap: 5px; font-size: 0.7rem;
-}
-.nav-item i { font-size: 1.4rem; margin-bottom: 2px; }
-.nav-item.active { color: var(--primary-color); }
-
-/* --- SPLASH & AUTH SCREENS --- */
-#splash-screen {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: black; z-index: 9999;
-    display: flex; justify-content: center; align-items: center;
-    transition: opacity 0.8s;
-}
-.splash-logo { width: 120px; animation: fadePulse 2s infinite; }
-
-#auth-screen {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: #000; z-index: 8000;
-    display: flex; justify-content: center; align-items: center;
-    padding: 30px;
-}
-#auth-screen.hidden { display: none; }
-.auth-box { width: 100%; max-width: 350px; text-align: center; }
-.auth-input {
-    width: 100%; padding: 15px; background: #222; border: 1px solid #333;
-    border-radius: 10px; color: white; margin-bottom: 10px; font-size: 1rem;
-}
-.btn-auth { width: 100%; padding: 15px; border-radius: 10px; font-weight: bold; margin-bottom: 10px; }
-.btn-login { background: var(--primary-color); color: white; }
-.btn-google { background: white; color: black; }
-.auth-switch { margin-top: 20px; font-size: 0.9rem; color: var(--primary-color); cursor: pointer; }
-
-/* --- HOME SCREEN SPECIALS --- */
-.status-pill {
-    background: rgba(255,255,255,0.1); padding: 8px 16px;
-    border-radius: 20px; font-size: 0.85rem; color: #ccc;
-    display: inline-flex; align-items: center; gap: 10px;
-    margin-bottom: 40px;
-}
+/* BLAUE AURA HINTERGRUND */
 .aurora-bg {
-    position: fixed; top: -20%; left: -20%; width: 140%; height: 140%;
-    z-index: -1; pointer-events: none; opacity: 0.4;
-    background: radial-gradient(circle at 50% 50%, #1a0b2e 0%, #000000 70%);
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: -1; pointer-events: none; overflow: hidden;
 }
-.dh-logo { width: 180px; margin-bottom: 20px; filter: drop-shadow(0 0 30px rgba(0, 122, 255, 0.3)); }
+.blob {
+    position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.5;
+    animation: moveBlob 20s infinite alternate;
+}
+.b1 { top: -10%; left: -10%; width: 500px; height: 500px; background: #0044ff; }
+.b2 { bottom: -10%; right: -10%; width: 400px; height: 400px; background: #007aff; animation-delay: -5s; }
+
+@keyframes moveBlob {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(50px, 50px) scale(1.1); }
+}
+
+/* Auth & Screens */
+.hidden { display: none !important; }
+#auth-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; }
+.auth-box { width: 85%; max-width: 350px; text-align: center; }
+.auth-input { width: 100%; background: #222; border: 1px solid #333; color: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; font-size: 1rem; }
+.btn-auth { width: 100%; padding: 15px; border-radius: 30px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 10px; font-size: 1rem; }
+.btn-login { background: #007aff; color: white; }
+.btn-google { background: white; color: black; }
+.auth-switch { color: #007aff; margin-top: 15px; cursor: pointer; font-size: 0.9rem; }
+
+#splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.8s; }
+.splash-logo { width: 120px; animation: logoPulse 2s infinite; }
+@keyframes logoPulse { 0% { opacity: 0.8; transform: scale(0.95); } 50% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0.8; transform: scale(0.95); } }
+
+/* App Layout */
+#app-container { height: 100%; display: flex; flex-direction: column; }
+.screen { display: none; flex: 1; flex-direction: column; height: 100%; overflow: hidden; }
+.screen.active { display: flex; }
+.content-home-layout { padding: 30px; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.content-scroll { padding: 20px; overflow-y: auto; height: 100%; padding-bottom: 100px; }
+
+/* Home Header */
+.status-pill { background: rgba(30,30,30,0.6); backdrop-filter: blur(10px); padding: 8px 16px; border-radius: 20px; display: flex; align-items: center; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 40px; cursor: pointer; }
+.divider { margin: 0 10px; color: #555; }
+.dh-logo { width: 120px; filter: drop-shadow(0 0 20px rgba(0,122,255,0.5)); transition: transform 0.2s; }
+.dh-logo:active { transform: scale(0.95); }
+.listening .dh-logo { filter: drop-shadow(0 0 30px #30d158); }
+#greeting-text { font-size: 2rem; font-weight: 800; text-align: center; margin: 20px 0 5px 0; line-height: 1.2; }
+.greeting-username { color: #007aff; }
+.slogan { color: #888; font-size: 0.9rem; margin-bottom: 30px; }
+.spacer-flex { flex: 1; }
+
+/* Buttons */
+.btn-primary { background: #007aff; color: white; border: none; width: 100%; padding: 18px; border-radius: 16px; font-size: 1.1rem; font-weight: 600; box-shadow: 0 5px 20px rgba(0,122,255,0.3); }
+.btn-secondary { background: rgba(255,255,255,0.1); color: white; border: none; width: 100%; padding: 15px; border-radius: 16px; font-size: 1rem; font-weight: 600; }
+.btn-text { background: transparent; border: none; color: #888; padding: 10px; width: 100%; margin-top: 20px; }
+.btn-danger { background: #ff3b30; color: white; border: none; width: 100%; padding: 15px; border-radius: 30px; font-weight: bold; margin-top: 15px; }
+
+/* Nav Bar */
+.bottom-nav { position: fixed; bottom: 0; width: 100%; background: rgba(10,10,10,0.95); backdrop-filter: blur(20px); border-top: 1px solid #333; display: flex; justify-content: space-around; padding: 15px 10px 25px 10px; z-index: 2000; }
+.nav-item { background: none; border: none; color: #666; font-size: 0.7rem; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.nav-item i { font-size: 1.4rem; margin-bottom: 2px; }
+.nav-item.active { color: #007aff; }
+
+/* Overlays (Drive, Detail, Summary) */
+.screen-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2100; display: none; flex-direction: column; }
+#map, #nav-map, #detail-map { width: 100%; height: 100%; min-height: 100%; z-index: 1; background: #111; }
+.icon-btn-floating { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.6); color: white; width: 40px; height: 40px; border-radius: 50%; border: none; z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+.drive-overlay-top { position: absolute; top: 0; width: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); padding: 50px 20px 20px; display: flex; justify-content: space-between; z-index: 1000; }
+.drive-overlay-bottom { position: absolute; bottom: 0; width: 100%; background: #000; padding: 20px; border-radius: 20px 20px 0 0; z-index: 1000; text-align: center; }
+.stat-box { text-align: center; }
+.stat-box .label { font-size: 0.7rem; color: #888; display: block; }
+.stat-box .value { font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+#live-dist { font-size: 3rem; font-weight: 800; }
+
+/* Social & Perf */
+.header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.social-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+.social-tab { padding: 8px 16px; background: #222; border-radius: 20px; font-size: 0.9rem; color: #888; cursor: pointer; }
+.social-tab.active { background: white; color: black; font-weight: bold; }
+.user-search-bar { width: 100%; padding: 12px; background: #222; border: none; border-radius: 10px; color: white; margin-bottom: 10px; }
+#search-results { position: absolute; top: 45px; width: 100%; background: #222; border-radius: 10px; z-index: 10; display: none; max-height: 300px; overflow-y: auto; border: 1px solid #333; }
+.search-item { padding: 10px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #333; }
+.s-avatar { width: 30px; height: 30px; border-radius: 50%; background-size: cover; background-position: center; }
+
+.post-card { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; }
+.post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.post-avatar { width: 35px; height: 35px; border-radius: 50%; background: #007aff; display: flex; align-items: center; justify-content: center; font-weight: bold; background-size: cover; background-position: center; }
+.post-user { font-weight: bold; font-size: 0.9rem; color: #fff; }
+.post-date { margin-left: auto; font-size: 0.7rem; color: #666; }
+.post-content { font-size: 0.95rem; line-height: 1.4; color: #eee; margin-bottom: 10px; }
+.create-post-box { display: flex; gap: 10px; margin-bottom: 20px; }
+.create-input { flex: 1; background: #222; border: none; padding: 12px; border-radius: 20px; color: white; }
+.btn-send-post { background: #007aff; border: none; width: 40px; height: 40px; border-radius: 50%; color: white; }
+
+/* Profile View */
+.profile-header-img { width: 100px; height: 100px; border-radius: 50%; background: #333; margin: 0 auto 15px; position: relative; background-size: cover; background-position: center; }
+.edit-badge { position: absolute; bottom: 0; right: 0; background: #007aff; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; cursor: pointer; }
+.profile-name { text-align: center; margin: 0; }
+.profile-bio { text-align: center; color: #888; font-size: 0.9rem; margin-top: 5px; }
+.profile-stats { display: flex; justify-content: center; gap: 30px; margin: 20px 0; }
+.p-stat { display: flex; flex-direction: column; align-items: center; }
+.p-stat span:first-child { font-weight: bold; font-size: 1.2rem; }
+.p-stat span:last-child { font-size: 0.7rem; color: #666; }
+.profile-actions-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+.btn-follow { background: #007aff; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; }
+.btn-follow.following { background: #333; color: #ccc; }
+.btn-chat { background: #333; color: white; border: none; padding: 8px 20px; border-radius: 20px; }
+
+/* Chat */
+.chat-container { display: flex; flex-direction: column; height: 60vh; background: #1a1a1a; border-radius: 12px; overflow: hidden; }
+.chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.chat-bubble { padding: 10px 15px; border-radius: 15px; max-width: 80%; font-size: 0.9rem; }
+.chat-bubble.me { background: #007aff; align-self: flex-end; border-bottom-right-radius: 2px; }
+.chat-bubble.them { background: #333; align-self: flex-start; border-bottom-left-radius: 2px; }
+.chat-input-area { padding: 10px; background: #222; display: flex; gap: 10px; }
+.chat-input { flex: 1; background: #333; border: none; padding: 10px; border-radius: 20px; color: white; }
+
+/* Music */
+.music-player-container { text-align: center; margin-top: 20px; }
+.album-art-wrapper { position: relative; width: 200px; height: 200px; margin: 0 auto 30px; display: flex; align-items: center; justify-content: center; }
+.music-aura { position: absolute; width: 100%; height: 100%; border-radius: 50%; background: #007aff; opacity: 0; filter: blur(30px); transition: opacity 0.5s; }
+.music-aura.playing { opacity: 0.6; animation: auraPulse 2s infinite; }
+@keyframes auraPulse { 0% { transform: scale(0.9); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 0.7; } 100% { transform: scale(0.9); opacity: 0.5; } }
+.album-art { width: 180px; height: 180px; background: #222; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; border: 2px solid #333; }
+.music-icon-big { font-size: 3rem; color: #555; }
+.song-info h5 { margin: 5px 0; font-size: 1.2rem; }
+.controls { display: flex; justify-content: center; align-items: center; gap: 30px; margin: 20px 0; }
+.btn-ctrl { background: none; border: none; color: white; font-size: 1.5rem; }
+.btn-play { width: 60px; height: 60px; background: white; color: black; border-radius: 50%; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+.playlist { margin-top: 30px; text-align: left; }
+.track-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #222; cursor: pointer; }
+.track-row.active { color: #007aff; }
+
+/* Garage List */
+.drive-item { background: #1c1c1e; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.drive-item h5 { margin: 0 0 5px 0; font-size: 1rem; }
+.drive-item span { color: #888; font-size: 0.8rem; }
+.drive-item .right-side { text-align: right; display: flex; flex-direction: column; }
+.drive-item .dist { color: #30d158; font-weight: bold; font-size: 1rem; }
+
+/* Perf */
+.perf-display { text-align: center; margin: 30px 0; }
+.perf-speed { font-size: 5rem; font-weight: 800; line-height: 1; }
+.perf-unit { font-size: 1rem; color: #888; display: block; }
+.perf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+.perf-box { background: #1a1a1a; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #333; }
+.perf-box.active { border-color: #30d158; background: rgba(48, 209, 88, 0.1); }
+.perf-lbl { font-size: 0.7rem; color: #888; display: block; margin-bottom: 5px; }
+.perf-val { font-size: 1.5rem; font-weight: bold; }
+.btn-arm { width: 100px; height: 100px; border-radius: 50%; background: #333; border: 2px solid #555; color: white; font-weight: bold; font-size: 1.2rem; transition: 0.3s; }
+.btn-arm.armed { background: #ff3b30; border-color: #ff3b30; box-shadow: 0 0 20px rgba(255, 59, 48, 0.5); }
