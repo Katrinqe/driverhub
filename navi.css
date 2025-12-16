@@ -6,7 +6,6 @@
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     box-shadow: 0 20px 40px rgba(0,0,0,0.6) !important;
 }
-
 .glass-input-row {
     background: rgba(255, 255, 255, 0.05) !important;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -17,7 +16,7 @@
     border-color: #30d158;
 }
 
-/* Navi: Blauer Pulsierender Punkt */
+/* Navi Marker & HUD */
 .nav-my-loc { background: transparent; border: none; }
 .blue-pulse {
     width: 20px; height: 20px;
@@ -35,12 +34,8 @@
     animation: pulse-ring 2s infinite;
     z-index: -1;
 }
-@keyframes pulse-ring {
-    0% { transform: scale(0.5); opacity: 1; }
-    100% { transform: scale(1.5); opacity: 0; }
-}
+@keyframes pulse-ring { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
 
-/* Navi: Buttons & HUD */
 .btn-recenter-nav {
     position: absolute; bottom: 120px; right: 20px;
     width: 50px; height: 50px; border-radius: 50%;
