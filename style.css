@@ -258,3 +258,22 @@ button { font-family: var(--font-stack); cursor: pointer; }
 .api-result-item:hover .api-result-sub {
     color: #ddd;
 }
+
+
+/* --- ACTIVE NAVI STYLES --- */
+
+/* Versteckt die Standard-Box von Leaflet Routing Machine während der Fahrt */
+.leaflet-routing-container {
+    display: none !important; /* Wir nutzen unser eigenes HUD */
+}
+
+/* Pulse Animation für den Pfeil */
+#nav-turn-icon i {
+    animation: navPulse 2s infinite;
+}
+
+@keyframes navPulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
