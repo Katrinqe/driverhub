@@ -244,6 +244,41 @@ let navStartCoords = null;
 let navDestCoords = null;
 let searchTimeout = null;
 
+const navInput = document.getElementById('nav-setup-input');
+const resultsBox = document.getElementById('nav-api-results');
+
+if(navInput) {
+    navInput.addEventListener('input', (e) => {
+        const term = e.target.value;
+        if(term.length < 3) { resultsBox.style.display = 'none'; return; }
+
+        if(searchTimeout) clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${term}`)
+                .then(r => r.json())
+                .then(data => {
+                    resultsBox.innerHTML = "";
+                    if(data.length > 0) {
+                        resultsBox.style.display = 'block';
+                        data.forEach(place => {
+                            const div = document.createElement('div');
+                            div.style.padding = "15px";
+                            div.style.borderBottom = "1px solid #333";
+                            div.style.cursor = "pointer";
+                            div.style.color = "white";
+                            div.style.background = "#222";
+                            div.innerText = place.display_name;
+                            div.onclick = () => selectDestination(place.lat, place.lon, place.display_name);
+                            resultsBox.appendChild(div);
+                        });
+                    } else {
+                        resultsBox.style.display = 'none';
+                    }
+                });
+        }, 500);
+    });
+}
+
 // 1. Öffnet das Setup-Fenster und holt GPS
 function openNaviMode() {
     // Navigations-Leiste unten ausblenden
@@ -493,6 +528,7 @@ document.querySelectorAll('.nav-item').forEach(btn => { btn.addEventListener('cl
 
 // --- SPEED LIMIT LOGIC (OVERPASS API) ---
 function checkSpeedLimit(lat, lon) { const now = Date.now(); if (now - lastLimitCheck < 8000) return; lastLimitCheck = now; const query = `[out:json]; way(around:15, ${lat}, ${lon})["maxspeed"]; out tags;`; const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`; fetch(url).then(response => response.json()).then(data => { if (data.elements && data.elements.length > 0) { let speed = data.elements[0].tags.maxspeed; if(speed === "none") { document.getElementById('limit-sign').style.display = 'none'; } else { speed = parseInt(speed); if(!isNaN(speed)) { document.getElementById('limit-sign').style.display = 'flex'; document.getElementById('limit-value').innerText = speed; } } } else { document.getElementById('limit-sign').style.display = 'none'; } }).catch(err => console.log("Limit API Error:", err)); }
+
 
 
 
