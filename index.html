@@ -213,6 +213,40 @@
     </div>
 </div>
 
+
+        <div id="nav-active-ui" class="screen-overlay" style="z-index: 4000; background: transparent; pointer-events: none; display: none; flex-direction: column; justify-content: space-between; padding: 20px;">
+    
+    <div style="background: rgba(20, 20, 20, 0.9); backdrop-filter: blur(15px); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); margin-top: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto; display: flex; align-items: center; gap: 15px;">
+        <div id="nav-turn-icon" style="font-size: 2.5rem; color: #30d158; min-width: 50px; text-align: center;">
+            <i class="fa-solid fa-arrow-up"></i>
+        </div>
+        <div>
+            <span id="nav-dist-text" style="font-size: 1.5rem; font-weight: 800; color: white; display: block;">0 m</span>
+            <span id="nav-instruction-text" style="font-size: 1rem; color: #ccc;">Route folgen</span>
+        </div>
+    </div>
+
+    <div style="background: rgba(20, 20, 20, 0.9); backdrop-filter: blur(15px); padding: 15px 25px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto; display: flex; align-items: center; justify-content: space-between;">
+        
+        <div style="text-align: center;">
+            <span style="font-size: 0.7rem; color: #888; display: block; font-weight: bold;">RESTZEIT</span>
+            <span id="nav-time-remaining" style="font-size: 1.2rem; font-weight: 800; color: white;">-- min</span>
+        </div>
+        
+        <div style="width: 1px; height: 30px; background: #444;"></div>
+
+        <div style="text-align: center;">
+            <span style="font-size: 0.7rem; color: #888; display: block; font-weight: bold;">STRECKE</span>
+            <span id="nav-dist-remaining" style="font-size: 1.2rem; font-weight: 800; color: white;">-- km</span>
+        </div>
+
+        <button onclick="stopNavigation()" style="background: rgba(255, 59, 48, 0.2); border: 1px solid #ff3b30; color: #ff3b30; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-left: 15px;">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+</div>
+
+        
 <section id="nav-screen" class="screen-overlay" style="z-index: 2200; background: #111;">
     <div id="nav-map" style="height: 100%; width: 100%;"></div>
     <button id="btn-close-nav" class="icon-btn-floating" style="top:20px; left:20px;" onclick="closeNaviMode()"><i class="fa-solid fa-arrow-left"></i></button>
@@ -258,4 +292,5 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
