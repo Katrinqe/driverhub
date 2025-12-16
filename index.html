@@ -228,15 +228,25 @@
         </section>
 
         <section id="summary-screen" class="screen-overlay">
-            <div class="content-center">
-                <h2>Drive Summary</h2>
-                <div class="stats-card">
-                    <div class="stat-row-final"><div><span class="label">DISTANCE</span><span class="final-value" id="sum-dist">0.0</span></div><div><span class="label">MAX</span><span class="final-value" id="sum-speed">0</span></div></div>
-                    <div class="stat-row-final"><div><span class="label">AVG</span><span class="final-value" id="sum-avg">0</span></div><div><span class="label">TIME</span><span class="final-value" id="sum-time">00:00</span></div></div>
-                </div>
-                <button id="btn-save-drive" class="btn-primary">Save to Garage</button>
+    <div class="content-center">
+        <h2 style="margin-bottom:30px; font-size:2rem;">Drive Summary</h2>
+        
+        <div class="stats-card">
+            <div class="stat-row-final">
+                <div><span class="label">DISTANCE</span><span class="final-value" id="sum-dist">0.0</span> <span class="unit">km</span></div>
+                <div><span class="label">MAX SPEED</span><span class="final-value" id="sum-speed">0</span> <span class="unit">km/h</span></div>
             </div>
-        </section>
+            <div style="margin-top:20px;" class="stat-row-final">
+                <div><span class="label">AVG SPEED</span><span class="final-value" id="sum-avg">0</span> <span class="unit">km/h</span></div>
+                <div><span class="label">DURATION</span><span class="final-value" id="sum-time">00:00</span></div>
+            </div>
+        </div>
+
+        <button id="btn-save-drive" class="btn-primary" style="margin-top:30px;">
+            Save to Garage
+        </button>
+    </div>
+</section>
 
         <section id="detail-screen" class="screen-overlay">
             <button id="btn-close-detail" class="icon-btn-floating"><i class="fa-solid fa-arrow-left"></i></button>
@@ -332,3 +342,4 @@
     <script src="navi.js"></script>
 </body>
 </html>
+
